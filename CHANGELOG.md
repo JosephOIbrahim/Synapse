@@ -2,6 +2,47 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.101.0 - Render QC timing measured, and it does not clear budget; stricter release gates
+
+**Product code changes.** One shipped code file changes: the brain-stack import
+diagnostic in `python/synapse/host/daemon.py`, for the case where the vendored
+wheels are inactive, now reports what failed instead of what it assumed. The
+Render QC timing harness lands under `harness/` and changes nothing an installed
+seat runs. The full note, with every limit, is
+[docs/releases/v5.101.0.md](docs/releases/v5.101.0.md).
+
+- **The timing verdict is branch 4.** On the deciding tier the floor is
+  **5.732 s** against a **2.0 s** budget, 2.9× over, while read plus write is
+  **0.300 s**. The dense cv2 sites are **12%** of total time on the deciding
+  tier, and the floor is computed with them already excluded, so making them
+  cheaper cannot reach the budget. The other **~87%** of scan time was never
+  broken down beyond two small timed pieces, so whether it is reducible is
+  unknown. Three units vote and all three land in branch 4.
+- **The 2.0 s budget is an input, not an output.** It is `B_SECONDS` in
+  `harness/vision/qc_timing/decide.py` and part of frozen rule revision 2.
+  QC-Q3 is ruled: the budget stays at 2.0 s (Joe, 14 November 2026).
+- **The receipt reproduces its own decision and is clean.** 541 records, 0
+  exceptions, 0 inconclusive frames, 45 timed records voided for foreign processes
+  only. `decide.decide()` over its per-frame values returns its `decision`
+  exactly. No frame name and no workstation model string is in the file.
+- **The vendored-wheel import diagnostic reports what failed.** On Windows, when
+  the running Python matches neither vendored SDK build (cp311 or cp313) and the
+  `anthropic` import raises ImportError, it quotes the exception it caught and
+  says which of `anthropic` and `pydantic` is installed, probing with `find_spec`
+  rather than importing. Every other ImportError keeps its existing error.
+- **The release gates got stricter.** `scripts/tag_release.py` refuses without a
+  committed crux record whose reviewed files are unchanged at the tagged commit,
+  and its git calls ignore a leaked `GIT_DIR`. The release-notes guard checks the
+  paths named in the claims it judges against the tagged tree, not the checkout.
+- **Developer side.** Every pytest run stamps its commit, interpreter and
+  dependency set; the suite ratchet refuses to compare across interpreters; four
+  panel Qt test files no longer need pytest in their isolated child; the timing
+  harness test feeds sentinel strings, not real hardware strings.
+- **README and logo.** The README is rewritten for calmer reading, and its logo
+  is a new SVG lockup (`assets/synapse-lockup.svg`, with a dark-theme variant
+  and the mark alone in `assets/synapse-mark.svg` and its dark variant). The
+  PNG logos stay in `assets/`. Neither ships in Setup.
+
 ## v5.100.0 - Doctor reads the right store and names foreign code; Render QC groundwork
 
 **Product code changes.** Doctor checks more of a seat and reads the memory

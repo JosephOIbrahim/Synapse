@@ -1,100 +1,107 @@
 <p align="center">
-  <img src="assets/SYNAPSE.png" alt="SYNAPSE" width="160">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/synapse-lockup-dark.svg">
+    <img src="assets/synapse-lockup.svg" alt="SYNAPSE" width="160">
+  </picture>
 </p>
 
 <p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
 
-<p align="center"><sub>v5.100.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.100.0 is Latest</sub></p>
+<p align="center"><sub>v5.101.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.101.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[▶️ Instructions](INSTRUCTIONS.md)** · [🏷️ Versions and tags](TAGS.md) · [What's new](docs/releases/v5.100.0.md) · [Help](#when-you-get-stuck)
+**[Instructions](INSTRUCTIONS.md)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.101.0.md) · [Help](#when-you-get-stuck)
+
+How to read this page: Start here and Install get you running. Everything after them is reference you can come back to when you need it.
 
 ## Start here
 
-**5.100.0 makes Doctor say more about a seat, and say it about the right folder.** It checks Moneta's native module against its pinned hash, counts sleep passes, names code loaded from outside the runtime, and reads the store an unsaved scene actually uses.
+5.101.0 changes one thing on your seat: when the AI libraries fail to load on a Python that the bundled copies do not fit, the error now quotes what went wrong. Everything else in this release measures or guards the product rather than changing it.
 
-Render QC groundwork lands too. **No artist sees a finding from the new detector yet**: nothing calls the new worker. Moneta 1.3.0, the panel code, the Setup behaviour and the native-artifact policy are unchanged from [5.99.0](docs/releases/v5.99.0.md). anthropic 2.x is **still unsupported**. [What changed in 5.100.0](#what-changed-in-51000) walks through it.
+The panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.100.0](docs/releases/v5.100.0.md). anthropic 2.x is still unsupported. [What changed in 5.101.0](#what-changed-in-51010) walks through it.
 
-### Get 5.100.0
+### Get 5.101.0
 
-- 📦 **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.100.0/SYNAPSE-5.100.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.100.0/SYNAPSE-5.100.0-source.zip).
-- 🔎 **Check the download:** Setup is **unsigned**. Compare its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.100.0/SHA256SUMS.txt).
-- 🦀 **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks. Explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
-- ✅ **What was checked:** read the [final artifact evidence and limits](docs/releases/v5.100.0.md#tests). The interactive wizard and the clean-machine checks are separate, and remain unqualified.
+- Download: [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.0/SYNAPSE-5.101.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.0/SYNAPSE-5.101.0-source.zip).
 
-Setup includes the panel as of v5.100.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+- Check the download: Setup is **unsigned**. Compare it with its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.0/SHA256SUMS.txt).
+
+- Rust when verified: Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks, and explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
+
+- What was checked: read the [5.101.0 tests and limits](docs/releases/v5.101.0.md#tests). Setup is built from the release commit and qualified before it is published; the interactive wizard and the clean-machine checks are separate, and remain unqualified.
+
+Setup includes the panel as of v5.101.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
 ### Install in four steps
 
-1. Save your scene and close Houdini. Follow **[source installation](docs/getting-started/installation.md#source-installation)** for v5.100.0, or run the v5.100.0 **[Windows Setup](docs/getting-started/installation.md#windows-installer)**.
-2. Restart Houdini. Open **New Pane Tab → Synapse**.
-3. Open **Connect models**. Choose a provider and model; add its key if needed.
-4. For node creation, select **Build and edit networks**. Choose **Check connection → Use this model**.
+01\. Save your scene and close Houdini. Follow [source installation](docs/getting-started/installation.md#source-installation) for v5.101.0, or run the v5.101.0 [Windows Setup](docs/getting-started/installation.md#windows-installer).
 
-💡 Using Ollama? Start its service first. **Connect** starts the separate Houdini bridge; **Doctor** checks the setup without a model.
+02\. Restart Houdini. Open New Pane Tab, then Synapse.
 
-**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately and restart Houdini to load the update. The 5.99.0 tag and assets remain unchanged.
+03\. Open Connect models. Choose a provider and model, and add its key if it needs one.
 
-**Jump to:** [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-51000) · [Troubleshooting](#when-you-get-stuck)
+04\. For node creation, select Build and edit networks. Choose Check connection, then Use this model.
 
-## What changed in 5.100.0
+Using Ollama? Start its service first. Connect starts the separate Houdini bridge, and Doctor checks the setup without a model.
 
-Doctor reads more of your seat, and reads the right folder. Render QC's first pieces are in the repository, and **nothing calls them yet**.
+**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update. The 5.100.0 tag and its assets remain unchanged.
 
-One promise from earlier releases still has not landed, and it comes first.
+Jump to: [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-51010) · [Troubleshooting](#when-you-get-stuck)
 
-### anthropic 2.x is still unsupported
+## What changed in 5.101.0
 
-The model-access guard still speaks only the 1.x auth convention. The pin stays `anthropic>=1.0.0,<2`, and under 2.x the guard still refuses every model call.
+Apart from the version string, one shipped code file changes, and the change is an error message. The rest of the release is a timing measurement, two stricter release gates and developer-side changes, and none of that reaches your seat.
 
-Producers: [the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md) · [the release note](docs/releases/v5.100.0.md#limits)
+### The import error now reports what it saw
 
-### Doctor reads the store your unsaved scene uses
+When the vendored SDK wheels are inactive on the running Python and the brain stack fails to import, **the error now quotes the exception it caught**. It then says which of `anthropic` and `pydantic` is installed, instead of asserting that neither is.
 
-Each launch of an unsaved scene keeps its memory in its own session folder. Doctor used to look in the shared `untitled` folder above them, where no store binds.
+The old message guessed at the cause. On the failure that prompted this change, both libraries were installed and a dependency of theirs was the missing piece, so the guess was wrong.
 
-It now reads the live store's own folder. It stays read-only: it builds no store and starts no session.
+Every other ImportError still raises the existing "anthropic SDK is not installed" error.
 
-Producer: [the store-folder tests](tests/test_doctor_store_follows_session.py)
+Producer: [`python/synapse/host/daemon.py`](python/synapse/host/daemon.py), the only shipped code file that `scripts/product_surface.py --diff v5.100.0 f50d9515` reports. The version bump in the release commit also rewrites the version string in shipped files.
 
-### Doctor checks Moneta's native module
+### The Render QC timing measurement does not clear its budget
 
-A new `moneta_native` check hashes the loaded Rust module and compares it with the pinned hash. **A hash that does not match fails**, whatever `MONETA_NATIVE` says.
+A harness stages frames, times three passes per frame, and decides under a frozen rule. Its verdict is branch 4: on the deciding tier, **everything except the dense analysis takes 5.732 s against a 2.0 s budget**. The dense analysis itself is a share of 0.120 of the total.
 
-With `MONETA_NATIVE` unset, a Python fallback reads **skipped** (no released version showed FAIL). Unset is Moneta's own auto mode, not a request.
+So making the dense analysis cheaper cannot reach the budget on its own. Most of the remaining time sits in a residual bucket. Apart from two small pieces, its parts were never timed separately, so whether it can shrink is unknown.
 
-Producer: [the native-module tests](tests/test_doctor_moneta_native.py)
+Think of timing a commute and finding that the traffic lights you meant to fix are about an eighth of the trip. Fixing them helps, but it does not get you there on time.
 
-### Doctor counts sleep passes
+The 2.0 s budget is an input to the measurement, not a result of it. It is `B_SECONDS` in `harness/vision/qc_timing/decide.py`, and owner decision QC-Q3, ruled on 14 November 2026, keeps it at 2.0 s. The data is one run on one machine.
 
-Every sleep pass this Houdini session runs is counted, completed or failed, with what it pruned.
+Producer: [the committed receipt](harness/vision/qc_timing/timing_receipt.json), whose decision `decide.py` recomputes from its own per-frame values. The harness lives under `harness/`, nothing in the product calls it, and it does not ship.
 
-**One field changes type.** `sleep_pass_called` is now `true` or `false`. It used to be the text `"not_tracked"`.
+### The release gates got stricter
 
-Producer: [the counter tests](tests/test_sleep_pass_counter.py)
+The tag script refuses to tag without a committed crux record bound to the reviewed code. **Any file the reviewed range changed must be unchanged at the tagged commit.**
 
-### Doctor names code from outside the runtime
+The release-notes guard now marks a claim UNSUPPORTED when a path it names is absent from the tagged tree, whatever the model scored.
 
-A new `runtime_provenance` check names each top-level package with a loaded module that came from outside SYNAPSE's runtime, Houdini's install and Houdini's Python. **If it finds one, Doctor shows NEEDS ATTENTION**, with the folder it came from.
+Neither gate ships. Both are how this release is cut.
 
-Why: on 2026-11-09 an installed seat loaded a compiled module from a development folder, and nothing said so.
+Producers: [`scripts/tag_release.py`](scripts/tag_release.py) · [`harness/jev/jev_release.py`](harness/jev/jev_release.py) · [the tag-gate tests](tests/test_tag_release_crux_record.py)
 
-Producer: [the provenance tests](tests/test_doctor_runtime_provenance.py)
+### What 5.101.0 does not change, and its limits
 
-### Render QC groundwork: a firefly finder and a supervised worker
+- No artist sees a finding from the timing harness or from Render QC.
 
-- A detector that says **where** fireflies are, not just how many.
-- **A firefly is a candidate, not a fail.** The check passes and names the candidates for you to judge. That is the owner's ruling.
-- A CPU worker that runs outside Houdini, launched only from an absolute `*.exe` path in `SYNAPSE_RETINA_WORKER_PYTHON`, with a 60-second limit.
+- **anthropic 2.x is still unsupported.** The pin stays `anthropic>=1.0.0,<2`, and under 2.x the model-access guard still refuses every model call ([the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md)).
 
-**Nothing calls it yet.** There are no saved receipts and no panel row. The detector, the worker and its frame reader are not in Setup.
+- Setup remains unsigned.
 
-Producers: [the worker tests](tests/test_retina_worker_contract.py) · [the release note](docs/releases/v5.100.0.md#render-qc-groundwork-development-seat)
+- Durable worker receipts are not in this release. That lane waits on its own review.
 
-**What this release does not change.** No artist sees a finding from the new Render QC detector. Two Codex reviews did not run, and the owner accepted them as recorded limits. Setup remains unsigned. The full list is in [Limits](docs/releases/v5.100.0.md#limits).
+- The new error has rare failures of its own. A stub `anthropic` or `pydantic` module without an import spec, or an import finder that raises, replaces the diagnostic with its own error. A local file named `anthropic.py` that shadows the package makes the message blame a dependency. Nothing in SYNAPSE causes these today, and the fixes are planned for the next release.
+
+- Doctor behaviour from 5.100.0 is unchanged. Its limits are in [5.100.0's notes](docs/releases/v5.100.0.md#limits).
+
+The full list is in the release notes' [Limits](docs/releases/v5.101.0.md#limits) section.
 
 ## Your first build
 
@@ -104,7 +111,7 @@ In a scratch scene, send:
 make a box
 ```
 
-Inspect the nodes, change a parameter, then try **Undo**.
+Inspect the nodes, change a parameter, then try Undo.
 
 ```mermaid
 flowchart LR
@@ -126,15 +133,19 @@ flowchart LR
 
 **Undo covers a recorded operation.** It does not reverse a whole conversation, and it does not reverse files written to disk. A failed build can leave partial nodes until you deliberately undo them.
 
-**The default worker refuses more than it allows.** It permits read-only tools and the inform-level edits — create a node, set a parameter, connect a wire, create a material — plus the artist's own Undo and Redo, which are inform-gated too. It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise. Three composite Solaris builders are the exception; each is one undo-wrapped call made only of inform-level primitives. [Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
+The default worker refuses more than it allows. It permits read-only tools and the inform-level edits (create a node, set a parameter, connect a wire, create a material), plus the artist's own Undo and Redo, which are inform-gated too.
+
+It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise. Three composite Solaris builders are the exception; each is one undo-wrapped call made only of inform-level primitives. [Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
 
 ## Safer Solaris wiring
 
-**An insertion keeps the exact upstream output.** Every connection into a node that already exists reserves its slot before other wires are appended. Merge-style targets also get an order warning — never a silent reorder.
+**An insertion keeps the exact upstream output.** Every connection into a node that already exists reserves its slot before other wires are appended. Merge-style targets also get an order warning, never a silent reorder.
 
-**Invalid requests stop before scene changes.** Preview must be a boolean. Managed parameters must be an object. A supplied display selector must be the id of a node in the request.
+Invalid requests stop before scene changes. Preview must be a boolean. Managed parameters must be an object. A supplied display selector must be the id of a node in the request.
 
-**Verified connections come from the final wires.** If a later cook changes a wire, the builder reports an error instead of returning a stale success receipt. A failed build tries to take back the one undo group it opened, and only when the undo stack still shows it; if that take-back fails, the partial build is left for you to undo.
+Verified connections come from the final wires. If a later cook changes a wire, the builder reports an error instead of returning a stale success receipt.
+
+A failed build tries to take back the one undo group it opened, and only when the undo stack still shows it. If that take-back fails, the partial build is left for you to undo.
 
 ```mermaid
 flowchart LR
@@ -154,7 +165,7 @@ flowchart LR
     linkStyle default stroke:#D07020
 ```
 
-**Checked in Houdini 22.0.400:** the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change.
+Checked in Houdini 22.0.400: the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change.
 
 These checks do not measure a complex scene's time savings, and they do not qualify every panel interaction. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
 
@@ -172,11 +183,11 @@ Scatter rocks along the cobblestone lane.
 
 SYNAPSE reads the scene before it builds. It finds the camera, the world, the world's collider and the place in the chain where the new nodes go, and it tells you where it read each one.
 
-If anything is missing or ambiguous, the answer is **UNKNOWN** and nothing is built.
+If anything is missing or ambiguous, **the answer is UNKNOWN and nothing is built**.
 
 If everything is known, it builds the recipe with the recipe's own values. An older note in memory cannot change them, and any value it had to correct is listed in the reply.
 
-The reply carries a receipt, and the receipt carries **Revert**. One click takes back that turn's own SYNAPSE-labelled undo group, and only while nothing else sits above it in Houdini's undo stack.
+The reply carries a receipt, and the receipt carries Revert. One click takes back that turn's own SYNAPSE-labelled undo group, and only while nothing else sits above it in Houdini's undo stack.
 
 ```mermaid
 flowchart LR
@@ -201,17 +212,17 @@ flowchart LR
     linkStyle default stroke:#D07020
 ```
 
-The reader knows one scene shape today: the `/stage` network, exactly one camera, a Camera node feeding the render settings directly, and one imported world that still carries its import record — with its source `.ply` and a sibling collider `.glb` beside it. Anything else is UNKNOWN. The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.
+The reader knows one scene shape today: the `/stage` network, exactly one camera, a Camera node feeding the render settings directly, and one imported world that still carries its import record, with its source `.ply` and a sibling collider `.glb` beside it. Anything else is UNKNOWN. The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.
 
 ## See what nodes do
 
-Select one or more nodes in a network editor. Then click **Identify** at the bottom of the panel, or send `/identify`.
+Select one or more nodes in a network editor. Then click Identify at the bottom of the panel, or send `/identify`.
 
 A short bubble appears beside each node, drawn over the network editor. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
 
-The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it. No model runs, and nothing leaves your machine.
+The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it. **No model runs, and nothing leaves your machine.**
 
-Click **Identify** again, or send `/identify off`, to clear the bubbles. The overlay is not saved into your scene. Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
+Click Identify again, or send `/identify off`, to clear the bubbles. The overlay is not saved into your scene. Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
 
 ```mermaid
 flowchart LR
@@ -238,16 +249,16 @@ Each click reads and draws the first 60 selected nodes. The cap is `CAP = 60` in
 
 | I want to… | Open or use… |
 |---|---|
-| Change the generation model | The model name at the top, or **Connect models**. |
-| Add my JEV / TypeSafe key | **Connect models → JEV / TypeSafe key setup → Save session key**. [Setup guide](docs/getting-started/jev-setup.md). |
-| Make more room for my prompt | Drag **Resize** above the input box. |
-| Find an action | **Commands** below the input box. |
-| See what selected nodes do | **Identify** at the bottom of the panel, or send `/identify`. |
-| Read how the shot's camera moves | **Spatial** at the bottom of the panel, or send `/spatial`. It draws the path in one undo step, with no model call. |
+| Change the generation model | The model name at the top, or Connect models. |
+| Add my JEV / TypeSafe key | Connect models, then JEV / TypeSafe key setup, then Save session key. [Setup guide](docs/getting-started/jev-setup.md). |
+| Make more room for my prompt | Drag Resize above the input box. |
+| Find an action | Commands below the input box. |
+| See what selected nodes do | Identify at the bottom of the panel, or send `/identify`. |
+| Read how the shot's camera moves | Spatial at the bottom of the panel, or send `/spatial`. It draws the path in one undo step, with no model call. |
 | Ask what SYNAPSE remembers about this scene | Ask in plain words. It reads this scene's saved notes first, and it says the answer is recalled, not measured again. |
-| Import a Marble world or Gaussian `.ply` | **World Labs** beside **Cloud relay**. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
-| Connect the SideFX help library | Follow **[Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect)**; Scout searches the published local index. |
-| Check a connection | **Connect**, then **Doctor**. |
+| Import a Marble world or Gaussian `.ply` | World Labs beside Cloud relay. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
+| Connect the SideFX help library | Follow [Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect); Scout searches the published local index. |
+| Check a connection | Connect, then Doctor. |
 
 Saving a JEV key keeps it in memory until Houdini closes. **It does not enable JEV, verify the key or grant data permission.** The setup guide walks through those separate controls.
 
@@ -255,34 +266,42 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 
 | Control | What it reaches | Limit |
 |---|---|---|
-| **Stop** | The panel's current turn. | Does not prove an active cook or render has stopped. |
-| **Cancel cook** · overflow menu | One known cooking node. | Unavailable when SYNAPSE cannot identify the node. |
-| **Emergency halt** · overflow menu | Cooking TOP networks under `/tasks`, `/obj`, `/stage`, `/out`; captures a session report. | Background renders are reported, not stopped. |
+| Stop | The panel's current turn. | Does not prove an active cook or render has stopped. |
+| Cancel cook, in the overflow menu | One known cooking node. | Unavailable when SYNAPSE cannot identify the node. |
+| Emergency halt, in the overflow menu | Cooking TOP networks under `/tasks`, `/obj`, `/stage`, `/out`; captures a session report. | Background renders are reported, not stopped. |
 
-**A turn also stops itself.** It ends after 25 tool rounds, 10 minutes or 3,000,000 input tokens, whichever comes first. The last line of the reply says which limit it reached, and no tool runs after that line. The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TURN_BUDGET_TOKENS` in `python/synapse/panel/claude_worker.py`.
+**A turn also stops itself.** It ends after 25 tool rounds, 10 minutes or 3,000,000 input tokens, whichever comes first. The last line of the reply says which limit it reached, and no tool runs after that line.
+
+The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TURN_BUDGET_TOKENS` in `python/synapse/panel/claude_worker.py`.
 
 ## What's ready
 
-- **Network work:** build and inspect through permitted tools; keep the result editable in Houdini.
-- **Verified recipes:** Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
-- **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
-- **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
-- **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
-- **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
-- **Local knowledge:** [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
+- Network work: build and inspect through permitted tools, and keep the result editable in Houdini.
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.100.0.md) · [Changelog](CHANGELOG.md)
+- Verified recipes: Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
+
+- Identify: a short bubble beside each selected node, built from the node and local SideFX help with no model call.
+
+- Model choice: Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
+
+- Claude Code: use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
+
+- Optional JEV assistance: rank selected-network actions or measure routing. Your generation model stays selected.
+
+- Local knowledge: the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
+
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.101.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
 | What you see | Try this first |
 |---|---|
 | No Synapse pane | Restart Houdini, then [verify installation](docs/getting-started/installation.md#verify-the-installation). |
-| Missing Ollama models | Start Ollama; reopen **Connect models → Check connection**. |
+| Missing Ollama models | Start Ollama, then reopen Connect models and Check connection. |
 | Unsure where the TypeSafe key goes | [JEV key setup](docs/getting-started/jev-setup.md#add-your-key). |
 | No saved suggestion | Read its reason. A checked record, matching version and project memory owner are required. |
 | Build running away | Use [Cancel cook or Emergency halt](#three-ways-to-stop), then inspect the scene. |
-| Identify bubbles say **Not in the local SideFX library** | [Build and connect the SideFX library](docs/studio/SIDEFX_LIBRARY.md#build-and-connect), then restart Houdini. |
+| Identify bubbles say "Not in the local SideFX library" | [Build and connect the SideFX library](docs/studio/SIDEFX_LIBRARY.md#build-and-connect), then restart Houdini. |
 
 [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose) · [First-session walkthrough](docs/getting-started/quickstart.md)
 
@@ -290,14 +309,20 @@ Saving a JEV key keeps it in memory until Houdini closes. **It does not enable J
 
 [![Play the SYNAPSE tool demonstration](assets/demo_v2_video_thumb.jpg)](https://vimeo.com/1225720538)
 
-[Watch the recorded demonstration on Vimeo →](https://vimeo.com/1225720538)
+[Watch the recorded demonstration on Vimeo](https://vimeo.com/1225720538)
+
+SYNAPSE does the work inside your Houdini scene through tools you can inspect, and what it builds stays yours to edit.
 
 <details>
 <summary><strong>For developers: architecture, checks and memory</strong></summary>
 
 **139 tools, two paths.** The registry count comes from [`TOOL_DEFS`](python/synapse/mcp/_tool_registry.py), checked by [tool-count tests](tests/test_phase0c_doc1_toolcount.py).
 
-Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution bridge. Reads, farm controls and Doctor route separately. The configured stdio client forwards Houdini calls over WebSocket `/synapse` to direct handlers. Those paths have different policy and evidence boundaries. Setting `SYNAPSE_MCP_READ_ONLY=1` limits every `/mcp` and WebSocket caller, the panel included, to read-only tools; stop controls always pass ([read-only mode](docs/mcp/SETUP.md#read-only-mode)).
+Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution bridge. Reads, farm controls and Doctor route separately.
+
+The configured stdio client forwards Houdini calls over WebSocket `/synapse` to direct handlers. Those paths have different policy and evidence boundaries.
+
+Setting `SYNAPSE_MCP_READ_ONLY=1` limits every `/mcp` and WebSocket caller, the panel included, to read-only tools; stop controls always pass ([read-only mode](docs/mcp/SETUP.md#read-only-mode)).
 
 [Execution diagrams and limits](docs/architecture/overview.md#execution-paths) · [External MCP setup](docs/mcp/SETUP.md) · [Source development and tests](docs/getting-started/installation.md#for-contributors)
 
@@ -305,13 +330,15 @@ Panel requests prefer HTTP `/mcp`; its ordinary mutations use the execution brid
 
 CI runs the suite in six pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`, `harness/notes/release-v5.97.7/tests` and `harness/probes/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
 
-**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so the **186** tests under `tests/` that need one are deselected there and never execute — 13,219 of the 13,405 collected in that directory run (measured on `00629530`). Those tests are measured by hand on a maintainer's machine, not by CI.
+**CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so tests that need one are deselected there and never execute. Those tests are measured by hand on a maintainer's machine, not by CI.
 
-CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. On the release host the stock suite is **12,906 passed, 506 skipped, 11 xfailed, 0 failed** (measured on `00629530`) ([the release's evidence](docs/releases/v5.100.0.md#tests)).
+CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. CI on `f50d9515` passed six of six jobs, with between 12,663 and 12,673 tests under `tests/` passed and 0 failed on each job ([Actions run 43615813442](https://github.com/JosephOIbrahim/Synapse/actions/runs/43615813442)).
 
-**The suites that need Houdini are not green on the release host.** Under hython 22.0.400 the release tree (`00629530`) gives **116 failed and 4 errors, 120 failing nodes**, and master `26861cf9` gives the same **120** on the same host; **1** fails on the release tree without also failing on `26861cf9`. The seat runs do not exercise Moneta. **Those counts move between runs.** The measured numbers and the commit each was measured on are in [the release's evidence](docs/releases/v5.100.0.md#tests).
+For 5.100.0, the stock suite on the release host was 12,906 passed, 506 skipped, 11 xfailed and 0 failed. Run locally with CI's marker expression (`-m "not needs_houdini"`, `--collect-only`), 13,219 of the 13,405 tests under `tests/` were collected and 186 deselected. Both figures were measured on `00629530` ([5.100.0's evidence](docs/releases/v5.100.0.md#tests)), and neither is a CI-runner count.
 
-The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.100.0.md) before relying on it.
+The suites that need Houdini were not green on the 5.100.0 release host. Under hython 22.0.400 the 5.100.0 release tree (`00629530`) gave 116 failed and 4 errors, 120 failing nodes, and master `26861cf9` gave the same 120 on the same host; 1 failed on the release tree without also failing on `26861cf9`. The seat runs do not exercise Moneta, and those counts move between runs. They were not re-measured for 5.101.0, so this page carries no seat-suite figure for it.
+
+The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.101.0.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -323,13 +350,21 @@ Explicit memory writes, decisions and error rows are recorded. Automatic session
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
-**Native policy depends on the installation route.** The [source package](packages/synapse.json) retains OFF. Windows Setup 5.100.0 can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks. Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host/artifact/execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
+Native policy depends on the installation route. The [source package](packages/synapse.json) retains OFF. Windows Setup can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks; 5.101.0 changes no file under `installer/` or `packages/` (`git diff --stat v5.100.0 f50d9515 -- installer/ packages/` is empty).
 
-**A native panic is caught in four places.** If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`. Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
+Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host, artifact and execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 
-**`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. It only prunes when the active store is Moneta-backed; under the default JSONL store it does nothing. Over the WebSocket connection it opens no undo group, so it cannot take back your last edit. On the in-Houdini HTTP `/mcp` route and the panel's tool route, an opted-in pass still runs inside the bridge's undo group. A pass that fails after pruning is still audited. A second, separate prune can run inside ordinary writes, and only when `SYNAPSE_AUTO_CONSOLIDATE` is set; it is independent of the sleep pass.
+A native panic is caught in four places. If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`.
 
-**Attention durability has a bounded contract.** Moneta 1.3.0 implements preservation of undrained attention in attached keyed snapshots; its degraded/keyless and unattached save paths have separate limits. The local reopen probes do not establish every attention/save/switch/quit path. See [current storage limits](docs/releases/v5.97.7.md#limits).
+Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
+
+**`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. It only prunes when the active store is Moneta-backed; under the default JSONL store it does nothing.
+
+Over the WebSocket connection the sleep pass opens no undo group, so it cannot take back your last edit. On the in-Houdini HTTP `/mcp` route and the panel's tool route, an opted-in pass still runs inside the bridge's undo group. A pass that fails after pruning is still audited.
+
+A second, separate prune can run inside ordinary writes, and only when `SYNAPSE_AUTO_CONSOLIDATE` is set; it is independent of the sleep pass.
+
+Attention durability has a bounded contract. Moneta 1.3.0 implements preservation of undrained attention in attached keyed snapshots; its degraded/keyless and unattached save paths have separate limits. The local reopen probes do not establish every attention/save/switch/quit path. See [current storage limits](docs/releases/v5.97.7.md#limits).
 
 [Storage and recall diagram](docs/architecture/overview.md#project-and-scene-memory) · [Optional memory LOOP](docs/architecture/overview.md#memory-loop) · [Saved suggestions](docs/development/rsi_stage0.md)
 
@@ -339,12 +374,8 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 [MIT](LICENSE).
 
-Moneta 1.3.0 is bundled under the MIT License by its copyright holder's written
-grant of 2026-10-19. Its pinned upstream metadata still declares "Proprietary";
-the bundle includes the grant notice and full MIT text.
+Moneta 1.3.0 is bundled under the MIT License by its copyright holder's written grant of 2026-10-19. Its pinned upstream metadata still declares "Proprietary"; the bundle includes the grant notice and full MIT text.
 
-Third-party packages retain their own licenses. The installer's `DEPENDENCIES.txt`
-lists the included components and license-text locations. The SideFX PDF, MPM
-masterclass transcripts and rewritten guides are excluded from this release.
+Third-party packages retain their own licenses. The installer's `DEPENDENCIES.txt` lists the included components and license-text locations. The SideFX PDF, MPM masterclass transcripts and rewritten guides are excluded from this release.
 
-Patent applications pending on the USD cognitive-state substrate, digital injection, and predictive lighting — see [PATENTS](PATENTS).
+Patent applications are pending on the USD cognitive-state substrate, digital injection, and predictive lighting. See [PATENTS](PATENTS).
