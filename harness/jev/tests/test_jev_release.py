@@ -8,12 +8,14 @@ that label as the verdict. The policy says otherwise, and these pin it.
 import importlib.util
 from pathlib import Path
 
-import pytest
-
 HERE = Path(__file__).resolve().parent
 GUARD = HERE.parent / "jev_release.py"
 
-pytest.importorskip("jev_client", reason="the release guard needs the Jev client on the path")
+# No importorskip here. jev_release.py puts its own directory on sys.path before it
+# imports jev_client, and jev_client is standard library only. The importorskip that
+# stood here ran BEFORE that, so the whole file skipped ("1 skipped", exit 5) unless
+# another test module had already put harness/jev on the path -- a targeted run or a
+# per-file mutation check tested nothing (review finding R3, 2026-11-13).
 _spec = importlib.util.spec_from_file_location("jev_release_under_test", GUARD)
 jr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(jr)
