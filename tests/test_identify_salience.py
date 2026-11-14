@@ -18,6 +18,8 @@ import sys
 import threading
 from pathlib import Path
 
+import pytest
+
 _PYTHON = str(Path(__file__).resolve().parents[1] / "python")
 if _PYTHON not in sys.path:
     sys.path.insert(0, _PYTHON)
@@ -25,6 +27,18 @@ if _PYTHON not in sys.path:
 from synapse.identify import compose as C  # noqa: E402
 from synapse.identify import salience  # noqa: E402
 from synapse.jev import adapter  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _jev_switch_unset(monkeypatch):
+    """Every test here measures the lane's own logic, so none may inherit the
+    operator's SYNAPSE_JEV kill switch. The stock runner exports SYNAPSE_JEV=off;
+    under it run_shadow returns None at the enable guard, two tests went red
+    (2026-11-13 audit) and test_two_or_fewer_survivors_is_inert passed for the
+    wrong reason, so its named mutation survived. Unset is the shipped default:
+    the artist preference decides. The kill switch itself is pinned in
+    tests/test_jev_adapter.py."""
+    monkeypatch.delenv("SYNAPSE_JEV", raising=False)
 
 # A node whose identity is full of show secrets: path, name and hip file. None of
 # these substrings may ever appear in a salience state.

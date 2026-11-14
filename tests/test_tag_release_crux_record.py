@@ -44,11 +44,28 @@ def mod():
 _FIXED = {"GIT_AUTHOR_DATE": "2026-11-10T00:00:00+00:00",
           "GIT_COMMITTER_DATE": "2026-11-10T00:00:00+00:00"}
 
+# The variables git itself names as repository-local (`git rev-parse
+# --local-env-vars`). Any one of them overrides cwd: with GIT_DIR leaked into
+# pytest, this fixture's init, config, add and commit -- and the tag tests --
+# would act on whatever repository it names, which on this machine is the
+# shared .git behind every worktree (review finding R4, 2026-11-13).
+_REPO_LOCATION_VARS = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_COUNT", "GIT_OBJECT_DIRECTORY", "GIT_DIR", "GIT_WORK_TREE",
+    "GIT_IMPLICIT_WORK_TREE", "GIT_GRAFT_FILE", "GIT_INDEX_FILE",
+    "GIT_NO_REPLACE_OBJECTS", "GIT_REPLACE_REF_BASE", "GIT_PREFIX",
+    "GIT_SHALLOW_FILE", "GIT_COMMON_DIR")
+
+
+def _env():
+    env = {k: v for k, v in os.environ.items() if k not in _REPO_LOCATION_VARS}
+    env.update(_FIXED)
+    return env
+
 
 def _git(repo, *args):
-    env = dict(os.environ, **_FIXED)
     return subprocess.run(["git", *args], cwd=str(repo),
-                          capture_output=True, text=True, env=env)
+                          capture_output=True, text=True, env=_env())
 
 
 def _commit(repo, message):
@@ -329,3 +346,159 @@ def test_successful_tag_creation_runs_post_tag_conformance_once(
     created = _git(r, "rev-parse", "v9.9.9^{commit}")
     assert created.returncode == 0, created.stderr
     assert created.stdout.strip() == tip
+
+
+# ---- a leaked repository variable cannot redirect the gate -----------------
+# Review finding R4 (2026-11-13). _run passed the whole environment to git, and
+# git obeys GIT_DIR over `-C`. A hook or a test runner that leaked GIT_DIR would
+# point every check -- and the tag itself -- at the repository it names. The
+# decoy below is a second throwaway repo, never the real tree.
+
+def _decoy(tmp_path):
+    decoy = tmp_path / "decoy"
+    decoy.mkdir()
+    assert _git(decoy, "init", "-q", "-b", "master").returncode == 0
+    _git(decoy, "config", "user.email", "decoy@test.invalid")
+    _git(decoy, "config", "user.name", "decoy")
+    _git(decoy, "config", "commit.gpgsign", "false")
+    (decoy / "decoy.txt").write_text("not the repository being tagged\n",
+                                     encoding="utf-8")
+    _commit(decoy, "decoy")
+    return decoy
+
+
+def test_a_leaked_git_dir_cannot_redirect_the_tag(mod, repo, tmp_path,
+                                                  monkeypatch):
+    r, _base, tip = repo
+    decoy = _decoy(tmp_path)
+    monkeypatch.setenv("GIT_DIR", str(decoy / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(decoy))
+
+    assert mod._head_sha(str(r)) == tip, "the gate read the decoy's HEAD"
+    assert mod._create_tag(str(r), "v9.9.9", tip) is True
+
+    created = _git(r, "rev-parse", "v9.9.9^{commit}")
+    assert created.returncode == 0, "the tag did not land in the tagged repo"
+    assert created.stdout.strip() == tip
+    assert _git(decoy, "tag", "--list").stdout.strip() == "", (
+        "the tag landed in the repository GIT_DIR named")
+
+
+def test_a_leaked_git_dir_cannot_open_the_crux_gate_from_another_repo(
+        mod, repo, tmp_path, monkeypatch):
+    r, base, tip = repo
+    _write_record(r, commit_range=f"{base}..{tip}")
+    decoy = _decoy(tmp_path)
+    monkeypatch.setenv("GIT_DIR", str(decoy / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(decoy))
+    assert mod.crux_record_problem(VER, root=r) is None, (
+        "the record was judged against the decoy's history")
+
+
+def test_the_scrub_list_covers_what_this_git_calls_repository_local(
+        mod, tmp_path):
+    named = _git(tmp_path, "rev-parse", "--local-env-vars")
+    assert named.returncode == 0, named.stderr
+    missing = set(named.stdout.split()) - set(mod._GIT_LOCAL_ENV)
+    assert not missing, (
+        f"this git names repository-local variables the gate does not scrub: "
+        f"{sorted(missing)}")
+
+
+# ---- the record binds the reviewed code, not just the reviewed commits -----
+# Review finding R1 (2026-11-13). The gate checked only that the reviewed tip
+# is an ancestor of HEAD, so any number of unreviewed edits could land on top
+# of the reviewed code and the gate still opened. It also accepted an empty
+# range (`X..X` is its own ancestor) and a review dated in the future.
+#
+# The binding is per file, deliberately not "nothing may land after the tip":
+# the release card's own order lands the lane merge, the notes, the CHANGELOG
+# and the VERSION bump after the review, so a gate that refused every later
+# commit could never open. What must not move is the code the review read.
+
+def test_release_commits_after_the_review_still_open_the_gate(mod, repo):
+    r, base, tip = repo
+    (r / "VERSION").write_text(VER + "\n", encoding="utf-8")
+    (r / "NOTES.md").write_text("release notes, written after the review\n",
+                                encoding="utf-8")
+    _commit(r, "release notes and version")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    assert mod.crux_record_problem(VER, root=r) is None
+
+
+def test_an_edit_to_reviewed_code_after_the_review_refuses(mod, repo):
+    r, base, tip = repo
+    (r / "work.txt").write_text("an unreviewed change\n", encoding="utf-8")
+    _commit(r, "edit after review")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "changed after" in problem
+    assert "work.txt" in problem
+    assert "next act:" in problem
+
+
+def test_deleting_reviewed_code_after_the_review_refuses(mod, repo):
+    r, base, tip = repo
+    (r / "work.txt").unlink()
+    _commit(r, "delete after review")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "work.txt" in problem
+
+
+def test_a_rewritten_record_is_the_one_file_allowed_to_change(mod, repo):
+    """A draft record inside the reviewed range may be rewritten afterwards;
+    the record is what the review produces, not what it read."""
+    r, _base, tip = repo
+    _write_record(r, reviewed_date="2026-11-10", commit_range=f"{tip}..{tip}")
+    draft_tip = _git(r, "rev-parse", "HEAD").stdout.strip()
+    _write_record(r, commit_range=f"{tip}..{draft_tip}")
+    assert mod.crux_record_problem(VER, root=r) is not None, (
+        "a range whose only change is the record binds no reviewed code")
+    _write_record(r, commit_range=f"{_base}..{draft_tip}")
+    assert mod.crux_record_problem(VER, root=r) is None
+
+
+def test_an_empty_range_refuses(mod, repo):
+    r, _base, tip = repo
+    for rng in (f"{tip}..{tip}", f"{tip[:7]}..{tip}"):
+        _write_record(r, commit_range=rng)
+        problem = mod.crux_record_problem(VER, root=r)
+        assert problem is not None, rng
+        assert "empty" in problem, problem
+
+
+def test_a_range_that_changes_no_files_refuses(mod, repo):
+    r, _base, tip = repo
+    done = _git(r, "commit", "-q", "--allow-empty", "-m", "nothing")
+    assert done.returncode == 0, done.stderr
+    empty = _git(r, "rev-parse", "HEAD").stdout.strip()
+    _write_record(r, commit_range=f"{tip}..{empty}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "changes no files" in problem
+
+
+def test_a_review_dated_in_the_future_refuses(mod, repo):
+    from datetime import date
+    r, base, tip = repo
+    _write_record(r, commit_range=f"{base}..{tip}", reviewed_date="2026-11-14")
+    problem = mod.crux_record_problem(VER, root=r, today=date(2026, 11, 13))
+    assert problem is not None
+    assert "future" in problem
+    assert mod.crux_record_problem(VER, root=r, today=date(2026, 11, 14)) is None
+
+
+def test_moving_reviewed_code_after_the_review_refuses(mod, repo):
+    """git diff follows renames by default and would list only the new name;
+    moving reviewed code away must still count as changing it."""
+    r, base, tip = repo
+    moved = _git(r, "mv", "work.txt", "moved.txt")
+    assert moved.returncode == 0, moved.stderr
+    _commit(r, "move after review")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "work.txt" in problem

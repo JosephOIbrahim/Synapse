@@ -30,10 +30,14 @@ This gate reads a committed record instead --
 
 It is bound to git so it cannot go stale silently: the range's tip must be
 contained in the commit being tagged, the record must be in that commit's
-tree (not merely in the working directory), and the review date cannot
-predate the reviewed tip. Another version, another history, an uncommitted
-record, a pre-dated record or a non-passing verdict refuses. No record, no
-tag.
+tree (not merely in the working directory), the range cannot be empty, and
+the review date can neither predate the reviewed tip nor lie in the future.
+It is bound to the reviewed code as well: every file the range changed must
+reach the tagged commit unchanged since the tip. Later commits may add the
+release notes, a CHANGELOG entry and the VERSION bump; they may not edit what
+the review read. Another version, another history, an uncommitted record, a
+pre-dated or post-dated record, an edit to reviewed code or a non-passing
+verdict refuses. No record, no tag.
 
 Running this script IS the human tag act. It never pushes; on success it
 prints the push command for the operator. v5.43.0 was published against a
@@ -47,10 +51,11 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,13 +66,31 @@ CRUX_STRING_FIELDS = ('version', 'review', 'reviewer', 'reviewed_date',
                       'verdict', 'commit_range')
 CRUX_SHA = re.compile(r'^[0-9a-fA-F]{7,40}$')
 
+# The variables git names as repository-local (`git rev-parse
+# --local-env-vars`). git obeys them over `-C`: a hook or a test runner that
+# leaked GIT_DIR into this process would point every check below -- and the tag
+# itself -- at whatever repository it names. Children of the gate never inherit
+# them, so `-C <root>` is the only thing that says which repository is judged.
+_GIT_LOCAL_ENV = (
+    'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_CONFIG', 'GIT_CONFIG_PARAMETERS',
+    'GIT_CONFIG_COUNT', 'GIT_OBJECT_DIRECTORY', 'GIT_DIR', 'GIT_WORK_TREE',
+    'GIT_IMPLICIT_WORK_TREE', 'GIT_GRAFT_FILE', 'GIT_INDEX_FILE',
+    'GIT_NO_REPLACE_OBJECTS', 'GIT_REPLACE_REF_BASE', 'GIT_PREFIX',
+    'GIT_SHALLOW_FILE', 'GIT_COMMON_DIR')
+
+
+def _child_env() -> dict:
+    """This process's environment minus the repository-location variables."""
+    return {k: v for k, v in os.environ.items() if k not in _GIT_LOCAL_ENV}
+
 
 def _run(args, timeout=180):
     """Run a command from ROOT. None = could not be observed (UNKNOWN)."""
     try:
         return subprocess.run(
             args, cwd=ROOT, capture_output=True, text=True,
-            encoding='utf-8', errors='replace', timeout=timeout)
+            encoding='utf-8', errors='replace', timeout=timeout,
+            env=_child_env())
     except (OSError, subprocess.SubprocessError):
         return None
 
@@ -127,12 +150,34 @@ def _is_ancestor(root, older, newer):
     return None
 
 
-def crux_record_problem(version, root=None):
+def _changed_paths(root, older, newer):
+    """Paths whose content differs between two commits; None = UNKNOWN.
+
+    --no-renames lists both sides of a rename, so moving reviewed code away
+    counts as changing it. -z keeps unusual names unquoted.
+    """
+    p = _git(root, 'diff', '--name-only', '--no-renames', '-z', older, newer)
+    if p is None or p.returncode != 0:
+        return None
+    return {name for name in p.stdout.split('\0') if name}
+
+
+def _today():
+    """The latest calendar date that is current here or in UTC.
+
+    A review recorded in UTC can be a day ahead of local time for a few hours;
+    that is not a pre-dated record, and refusing it would be a false alarm.
+    """
+    return max(date.today(), datetime.now(timezone.utc).date())
+
+
+def crux_record_problem(version, root=None, today=None):
     """None when the closure record opens the gate; else the refusal text.
 
     Fail closed: every branch that cannot read the record, cannot bind it to
     this version, or cannot bind it to this history returns text. Every
-    refusal names the file and the operator's next act.
+    refusal names the file and the operator's next act. ``today`` is
+    injectable for tests; the gate itself always reads the clock.
     """
     root = Path(root) if root is not None else ROOT
     rel = crux_record_rel(version)
@@ -210,6 +255,12 @@ def crux_record_problem(version, root=None):
         return refuse(f'{shown} reviewed_date {reviewed} predates the '
                       f'reviewed tip {tip} (committed {tip_day})',
                       'record the date the review ran against this code')
+    now = today if today is not None else _today()
+    if date.fromisoformat(reviewed) > now:
+        return refuse(f'{shown} reviewed_date {reviewed} is in the future '
+                      f'(today is {now.isoformat()}); a record dated ahead was '
+                      f'written before its review ran',
+                      'record the date the review actually ran')
     ordered = _is_ancestor(root, base_sha, tip_sha)
     if ordered is None:
         return refuse(f'{shown} commit_range could not be checked '
@@ -219,6 +270,10 @@ def crux_record_problem(version, root=None):
         return refuse(f'{shown} commit_range does not run base -> tip '
                       f'({base} -> {tip})',
                       'record the range in base..tip order, then re-run')
+    if base_sha == tip_sha:
+        return refuse(f'{shown} commit_range {rng!r} is empty: base and tip '
+                      f'are the same commit, so it names no reviewed change',
+                      'record the range the review covered, base before tip')
     contained = _is_ancestor(root, tip_sha, 'HEAD')
     if contained is None:
         return refuse(f'{shown} could not be checked against HEAD '
@@ -238,6 +293,30 @@ def crux_record_problem(version, root=None):
         return refuse(f'{shown} is in the working directory but not in the '
                       f'commit being tagged',
                       'commit the record, then re-run')
+
+    # The review read the files its range changed. Those files must reach the
+    # tag as the review read them. Later commits may add notes, a CHANGELOG
+    # entry or a VERSION bump; they may not edit reviewed code. The record is
+    # the one exception: it is what the review produced, not what it read.
+    reviewed_paths = _changed_paths(root, base_sha, tip_sha)
+    changed_since = _changed_paths(root, tip_sha, 'HEAD')
+    if reviewed_paths is None or changed_since is None:
+        return refuse(f'{shown} could not compare the reviewed files with '
+                      f'HEAD (git unobservable)',
+                      'run where git can read this repository')
+    reviewed_paths.discard(shown)
+    if not reviewed_paths:
+        return refuse(f'{shown} commit_range {base}..{tip} changes no files, '
+                      f'so it binds no reviewed code',
+                      'record the range that holds the reviewed changes')
+    moved = sorted(reviewed_paths & changed_since)
+    if moved:
+        listed = ', '.join(moved[:5])
+        more = f' (+{len(moved) - 5} more)' if len(moved) > 5 else ''
+        return refuse(f'{shown} is stale: {len(moved)} file(s) the review '
+                      f'covered changed after its tip {tip}: {listed}{more}',
+                      're-run the crux review on the code being tagged and '
+                      f'rewrite {shown}, then re-run')
     return None
 
 

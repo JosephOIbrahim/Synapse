@@ -57,28 +57,70 @@ def claim_paths(claim: str) -> list:
     return out
 
 
-def missing_paths(claim: str, root=None) -> list:
-    """Every path the claim names that does not exist under ``root``.
+class TreeUnreadable(Exception):
+    """The tree being judged cannot be read: the ref does not resolve, or git cannot run."""
+
+
+def _git_at(root, *args: str):
+    """A git call at ``root``; None when git cannot run at all."""
+    try:
+        return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _resolves(root, ref: str) -> bool:
+    p = _git_at(root, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+    return p is not None and p.returncode == 0 and bool(p.stdout.strip())
+
+
+def missing_paths(claim: str, root=None, *, ref: str = "HEAD") -> list:
+    """Every path the claim names that is not in the committed tree of ``ref``.
 
     The release guard judges claims against a diff stat and commit subjects. Neither
     can see whether a path a claim names is in the tree being judged: a note claiming
     a module ships scored 0.84 supported and 0.79 confidence while that module was
     absent from master. A stronger threshold would not have caught it -- the model was
     answering the question it was asked. This is the question it was not asked.
+
+    It reads the tree of the ref being judged, never the working directory: a checkout
+    holding the file untracked, ignored or from another branch passed a claim the
+    tagged tree contradicts (review finding R2, 2026-11-13). Raises TreeUnreadable when
+    that tree cannot be read, because unverifiable is a different answer from absent.
     """
+    paths = claim_paths(claim)
+    if not paths:
+        return []
     base = Path(root) if root is not None else REPO
-    return [tok for tok in claim_paths(claim) if not (base / tok).exists()]
+    tree = _git_at(base, "rev-parse", "--verify", "--quiet", f"{ref}^{{tree}}")
+    if tree is None or tree.returncode != 0 or not tree.stdout.strip():
+        raise TreeUnreadable(ref)
+    tree_sha = tree.stdout.strip()
+    missing = []
+    for tok in paths:
+        p = _git_at(base, "cat-file", "-e", f"{tree_sha}:{tok}")
+        if p is None:
+            raise TreeUnreadable(ref)
+        if p.returncode != 0:
+            missing.append(tok)
+    return missing
 
 
-def final_verdict(claim, choice, confidence, probabilities, policy, root=None):
+def final_verdict(claim, choice, confidence, probabilities, policy, root=None, *,
+                  ref: str = "HEAD"):
     """The claim's verdict, with existence outranking the model.
 
-    Returns (verdict, missing). A claim naming a path that is not in the tree is
-    UNSUPPORTED whatever the model scored: the evidence contradicts it, and that is
-    a fact rather than a judgment.
+    Returns (verdict, missing). A claim naming a path that is not in the tree of
+    ``ref`` is UNSUPPORTED whatever the model scored: the evidence contradicts it,
+    and that is a fact rather than a judgment. A claim naming paths in a tree that
+    cannot be read is REFEREE: the question could not be asked, so a human reads it.
     """
     verdict = classify_claim(choice, confidence, probabilities, policy)
-    missing = missing_paths(claim, root)
+    try:
+        missing = missing_paths(claim, root, ref=ref)
+    except TreeUnreadable:
+        return "REFEREE", []
     if missing:
         return "UNSUPPORTED", missing
     return verdict, []
@@ -106,6 +148,13 @@ def classify_claim(choice, confidence, probabilities, policy) -> str:
 
 
 def notes(tag: str, prev: str) -> int:
+    # The evidence (prev..tag) and the existence check both read the tag. A tag that
+    # does not resolve would leave the model judging an empty diff and every named
+    # path unverifiable, so the guard says so instead of asking.
+    if not _resolves(REPO, tag):
+        print(f"REFEREE     {tag} does not resolve to a commit here; nothing can be judged "
+              f"against it. Create the tag (or pass a ref that exists), then re-run.")
+        return 1
     path = REPO / "docs" / "releases" / f"{tag}.md"
     text = path.read_text(encoding="utf-8")
     claims = _claims(text)
@@ -129,7 +178,7 @@ def notes(tag: str, prev: str) -> int:
             v, _missing = "REFEREE", []
         else:
             v, _missing = final_verdict(c, r.get("choice"), r.get("confidence"),
-                                        r.get("probabilities"), pol)
+                                        r.get("probabilities"), pol, ref=tag)
         bad += v in ("UNSUPPORTED", "REFEREE")
         note = f"  [missing: {', '.join(_missing)}]" if _missing else ""
         print(f"{v:11} {c[:96]}{note}")
