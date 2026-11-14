@@ -5,6 +5,9 @@ commit or which interpreter produced them, and one was cited for a worktree it w
 not produced from. The header is now the proof; these tests keep it honest.
 """
 import importlib.util
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -74,3 +77,44 @@ def test_the_report_header_hook_emits_the_line(monkeypatch):
     lines = conftest.pytest_report_header(cfg)
     assert lines, "the report header hook returned nothing"
     assert "commit" in lines[0] and "numpy=" in lines[0], lines[0]
+
+
+# git's repository-local variables (`git rev-parse --local-env-vars`): the throwaway
+# repository below must not be created inside whatever repository a leaked GIT_DIR names.
+_REPO_LOCATION_VARS = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_COUNT", "GIT_OBJECT_DIRECTORY", "GIT_DIR", "GIT_WORK_TREE",
+    "GIT_IMPLICIT_WORK_TREE", "GIT_GRAFT_FILE", "GIT_INDEX_FILE",
+    "GIT_NO_REPLACE_OBJECTS", "GIT_REPLACE_REF_BASE", "GIT_PREFIX",
+    "GIT_SHALLOW_FILE", "GIT_COMMON_DIR")
+
+
+def test_identity_stamps_this_repository_whatever_the_working_directory(monkeypatch, tmp_path):
+    """Review finding R5 (2026-11-13): the stamp ran git in the process cwd. Run from a
+    temp folder it said UNKNOWN; run from inside another repository it stamped THAT
+    repository's sha -- the mis-citation this hook exists to prevent. The other
+    repository here has its own HEAD, so a cwd-relative stamp is a wrong answer, not
+    merely an unknown one."""
+    if shutil.which("git") is None:
+        pytest.skip("git is not on PATH")
+    here = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                          capture_output=True, text=True)
+    if here.returncode != 0:
+        pytest.skip("this checkout is not a git repository")
+    dirty_here = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain"],
+                                capture_output=True, text=True)
+
+    other = tmp_path / "other"
+    other.mkdir()
+    env = {k: v for k, v in os.environ.items() if k not in _REPO_LOCATION_VARS}
+    for args in (["init", "-q"], ["config", "user.email", "other@test.invalid"],
+                 ["config", "user.name", "other"], ["config", "commit.gpgsign", "false"],
+                 ["commit", "-q", "--allow-empty", "-m", "another repository"]):
+        p = subprocess.run(["git", *args], cwd=str(other), env=env, capture_output=True, text=True)
+        assert p.returncode == 0, p.stderr
+    monkeypatch.chdir(other)
+
+    ident = conftest.identity()
+    assert ident["commit"] == here.stdout.strip(), (
+        "the stamp named the repository the process happened to be in")
+    assert ident["dirty"] is bool(dirty_here.stdout.strip())

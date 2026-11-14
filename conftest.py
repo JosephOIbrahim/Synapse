@@ -18,16 +18,23 @@ import hashlib
 import importlib.util
 import subprocess
 import sys
+from pathlib import Path
 
 # The modules whose absence or presence changed this project's suite results.
 # find_spec, not import: probing presence must not pay an import cost or a side
 # effect, and a package that is installed-but-broken must still read as present.
 _PROBE = ("numpy", "cv2", "mcp", "pxr", "PySide6", "anthropic", "pydantic")
 
+# The checkout this conftest belongs to. git runs here, not in the process cwd:
+# pytest started from a temp folder stamped UNKNOWN, and started from inside
+# another repository it stamped that repository's sha (review finding R5).
+_ROOT = Path(__file__).resolve().parent
+
 
 def _git(*args: str) -> str:
     try:
-        p = subprocess.run(["git", *args], capture_output=True, text=True, timeout=15)
+        p = subprocess.run(["git", *args], cwd=str(_ROOT), capture_output=True, text=True,
+                           timeout=15)
     except Exception:  # noqa: BLE001 - a missing git is not a test failure
         return ""
     return p.stdout.strip() if p.returncode == 0 else ""
