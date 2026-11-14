@@ -1,0 +1,9 @@
+{
+  "version": "5.101.0",
+  "review": "REL-5.101.0-RANGE",
+  "reviewer": "Codex",
+  "reviewed_date": "2026-11-14",
+  "verdict": "PASS",
+  "passed": true,
+  "commit_range": "7f8c5ec3cf6a794691d1df47b0b167f9147e7ac5..f50d9515bae496355fb7004c289c1483290dbf9a"
+}
