@@ -1,0 +1,10 @@
+{
+  "id": "salus_lint",
+  "target": "salus",
+  "objective": "Reduce ruff findings in src/salus without changing behaviour. Fix the code the finding points at; never silence it.",
+  "focus": ["src/salus/**/*.py"],
+  "metric": {"kind": "ruff", "args": ["src/salus"], "direction": "min"},
+  "min_delta": 1,
+  "budget": {"max_iterations": 120, "max_hours": 6, "no_progress": 20},
+  "on_houdini": "pause"
+}
