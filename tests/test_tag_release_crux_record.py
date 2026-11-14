@@ -403,3 +403,102 @@ def test_the_scrub_list_covers_what_this_git_calls_repository_local(
     assert not missing, (
         f"this git names repository-local variables the gate does not scrub: "
         f"{sorted(missing)}")
+
+
+# ---- the record binds the reviewed code, not just the reviewed commits -----
+# Review finding R1 (2026-11-13). The gate checked only that the reviewed tip
+# is an ancestor of HEAD, so any number of unreviewed edits could land on top
+# of the reviewed code and the gate still opened. It also accepted an empty
+# range (`X..X` is its own ancestor) and a review dated in the future.
+#
+# The binding is per file, deliberately not "nothing may land after the tip":
+# the release card's own order lands the lane merge, the notes, the CHANGELOG
+# and the VERSION bump after the review, so a gate that refused every later
+# commit could never open. What must not move is the code the review read.
+
+def test_release_commits_after_the_review_still_open_the_gate(mod, repo):
+    r, base, tip = repo
+    (r / "VERSION").write_text(VER + "\n", encoding="utf-8")
+    (r / "NOTES.md").write_text("release notes, written after the review\n",
+                                encoding="utf-8")
+    _commit(r, "release notes and version")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    assert mod.crux_record_problem(VER, root=r) is None
+
+
+def test_an_edit_to_reviewed_code_after_the_review_refuses(mod, repo):
+    r, base, tip = repo
+    (r / "work.txt").write_text("an unreviewed change\n", encoding="utf-8")
+    _commit(r, "edit after review")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "changed after" in problem
+    assert "work.txt" in problem
+    assert "next act:" in problem
+
+
+def test_deleting_reviewed_code_after_the_review_refuses(mod, repo):
+    r, base, tip = repo
+    (r / "work.txt").unlink()
+    _commit(r, "delete after review")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "work.txt" in problem
+
+
+def test_a_rewritten_record_is_the_one_file_allowed_to_change(mod, repo):
+    """A draft record inside the reviewed range may be rewritten afterwards;
+    the record is what the review produces, not what it read."""
+    r, _base, tip = repo
+    _write_record(r, reviewed_date="2026-11-10", commit_range=f"{tip}..{tip}")
+    draft_tip = _git(r, "rev-parse", "HEAD").stdout.strip()
+    _write_record(r, commit_range=f"{tip}..{draft_tip}")
+    assert mod.crux_record_problem(VER, root=r) is not None, (
+        "a range whose only change is the record binds no reviewed code")
+    _write_record(r, commit_range=f"{_base}..{draft_tip}")
+    assert mod.crux_record_problem(VER, root=r) is None
+
+
+def test_an_empty_range_refuses(mod, repo):
+    r, _base, tip = repo
+    for rng in (f"{tip}..{tip}", f"{tip[:7]}..{tip}"):
+        _write_record(r, commit_range=rng)
+        problem = mod.crux_record_problem(VER, root=r)
+        assert problem is not None, rng
+        assert "empty" in problem, problem
+
+
+def test_a_range_that_changes_no_files_refuses(mod, repo):
+    r, _base, tip = repo
+    done = _git(r, "commit", "-q", "--allow-empty", "-m", "nothing")
+    assert done.returncode == 0, done.stderr
+    empty = _git(r, "rev-parse", "HEAD").stdout.strip()
+    _write_record(r, commit_range=f"{tip}..{empty}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "changes no files" in problem
+
+
+def test_a_review_dated_in_the_future_refuses(mod, repo):
+    from datetime import date
+    r, base, tip = repo
+    _write_record(r, commit_range=f"{base}..{tip}", reviewed_date="2026-11-14")
+    problem = mod.crux_record_problem(VER, root=r, today=date(2026, 11, 13))
+    assert problem is not None
+    assert "future" in problem
+    assert mod.crux_record_problem(VER, root=r, today=date(2026, 11, 14)) is None
+
+
+def test_moving_reviewed_code_after_the_review_refuses(mod, repo):
+    """git diff follows renames by default and would list only the new name;
+    moving reviewed code away must still count as changing it."""
+    r, base, tip = repo
+    moved = _git(r, "mv", "work.txt", "moved.txt")
+    assert moved.returncode == 0, moved.stderr
+    _commit(r, "move after review")
+    _write_record(r, commit_range=f"{base}..{tip}")
+    problem = mod.crux_record_problem(VER, root=r)
+    assert problem is not None
+    assert "work.txt" in problem
