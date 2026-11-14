@@ -47,6 +47,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -61,13 +62,31 @@ CRUX_STRING_FIELDS = ('version', 'review', 'reviewer', 'reviewed_date',
                       'verdict', 'commit_range')
 CRUX_SHA = re.compile(r'^[0-9a-fA-F]{7,40}$')
 
+# The variables git names as repository-local (`git rev-parse
+# --local-env-vars`). git obeys them over `-C`: a hook or a test runner that
+# leaked GIT_DIR into this process would point every check below -- and the tag
+# itself -- at whatever repository it names. Children of the gate never inherit
+# them, so `-C <root>` is the only thing that says which repository is judged.
+_GIT_LOCAL_ENV = (
+    'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_CONFIG', 'GIT_CONFIG_PARAMETERS',
+    'GIT_CONFIG_COUNT', 'GIT_OBJECT_DIRECTORY', 'GIT_DIR', 'GIT_WORK_TREE',
+    'GIT_IMPLICIT_WORK_TREE', 'GIT_GRAFT_FILE', 'GIT_INDEX_FILE',
+    'GIT_NO_REPLACE_OBJECTS', 'GIT_REPLACE_REF_BASE', 'GIT_PREFIX',
+    'GIT_SHALLOW_FILE', 'GIT_COMMON_DIR')
+
+
+def _child_env() -> dict:
+    """This process's environment minus the repository-location variables."""
+    return {k: v for k, v in os.environ.items() if k not in _GIT_LOCAL_ENV}
+
 
 def _run(args, timeout=180):
     """Run a command from ROOT. None = could not be observed (UNKNOWN)."""
     try:
         return subprocess.run(
             args, cwd=ROOT, capture_output=True, text=True,
-            encoding='utf-8', errors='replace', timeout=timeout)
+            encoding='utf-8', errors='replace', timeout=timeout,
+            env=_child_env())
     except (OSError, subprocess.SubprocessError):
         return None
 

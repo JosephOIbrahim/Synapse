@@ -44,11 +44,28 @@ def mod():
 _FIXED = {"GIT_AUTHOR_DATE": "2026-11-10T00:00:00+00:00",
           "GIT_COMMITTER_DATE": "2026-11-10T00:00:00+00:00"}
 
+# The variables git itself names as repository-local (`git rev-parse
+# --local-env-vars`). Any one of them overrides cwd: with GIT_DIR leaked into
+# pytest, this fixture's init, config, add and commit -- and the tag tests --
+# would act on whatever repository it names, which on this machine is the
+# shared .git behind every worktree (review finding R4, 2026-11-13).
+_REPO_LOCATION_VARS = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_COUNT", "GIT_OBJECT_DIRECTORY", "GIT_DIR", "GIT_WORK_TREE",
+    "GIT_IMPLICIT_WORK_TREE", "GIT_GRAFT_FILE", "GIT_INDEX_FILE",
+    "GIT_NO_REPLACE_OBJECTS", "GIT_REPLACE_REF_BASE", "GIT_PREFIX",
+    "GIT_SHALLOW_FILE", "GIT_COMMON_DIR")
+
+
+def _env():
+    env = {k: v for k, v in os.environ.items() if k not in _REPO_LOCATION_VARS}
+    env.update(_FIXED)
+    return env
+
 
 def _git(repo, *args):
-    env = dict(os.environ, **_FIXED)
     return subprocess.run(["git", *args], cwd=str(repo),
-                          capture_output=True, text=True, env=env)
+                          capture_output=True, text=True, env=_env())
 
 
 def _commit(repo, message):
@@ -329,3 +346,60 @@ def test_successful_tag_creation_runs_post_tag_conformance_once(
     created = _git(r, "rev-parse", "v9.9.9^{commit}")
     assert created.returncode == 0, created.stderr
     assert created.stdout.strip() == tip
+
+
+# ---- a leaked repository variable cannot redirect the gate -----------------
+# Review finding R4 (2026-11-13). _run passed the whole environment to git, and
+# git obeys GIT_DIR over `-C`. A hook or a test runner that leaked GIT_DIR would
+# point every check -- and the tag itself -- at the repository it names. The
+# decoy below is a second throwaway repo, never the real tree.
+
+def _decoy(tmp_path):
+    decoy = tmp_path / "decoy"
+    decoy.mkdir()
+    assert _git(decoy, "init", "-q", "-b", "master").returncode == 0
+    _git(decoy, "config", "user.email", "decoy@test.invalid")
+    _git(decoy, "config", "user.name", "decoy")
+    _git(decoy, "config", "commit.gpgsign", "false")
+    (decoy / "decoy.txt").write_text("not the repository being tagged\n",
+                                     encoding="utf-8")
+    _commit(decoy, "decoy")
+    return decoy
+
+
+def test_a_leaked_git_dir_cannot_redirect_the_tag(mod, repo, tmp_path,
+                                                  monkeypatch):
+    r, _base, tip = repo
+    decoy = _decoy(tmp_path)
+    monkeypatch.setenv("GIT_DIR", str(decoy / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(decoy))
+
+    assert mod._head_sha(str(r)) == tip, "the gate read the decoy's HEAD"
+    assert mod._create_tag(str(r), "v9.9.9", tip) is True
+
+    created = _git(r, "rev-parse", "v9.9.9^{commit}")
+    assert created.returncode == 0, "the tag did not land in the tagged repo"
+    assert created.stdout.strip() == tip
+    assert _git(decoy, "tag", "--list").stdout.strip() == "", (
+        "the tag landed in the repository GIT_DIR named")
+
+
+def test_a_leaked_git_dir_cannot_open_the_crux_gate_from_another_repo(
+        mod, repo, tmp_path, monkeypatch):
+    r, base, tip = repo
+    _write_record(r, commit_range=f"{base}..{tip}")
+    decoy = _decoy(tmp_path)
+    monkeypatch.setenv("GIT_DIR", str(decoy / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(decoy))
+    assert mod.crux_record_problem(VER, root=r) is None, (
+        "the record was judged against the decoy's history")
+
+
+def test_the_scrub_list_covers_what_this_git_calls_repository_local(
+        mod, tmp_path):
+    named = _git(tmp_path, "rev-parse", "--local-env-vars")
+    assert named.returncode == 0, named.stderr
+    missing = set(named.stdout.split()) - set(mod._GIT_LOCAL_ENV)
+    assert not missing, (
+        f"this git names repository-local variables the gate does not scrub: "
+        f"{sorted(missing)}")
