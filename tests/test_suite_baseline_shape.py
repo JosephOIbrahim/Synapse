@@ -102,7 +102,7 @@ def test_ratchet_refuses_a_run_on_a_different_interpreter():
     """The synthetic pair: gate 3.14.2, run 3.12.10. Must refuse, naming both."""
     problems = checks._identity_mismatch(_GATE, running={
         "version": (3, 12, 10),
-        "executable": r"C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe",
+        "executable": r"C:\Users\Example\AppData\Local\Programs\Python\Python312\python.exe",
         "implementation": "cpython",
     })
     assert problems, "a 3.14.2 baseline must not be ratcheted from a 3.12.10 run"

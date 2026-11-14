@@ -9,16 +9,16 @@ step 3 on runs until the review passes.
 | Tip        : the commit that carries this revision of this card            |
 | Record     : harness/notes/release-5.101.0/CRUX-RECORD.json                |
 | Scope      : master as it is. The receipts lane is NOT in this release.    |
-| Revised    : 2026-11-14 pre-crux fix round; drafted 2026-11-11             |
+| Revised    : 2026-11-14 crux fix round; drafted 2026-11-11                 |
 | Author     : Claude Code. Every number below names its producer.           |
 +============================================================================+
 ```
 
 Nothing in this card has been executed. `VERSION` is still `5.100.0` and no tag
-exists beyond `v5.100.0`. This revision was written on `a1ea943e`, the
-decision-2 revision of this card, whose parent is local master `8fcdca29`.
-Neither was pushed; `origin/master` was `2cde3bf5`. Those lines are the card's
-only live claims: re-read them before acting.
+exists beyond `v5.100.0`. This revision was written on `7d5d6e7d`, the
+pre-crux fix-round revision of this card, which was pushed: `origin/master` was
+`7d5d6e7d`. Those lines are the card's only live claims: re-read them before
+acting.
 
 **Joe's go, 14 November 2026.** It covers the commit, the push, the release,
 `TAGS.md`, the logo and the README, "when you are ready using CTO best
@@ -55,6 +55,18 @@ tag (section 4.3). Joe confirmed both the same day: "All other decisions as
 you've taken them." The same message ruled QC-Q3: "QC-Q3: keep 2.0 s." A
 later message ruled leg C's machine precondition for v5.101.0 (step 6a).
 
+**Why the crux fix round.** The Codex crux review of `7d5d6e7d` returned
+**FAIL** on one HIGH finding, F1: the source-archive audit that step 6a runs
+exits 1 on a real local account path in `tests/test_suite_baseline_shape.py:105`.
+This revision replaces that path's account with the repository's placeholder,
+`Example`, which the audit's account pattern does not match, and corrects the
+step 8a sentence about a `fallback` ledger row (F8). The review's other findings
+(F2 and F3 medium, F4 to F7 low) do not block this release: F4 and F5 join KI-4
+in section 1, and the rest are queued for after the tag with decision 4's lane.
+The review and its evidence are kept outside the repo, in
+`<build-root>/v51010-crux/review-7d5d6e7d/`. The crux review runs again on this
+revision.
+
 ---
 
 ## 1. What v5.101.0 is
@@ -82,29 +94,35 @@ shipped files: `VERSION`, `pyproject.toml`, `python/synapse/__init__.py` and
 - **The always-on agent.** Proposals and a probe receipt only, on the branch
   `proposal/always-on-reconcile`; nothing of it is on master.
 
-**Known limitation that ships (KI-4).** In the daemon's import diagnostic
+**Known limitations that ship (KI-4, F4 and F5).** In the daemon's import diagnostic
 (`python/synapse/host/daemon.py:498-501`, inside `except ImportError`),
 `find_spec` raises `ValueError` when `sys.modules` already holds an `anthropic`
 or `pydantic` stub with no usable `__spec__`, such as a bare module object or a
 `MagicMock`. That error then replaces the diagnostic's own `RuntimeError`. The
 pre-crux read's grep found no current stub in the tree that triggers it. The
-notes state it as a known limitation; the fix is for v5.102.0.
+crux review of `7d5d6e7d` found two more in the same diagnostic. An import
+finder that raises from `find_spec` also replaces the `RuntimeError` (F4). And
+finding both module specs does not prove that a dependency failed, so a local
+`anthropic.py` that shadows the package makes the message blame a dependency
+(F5). The notes state all three as known limitations; the fixes are for
+v5.102.0.
 
 ---
 
 ## 2. The range
 
-**At `a1ea943e`: 51 commits, 17 of them merges.** Producer:
-`git rev-list --count v5.100.0..a1ea943e` and the same with `--merges`. The
-commit that carries this revision makes it **52 commits, 17 merges**. That
+**At `7d5d6e7d`: 52 commits, 17 of them merges.** Producer:
+`git rev-list --count v5.100.0..7d5d6e7d` and the same with `--merges`. The
+commit that carries this revision makes it **53 commits, 17 merges**. That
 commit is the reviewed tip and the last commit of the reviewed range (section
 4.2, step 1).
 
 **26 files other than this card differ from `v5.100.0`, +56,016/−361.**
-Producer: `git diff --shortstat --no-renames v5.100.0 a1ea943e -- .
-':!harness/notes/release-5.101.0/RELEASE_v5.101.0.md'`. This card is the 27th
-file. Its own line count moves with each revision, so it is left out of the
-figure. Most of the insertions are the timing receipt,
+Producer: `git diff --shortstat --no-renames v5.100.0 7d5d6e7d -- .
+':!harness/notes/release-5.101.0/RELEASE_v5.101.0.md'`. This revision's one-line
+change to `tests/test_suite_baseline_shape.py` leaves that figure unchanged. This
+card is the 27th file. Its own line count moves with each revision, so it is left
+out of the figure. Most of the insertions are the timing receipt,
 `harness/vision/qc_timing/timing_receipt.json`. These are the files the crux
 record will freeze (section 4.3):
 
@@ -129,17 +147,18 @@ the tree carries only the rebuilt one.
   review makes the tag gate refuse the record as stale (pinned by
   `tests/test_tag_release_crux_record.py::test_commit_not_in_tagged_history_refuses`).
 
-**CI.** The last CI run on master is Actions run `43593998527` on `2cde3bf5`:
-six of six `test (os, py)` jobs `success`, 0 failed. `8fcdca29` adds one change
-to `harness/vision/qc_timing/test_qc_timing_harness.py`, which CI does not
-collect.
+**CI.** Actions run `43613866021` on `7d5d6e7d`, a push run on master: six of
+six `test (os, py)` jobs `success`, 0 failed, with the same per-job counts as run
+`43593998527` on `2cde3bf5`. The commit that carries this revision gets its own
+run when step 1 pushes it.
 
 **Local suite.** A full local stock suite on the `a1ea943e` tree gave 12,728
 passed, 727 skipped, 10 xfailed, 11 deselected and no failures on CPython
 3.14.2. Producer: the summary line of
 `<build-root>/v51010-graph/stock-a1ea943e/stock-suite.log`, which stamps commit
-`a1ea943e`. It was measured before this card-only fix round, and it is not a
-release number.
+`a1ea943e`. It was measured before both fix rounds, which change only this card
+and one string in `tests/test_suite_baseline_shape.py`, and it is not a release
+number.
 
 ---
 
@@ -153,13 +172,12 @@ commit.
 
 **Before the release commit they need:**
 
-1. **The release head.** The notes say "master at `2cde3bf5`". The head is now
-   the reviewed tip (section 4.2, step 1), which adds the timing test's sentinel
-   strings (one developer-side line) and this card.
-2. **The CI table** for the release head. The table in the notes is run
+1. **The reviewed tip.** The notes must name it (section 4.2, step 1); the
+   draft at `4d6c6523` says "master at `2cde3bf5`".
+2. **The CI table** for the reviewed tip. The table in that draft is run
    `43593998527` on `2cde3bf5`.
-3. **KI-4 as a known limitation** (section 1), and **QC-Q3 as ruled:** keep
-   2.0 s.
+3. **KI-4, F4 and F5 as known limitations** (section 1), and **QC-Q3 as
+   ruled:** keep 2.0 s.
 4. **Leg C's machine precondition for v5.101.0, as ruled** (section 4.2, step
    6a).
 
@@ -287,7 +305,9 @@ v5.100.0 history.
        does not exist yet). `run-build-and-qual.ps1`
        builds Setup and runs legs A-executable, B-upgrade and C-production;
        then `run-legs-D2-D.ps1` runs legs D2 and D (`legs-D2-D.log`); and
-       `audit_source_archive.py` checks the committed source archive.
+       `audit_source_archive.py` checks the committed source archive. Its
+       real-account-path rule has no allowlist: one such path anywhere in the
+       archive fails it (the review's F1).
      - **Leg C on this machine.** `production_uninstall_registration_absent_before`
        fails here, because this machine already carries SYNAPSE's uninstall
        registration, and `run-build-and-qual.ps1` exits 1 on it before its
@@ -336,9 +356,11 @@ v5.100.0 history.
         `jev_client.api_key` also reads), and `SYNAPSE_JEV` not set to `off`.
    - **Reading the result.** M counts the `UNSUPPORTED` and `REFEREE` claims;
      `PARTIAL` is not counted.
-     - **The guard did not run** if the ledger row says `fallback` or
-       `disabled`: the model was never asked, and every claim reads `REFEREE`.
-       Fix the prerequisite and run it again. That is not a send-back.
+     - **No usable verdict** if the ledger row says `fallback` or `disabled`:
+       every claim reads `REFEREE`. `disabled` means the model was never asked.
+       `fallback` can also follow a request that failed or timed out
+       (`jev_client.ask`'s broad handler), so read the row's reason. Fix the
+       cause and run it again. That is not a send-back.
      - **A send-back** is a claim found false: an `UNSUPPORTED` claim whose
        `[missing: ...]` paths the tagged tree lacks, or a flagged claim that a
        human read confirms is wrong.
@@ -422,9 +444,9 @@ v5.100.0 history.
 | Gate | State | Who closes it |
 |---|---|---|
 | Land this card and push master | **not done**; Joe's go given | the operator, behind Gate C |
-| Codex crux review of `v5.100.0..<reviewed tip>` | **not run**; the brief needs the reviewed tip | Codex, then the record |
+| Codex crux review of `v5.100.0..<reviewed tip>` | **not run on this revision.** The review of `7d5d6e7d` returned FAIL on F1, fixed here | Codex, then the record |
 | Decision 4's hardening lane, which touches reviewed files | **closed: after the tag.** The orchestrator's CTO call under Joe's delegation; Joe confirmed it on 14 November 2026 | closed |
-| Notes updated for the release head, with its CI table, KI-4, QC-Q3 and leg C's ruled precondition | **not done** | a builder |
+| Notes updated for the reviewed tip, with its CI table, KI-4, F4, F5, QC-Q3 and leg C's ruled precondition | **not done** | a builder |
 | Leg C's machine precondition for v5.101.0 | **closed: the same as v5.100.0, that one check only.** Any other leg C failure is a red. Joe ruled it on 14 November 2026 | closed |
 | Release guard (step 8a), and a human read of claims 21 and later | **not run** | the operator, after the local tag |
 | QC-Q3, whether 2.0 s is the right budget | **closed: keep 2.0 s.** Joe ruled it on 14 November 2026 | closed |
@@ -440,7 +462,8 @@ v5.100.0 history.
 - **Card:** this file.
 - **Notes:** `scratch/v5.101.0-notes-master` at `4d6c6523`.
 - **The pre-crux read:** `<build-root>/v51010-graph/precrux-journal.json`, outside
-  the repo. **The verifiers of this revision:**
+  the repo. **The crux review of `7d5d6e7d` (FAIL):**
+  `<build-root>/v51010-crux/review-7d5d6e7d/`, also outside. **The verifiers of this revision:**
   `<build-root>/v51010-graph/moe-journal.json`, also outside.
 - **The two-lane version of this card:** `8fcdca29`, and the earlier notes draft on
   `scratch/v5.101.0-card` at `f31aa5d6`. Both are history.
