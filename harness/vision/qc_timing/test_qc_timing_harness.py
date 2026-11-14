@@ -607,9 +607,12 @@ def test_make_receipt_refuses_when_a_staged_file_name_reaches_the_text(tmp_path,
 
 
 def test_compose_keeps_the_workstation_model_strings_out_of_the_receipt():                    # decision 2b
+    # Sentinels, not real hardware: a test that keeps a workstation's model string out of
+    # the receipt must not publish one itself. Any value works; it only has to be findable.
+    cpu, drive = "SENTINEL-CPU-MODEL-0000", "SENTINEL-DRIVE-MODEL-0000"
     run = _run()
-    run["environment"]["cpu_model"] = "AMD Ryzen Threadripper PRO 7965WX 24-Cores"
-    run["environment"]["scratch_drive_model"] = "Samsung SSD 990 PRO 4TB"
+    run["environment"]["cpu_model"] = cpu
+    run["environment"]["scratch_drive_model"] = drive
     r = make_receipt.compose(run, _canned_raw(), None, {"commit": "a" * 40, "files": {}})
     assert "cpu_model" not in r["environment"]
     assert "scratch_drive_model" not in r["environment"]
@@ -617,8 +620,8 @@ def test_compose_keeps_the_workstation_model_strings_out_of_the_receipt():      
               "logical_cores", "threads", "pythonpath"):
         assert r["environment"].get(k) == run["environment"][k]
     text = json.dumps(r)
-    assert "Threadripper" not in text
-    assert "990 PRO" not in text
+    assert cpu not in text
+    assert drive not in text
 
 
 # ------------------------------------------- the wrappers on a real fireflies() call (R4 venv only)
