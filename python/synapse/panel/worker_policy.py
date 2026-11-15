@@ -55,6 +55,22 @@ _VALID_MODES = (
 _DEFAULT_MODE = _MODE_STANDARD
 _PROFILE_ENV_VAR = "SYNAPSE_WORKER_TOOL_PROFILE"
 
+# Explicit worker tool subset. Unset/empty = no change. A set value is a
+# comma-separated list of EXACT advertised names; it can only REMOVE tools,
+# never grant one, and applies in every policy mode (a hard ceiling).
+_ALLOWLIST_ENV_VAR = "SYNAPSE_WORKER_TOOL_ALLOWLIST"
+
+
+def _parse_allowlist(raw):
+    names = tuple(dict.fromkeys(n.strip() for n in raw.split(",") if n.strip()))
+    return names or None
+
+
+def active_tool_allowlist():
+    """The configured worker subset, or None when unfiltered. Read fresh each
+    call so a live config change takes effect (the resolve_mode posture)."""
+    return _parse_allowlist(os.environ.get(_ALLOWLIST_ENV_VAR, ""))
+
 # Knowledge-tool prefix: the 6 ``synapse_group_*`` tools have no TOOL_DEFS
 # entry. They are read-only knowledge lookups (a description string back to
 # the LLM, no mutation) -> always allowed.
@@ -165,6 +181,10 @@ def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) ->
         (fail-closed).
     """
     mode = resolve_mode(profile)
+
+    allowlist = active_tool_allowlist()
+    if allowlist is not None and tool_name not in allowlist:
+        return False, "outside the configured worker tool allowlist"
 
     if mode == _MODE_PROPOSAL:
         # Proposal interfaces declare intent; application belongs to the host.

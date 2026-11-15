@@ -92,8 +92,9 @@ def get_anthropic_tools() -> list[dict]:
 
 # Filtered caches for the autonomous worker -- advertise only allowlisted
 # tools so the LLM never even SEES a denied tool. Keyed by resolved policy
-# mode so a SYNAPSE_WORKER_TOOL_MODE change (live config / tests) re-filters.
-_WORKER_TOOLS_CACHE: dict[str, tuple[dict, ...]] = {}
+# mode plus the SYNAPSE_WORKER_TOOL_ALLOWLIST subset, so a change to either
+# (live config / tests) re-filters.
+_WORKER_TOOLS_CACHE: dict[tuple, tuple[dict, ...]] = {}
 
 
 def get_anthropic_tools_for_worker() -> list[dict]:
@@ -102,17 +103,19 @@ def get_anthropic_tools_for_worker() -> list[dict]:
     A subset of ``get_anthropic_tools()`` filtered through
     ``worker_policy.is_tool_allowed_for_worker``. Does NOT mutate the full
     ``_TOOLS_CACHE`` -- other callers (interactive panel, tool-count tests)
-    still see every tool. Cached per resolved policy mode.
+    still see every tool. Cached per (resolved policy mode, allowlist).
     """
-    from synapse.panel.worker_policy import is_tool_allowed_for_worker, resolve_mode
+    from synapse.panel.worker_policy import (
+        active_tool_allowlist, is_tool_allowed_for_worker, resolve_mode)
     mode = resolve_mode()
-    cached = _WORKER_TOOLS_CACHE.get(mode)
+    cache_key = (mode, active_tool_allowlist())
+    cached = _WORKER_TOOLS_CACHE.get(cache_key)
     if cached is None:
         cached = tuple(
             tool for tool in _TOOLS_CACHE
             if is_tool_allowed_for_worker(tool["name"])[0]
         )
-        _WORKER_TOOLS_CACHE[mode] = cached
+        _WORKER_TOOLS_CACHE[cache_key] = cached
     return list(cached)
 
 
