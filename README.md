@@ -5,7 +5,11 @@
   </picture>
 </p>
 
-<p align="center"><strong>Your AI assistant inside Houdini.</strong><br>Describe a task. Inspect the nodes. Keep creative control.</p>
+<p align="center"><strong>SYNAPSE is an AI assistant that runs inside Houdini 22.</strong></p>
+
+<p align="center">Connect a local or cloud AI model that can use tools, describe a task in plain words, and SYNAPSE builds real nodes in your scene that you can inspect and edit.</p>
+
+<p align="center">By default it makes changes without asking first, so start in a scratch scene.</p>
 
 <p align="center"><sub>v5.101.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.101.1 is Latest</sub></p>
 
@@ -19,19 +23,21 @@ How to read this page: Start here and Install get you running. Everything after 
 
 ## Start here
 
-5.101.1 changes one thing on your seat, and only when you set it: a new environment variable, `SYNAPSE_WORKER_TOOL_ALLOWLIST`, limits which tools the panel's model worker can use. Leave it unset and nothing changes.
+5.101.1 changes one thing on your seat, and only when you set it: a new environment variable, `SYNAPSE_WORKER_TOOL_ALLOWLIST`, limits which tools the panel's model worker can use. Leave it unset and nothing changes. [What changed in 5.101.1](#what-changed-in-51011) walks through it.
 
-Otherwise the panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.101.0](docs/releases/v5.101.0.md). anthropic 2.x is still unsupported. [What changed in 5.101.1](#what-changed-in-51011) walks through it.
+Otherwise the panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.101.0](docs/releases/v5.101.0.md).
+
+anthropic 2.x is still unsupported.
 
 ### Get 5.101.1
 
-- Download: [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-source.zip).
+- **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-source.zip).
 
-- Check the download: Setup is **unsigned**. Compare it with its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SHA256SUMS.txt).
+- **Check the download:** Setup is unsigned. Compare it with its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SHA256SUMS.txt).
 
-- Rust when verified: Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks, and explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
+- **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks, and explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
 
-- What was checked: read the [5.101.1 tests and limits](docs/releases/v5.101.1.md#tests). Setup is built from the release commit and qualified before it is published; the interactive wizard and the clean-machine checks are separate, and remain unqualified.
+- **What was checked:** read the [5.101.1 tests and limits](docs/releases/v5.101.1.md#tests). Setup is built from the release commit and qualified before it is published; the interactive wizard and the clean-machine checks are separate, and remain unqualified.
 
 Setup includes the panel as of v5.101.1, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
@@ -45,35 +51,71 @@ Setup includes the panel as of v5.101.1, including Spatial, the Render footer ro
 
 04\. For node creation, select Build and edit networks. Choose Check connection, then Use this model.
 
-Using Ollama? Start its service first. Connect starts the separate Houdini bridge, and Doctor checks the setup without a model.
+Using Ollama? Start its service first.
 
-**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update. The 5.101.0 tag and its assets remain unchanged.
+Connect starts the separate Houdini bridge, and Doctor checks the setup without a model.
+
+**Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update.
+
+The 5.101.0 tag and its assets remain unchanged.
 
 Jump to: [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-51011) · [Troubleshooting](#when-you-get-stuck)
 
 ## What changed in 5.101.1
 
-Apart from the version string, two shipped code files change, and only a seat that sets one environment variable sees the difference. The rest of the release is tests and documentation, and none of that reaches your seat.
+Apart from the version string, two shipped code files change, and only a seat that sets one environment variable sees the difference.
+
+The rest of the release is tests and documentation, and none of that reaches your seat.
 
 ### An optional ceiling on the panel worker's tools
 
 **`SYNAPSE_WORKER_TOOL_ALLOWLIST` limits which tools the panel's model worker can use.** Set it to a comma-separated list of exact tool names, such as `houdini_create_node,synapse_inspect_scene`. The worker then refuses every tool that is not on the list, and it leaves those tools out of what it sends to the model.
 
-Unset or empty, it changes nothing.
+Unset or empty, it changes nothing unless the `.env` file in SYNAPSE's root folder sets it. A value of only spaces and commas changes nothing.
 
 The list only removes tools. A listed tool still gets the decision of the worker's policy mode, so listing `houdini_execute_python` does not make it callable in the default mode. The ceiling holds in every mode.
 
+In this diagram, a path that starts with `panel/` or `mcp/` is under `python/synapse/`. Every other path starts at the repository root.
+
+```mermaid
+flowchart LR
+    accTitle: An optional list caps the tools the panel's model worker can use
+    accDescr: You set SYNAPSE_WORKER_TOOL_ALLOWLIST in the environment Houdini starts with. The panel worker then offers your model only the listed tools that its policy mode also permits. When the model calls a tool, a tool that is not on the list is refused in every mode and is not dispatched, and a listed tool still needs its mode's permission. Claude Code and other MCP clients never reach this check; read-only mode is the switch that limits them.
+    U["You set<br/>SYNAPSE_WORKER_TOOL_ALLOWLIST<br/>panel/worker_policy.py"] --> W["The worker offers only<br/>listed tools the mode permits<br/>panel/tool_bridge.py"]
+    W --> M["Your model<br/>picks a tool<br/>panel/claude_worker.py"]
+    M --> C{"On the list?<br/>panel/worker_policy.py"}
+    C -->|"no: in every mode"| X["Refused<br/>not dispatched<br/>panel/worker_policy.py"]
+    C -->|"yes"| P{"Does the mode<br/>permit it?<br/>panel/worker_policy.py"}
+    P -->|"no"| X
+    P -->|"yes"| T["The tool runs<br/>panel/tool_executor.py"]
+    O["Claude Code and<br/>other MCP clients<br/>mcp/server.py, mcp_server.py"] -->|"not limited by the list"| R["Read-only mode<br/>is their switch<br/>mcp/read_only_mode.py"]
+    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
+    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    class U artist
+    class W,M,C,P,X,T synapse
+    linkStyle default stroke:#D07020
+```
+
 Set it in the environment Houdini starts with, then restart Houdini. If your environment already sets it, the ceiling takes effect once 5.101.1 is installed and Houdini restarts. The release notes show [how to set it, with an example](docs/releases/v5.101.1.md#how-to-use-it).
 
-Producer: [`python/synapse/panel/worker_policy.py`](python/synapse/panel/worker_policy.py) and [`python/synapse/panel/tool_bridge.py`](python/synapse/panel/tool_bridge.py), the only shipped code files that `scripts/product_surface.py --diff v5.101.0 d7fc6b65` reports, and [their tests](tests/test_worker_tool_allowlist.py). The version bump in the release commit also rewrites the version string in shipped files.
+Producer: [`python/synapse/panel/worker_policy.py`](python/synapse/panel/worker_policy.py) and [`python/synapse/panel/tool_bridge.py`](python/synapse/panel/tool_bridge.py), the only shipped code files that `scripts/product_surface.py --diff v5.101.0 d7fc6b65` reports, and [their tests](tests/test_worker_tool_allowlist.py).
+
+The version bump in the release commit also rewrites the version string in shipped files.
 
 5.101.1 keeps everything 5.101.0 changed: the import error that quotes what went wrong, the Render QC timing measurement and the stricter release gates. [What changed in 5.101.0](docs/releases/v5.101.0.md).
 
 ### What 5.101.1 does not change, and its limits
 
-- A name that matches no tool is ignored without a warning. A list with no usable name leaves the worker with no tools. The list limits tool names, not what a listed tool can do: with `houdini_create_node` and `houdini_set_parm` listed, the worker can still make a wrangle or Python node and write its code.
+- A name that matches no tool is ignored without a warning.
 
-- The ceiling limits the panel's model worker only. Claude Code and other MCP clients do not pass through it; [read-only mode](docs/mcp/SETUP.md#read-only-mode) is the switch that limits them. Read-only mode also limits the panel's own worker while its calls go through `/mcp`, and it always lets the stop controls through.
+- A list in which no name is both real and permitted by the mode leaves the worker with no tools.
+
+- The list limits tool names, not what a listed tool can do: in the default mode, with `houdini_create_node` and `houdini_set_parm` listed, the worker can still make a wrangle or Python node and write its code.
+
+- The ceiling limits the panel's model worker only. Claude Code and other MCP clients do not pass through it; [read-only mode](docs/mcp/SETUP.md#read-only-mode) is the switch that limits them.
+
+- Read-only mode also limits the panel's own worker while its calls go through `/mcp`, and it always lets the stop controls through.
 
 - No artist sees a finding from the timing harness or from Render QC.
 
@@ -83,7 +125,12 @@ Producer: [`python/synapse/panel/worker_policy.py`](python/synapse/panel/worker_
 
 - Durable worker receipts are not in this release. That lane waits on its own review.
 
-- The import error from 5.101.0 still has rare failures of its own. A stub `anthropic` or `pydantic` module without an import spec, or an import finder that raises, replaces the diagnostic with its own error. A local file named `anthropic.py` that shadows the package makes the message blame a dependency. Nothing in SYNAPSE causes these today. They are not fixed in 5.101.1; the fixes are planned for 5.102.0.
+- The import error from 5.101.0 still has rare failures of its own:
+
+  - A stub `anthropic` or `pydantic` module without an import spec, or an import finder that raises, replaces the diagnostic with its own error.
+  - A local file named `anthropic.py` that shadows the package makes the message blame a dependency.
+
+  Nothing in SYNAPSE causes these today. They are not fixed in 5.101.1; the fixes are planned for 5.102.0.
 
 - Doctor behaviour from 5.100.0 is unchanged. Its limits are in [5.100.0's notes](docs/releases/v5.100.0.md#limits).
 
@@ -121,13 +168,19 @@ flowchart LR
 
 The default worker refuses more than it allows. It permits read-only tools and the inform-level edits (create a node, set a parameter, connect a wire, create a material), plus the artist's own Undo and Redo, which are inform-gated too.
 
-It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise. Three composite Solaris builders are the exception; each is one undo-wrapped call made only of inform-level primitives. [Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
+It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise.
+
+Three composite Solaris builders, listed in `_WORKER_BUILDER_ALLOWLIST` in `python/synapse/panel/worker_policy.py`, are the exception; each is one undo-wrapped call made only of inform-level primitives. [Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
 
 ## Safer Solaris wiring
 
 **An insertion keeps the exact upstream output.** Every connection into a node that already exists reserves its slot before other wires are appended. Merge-style targets also get an order warning, never a silent reorder.
 
-Invalid requests stop before scene changes. Preview must be a boolean. Managed parameters must be an object. A supplied display selector must be the id of a node in the request.
+Invalid requests stop before scene changes:
+
+- Preview must be a boolean.
+- Managed parameters must be an object.
+- A supplied display selector must be the id of a node in the request.
 
 Verified connections come from the final wires. If a later cook changes a wire, the builder reports an error instead of returning a stale success receipt.
 
@@ -169,7 +222,7 @@ Scatter rocks along the cobblestone lane.
 
 SYNAPSE reads the scene before it builds. It finds the camera, the world, the world's collider and the place in the chain where the new nodes go, and it tells you where it read each one.
 
-If anything is missing or ambiguous, **the answer is UNKNOWN and nothing is built**.
+**If anything is missing or ambiguous, the answer is UNKNOWN and nothing is built.**
 
 If everything is known, it builds the recipe with the recipe's own values. An older note in memory cannot change them, and any value it had to correct is listed in the reply.
 
@@ -198,7 +251,14 @@ flowchart LR
     linkStyle default stroke:#D07020
 ```
 
-The reader knows one scene shape today: the `/stage` network, exactly one camera, a Camera node feeding the render settings directly, and one imported world that still carries its import record, with its source `.ply` and a sibling collider `.glb` beside it. Anything else is UNKNOWN. The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.
+The reader knows one scene shape today:
+
+- the `/stage` network
+- exactly one camera
+- a Camera node feeding the render settings directly
+- one imported world that still carries its import record, with its source `.ply` and a sibling collider `.glb` beside it
+
+Anything else is UNKNOWN. The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.
 
 ## See what nodes do
 
@@ -206,9 +266,13 @@ Select one or more nodes in a network editor. Then click Identify at the bottom 
 
 A short bubble appears beside each node, drawn over the network editor. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
 
-The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it. **No model runs, and nothing leaves your machine.**
+The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it.
 
-Click Identify again, or send `/identify off`, to clear the bubbles. The overlay is not saved into your scene. Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
+**No model runs, and nothing leaves your machine.**
+
+Click Identify again, or send `/identify off`, to clear the bubbles. The overlay is not saved into your scene.
+
+Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
 
 ```mermaid
 flowchart LR
@@ -246,7 +310,9 @@ Each click reads and draws the first 60 selected nodes. The cap is `CAP = 60` in
 | Connect the SideFX help library | Follow [Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect); Scout searches the published local index. |
 | Check a connection | Connect, then Doctor. |
 
-Saving a JEV key keeps it in memory until Houdini closes. **It does not enable JEV, verify the key or grant data permission.** The setup guide walks through those separate controls.
+Saving a JEV key keeps it in memory until Houdini closes.
+
+**Saving the key does not enable JEV, verify it or grant data permission.** The setup guide walks through those separate controls.
 
 ### Three ways to stop
 
@@ -262,19 +328,19 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 
 ## What's ready
 
-- Network work: build and inspect through permitted tools, and keep the result editable in Houdini.
+- **Network work:** build and inspect through permitted tools, and keep the result editable in Houdini.
 
-- Verified recipes: Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
+- **Verified recipes:** Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
 
-- Identify: a short bubble beside each selected node, built from the node and local SideFX help with no model call.
+- **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
 
-- Model choice: Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
+- **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
 
-- Claude Code: use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
+- **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
 
-- Optional JEV assistance: rank selected-network actions or measure routing. Your generation model stays selected.
+- **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 
-- Local knowledge: the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
+- **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
 [Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.101.1.md) · [Changelog](CHANGELOG.md)
 
@@ -314,7 +380,18 @@ Setting `SYNAPSE_MCP_READ_ONLY=1` limits every `/mcp` and WebSocket caller, the 
 
 ### What CI runs
 
-CI runs the suite in six pytest invocations: `tests/`, `harness/jev/tests`, `harness/harness2/tests`, `harness/attest/tests`, `harness/notes/release-v5.97.7/tests` and `harness/probes/tests`, plus one targeted re-check of the Moneta-backed memory tests. The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them. See [the workflow](.github/workflows/ci.yml).
+CI runs the suite in six pytest invocations:
+
+- `tests/`
+- `harness/jev/tests`
+- `harness/harness2/tests`
+- `harness/attest/tests`
+- `harness/notes/release-v5.97.7/tests`
+- `harness/probes/tests`
+
+The first four are also in `testpaths` in [`pyproject.toml`](pyproject.toml), so a bare `pytest` run collects them.
+
+CI also runs one targeted re-check of the Moneta-backed memory tests. See [the workflow](.github/workflows/ci.yml).
 
 **CI never runs the Houdini-dependent tests.** No Houdini runtime exists on a CI runner, so tests that need one are deselected there and never execute. Those tests are measured by hand on a maintainer's machine, not by CI.
 
@@ -322,9 +399,15 @@ CI runs stock Python 3.11 and 3.14 on Linux, macOS and Windows. CI on `f50d9515`
 
 For 5.100.0, the stock suite on the release host was 12,906 passed, 506 skipped, 11 xfailed and 0 failed. Run locally with CI's marker expression (`-m "not needs_houdini"`, `--collect-only`), 13,219 of the 13,405 tests under `tests/` were collected and 186 deselected. Both figures were measured on `00629530` ([5.100.0's evidence](docs/releases/v5.100.0.md#tests)), and neither is a CI-runner count.
 
-The suites that need Houdini were not green on the 5.100.0 release host. Under hython 22.0.400 the 5.100.0 release tree (`00629530`) gave 116 failed and 4 errors, 120 failing nodes, and master `26861cf9` gave the same 120 on the same host; 1 failed on the release tree without also failing on `26861cf9`. The seat runs do not exercise Moneta, and those counts move between runs. They were not re-measured for 5.101.0 or 5.101.1, so this page carries no seat-suite figure for either.
+The suites that need Houdini were not green on the 5.100.0 release host.
 
-The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs. Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.101.1.md) before relying on it.
+Under hython 22.0.400 the 5.100.0 release tree (`00629530`) gave 116 failed and 4 errors, 120 failing nodes, and master `26861cf9` gave the same 120 on the same host; 1 failed on the release tree without also failing on `26861cf9` ([5.100.0's evidence](docs/releases/v5.100.0.md#tests)).
+
+The seat runs do not exercise Moneta, and those counts move between runs. They were not re-measured for 5.101.0 or 5.101.1, so this page carries no seat-suite figure for either.
+
+The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs.
+
+Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.101.1.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -332,17 +415,23 @@ Configured memory and scene/project notes supply recalled context. Recall is adv
 
 A scene's notes come back through `synapse_project_setup`. Search and recall read saved decisions, and they do not cover those notes. The panel asks for the notes first when you ask what it remembers about a scene.
 
-Explicit memory writes, decisions and error rows are recorded. Automatic session and action rows are off unless `SYNAPSE_AUTO_MEMORY=1`. A returned record ID alone does not prove that it will survive a restart; [storage and recall limits](docs/architecture/overview.md#project-and-scene-memory) explain the separate writes.
+Explicit memory writes, decisions and error rows are recorded. Automatic session and action rows are off unless `SYNAPSE_AUTO_MEMORY=1`.
+
+A returned record ID alone does not prove that it will survive a restart; [storage and recall limits](docs/architecture/overview.md#project-and-scene-memory) explain the separate writes.
 
 Moneta's USD mirror is an inspection view, not the storage owner. Missing services and unknown outcomes remain visible. A memory store that cannot be read is reported as a failure, not as an empty answer.
 
-Native policy depends on the installation route. The [source package](packages/synapse.json) retains OFF. Windows Setup can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks; 5.101.1 changes no file under `installer/` or `packages/` (`git diff --stat v5.101.0 d7fc6b65 -- installer/ packages/` is empty).
+Native policy depends on the installation route. The [source package](packages/synapse.json) retains OFF. Windows Setup can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks.
+
+5.101.1 changes no file under `installer/` or `packages/` (`git diff --stat v5.101.0 d7fc6b65 -- installer/ packages/` is empty).
 
 Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host, artifact and execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 
 A native panic is caught in four places. If the Moneta store panics while it is built, SYNAPSE logs it, records the fallback and serves the JSONL store. A panic inside `synapse_sleep_pass` returns `ran=False`.
 
-Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped. The connection handlers themselves still catch `Exception` only.
+Since 5.97.4, a panic that reaches the command dispatcher gets a failed reply under its request id, and with `SYNAPSE_AUTO_MEMORY=1` a panic in an automatic session row is logged and that row is skipped.
+
+The connection handlers themselves still catch `Exception` only.
 
 **`synapse_sleep_pass` is refused unless `SYNAPSE_ALLOW_SLEEP_PASS=1` is set.** It prunes memory, and a request cannot opt in. It only prunes when the active store is Moneta-backed; under the default JSONL store it does nothing.
 
@@ -362,6 +451,8 @@ Attention durability has a bounded contract. Moneta 1.3.0 implements preservatio
 
 Moneta 1.3.0 is bundled under the MIT License by its copyright holder's written grant of 2026-10-19. Its pinned upstream metadata still declares "Proprietary"; the bundle includes the grant notice and full MIT text.
 
-Third-party packages retain their own licenses. The installer's `DEPENDENCIES.txt` lists the included components and license-text locations. The SideFX PDF, MPM masterclass transcripts and rewritten guides are excluded from this release.
+Third-party packages retain their own licenses. The installer's `DEPENDENCIES.txt` lists the included components and license-text locations.
+
+The SideFX PDF, MPM masterclass transcripts and rewritten guides are excluded from this release.
 
 Patent applications are pending on the USD cognitive-state substrate, digital injection, and predictive lighting. See [PATENTS](PATENTS).
