@@ -529,6 +529,31 @@ def _reset_backend_fallback_telemetry():
         store_mod._BACKEND_FALLBACK = None
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _scrub_worker_tool_allowlist():
+    """SYNAPSE_WORKER_TOOL_ALLOWLIST is an operator ceiling on the panel
+    worker's tools (panel/worker_policy.py): when it is set, every unlisted
+    tool is denied in every policy mode. A seat that sets it in its user
+    environment would otherwise see that ceiling inside every worker-policy
+    test and turn them red. The session runs without it and puts it back at
+    the end; the allowlist's own tests (tests/test_worker_tool_allowlist.py)
+    set it per test with monkeypatch.
+
+    Session scope, and no monkeypatch, on purpose. A function-scoped autouse
+    fixture here that requested ``monkeypatch`` would make pytest create
+    monkeypatch before every module-level autouse fixture, so its undo would
+    run after them. tests/test_start_hwebserver_durable_ref.py and
+    tests/test_g1a_followup_job_root_discovery.py rebind modules in an autouse
+    fixture that must finalize after that undo; the reversed order left
+    synapse.server.handlers_memory and synapse.server.start_hwebserver
+    divergent, which tests/test_pkg_bootstrap_invariant.py
+    (test_r310_shapes_leave_no_runtime_divergence) reports."""
+    saved = os.environ.pop("SYNAPSE_WORKER_TOOL_ALLOWLIST", None)
+    yield
+    if saved is not None:
+        os.environ["SYNAPSE_WORKER_TOOL_ALLOWLIST"] = saved
+
+
 # ===========================================================================
 # Inspector subsystem fixtures (added Sprint 2 Week 1, 2026-04-18)
 # ---------------------------------------------------------------------------

@@ -245,6 +245,10 @@ anywhere in the codebase.
   denies review/approve/critical-gated tools, fail-closed on unknown)
   applies to the autonomous worker and the interactive panel, which passes
   `enforce_worker_policy=True`. A request cannot self-authorize a gated tool.
+  An optional `SYNAPSE_WORKER_TOOL_ALLOWLIST` (exact tool names,
+  comma-separated) caps that set in every mode: the worker denies unlisted
+  tools and does not send their schemas to the model. It cannot grant a tool
+  the mode denies.
 - Bridge-path consent gates govern `/mcp` operations.
 - The live `/synapse` path runs `execute_python` **ungated** — the
   documented single-user-localhost posture (CLAUDE.md §1.2 / D1).
