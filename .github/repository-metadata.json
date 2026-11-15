@@ -1,5 +1,5 @@
 {
-  "description": "Artist-controlled AI assistance inside Houdini. Build editable node networks, connect local or cloud models, and explore checked suggestions with optional project memory.",
+  "description": "SYNAPSE is an AI assistant that runs inside Houdini 22. Connect a local or cloud AI model that can use tools, describe a task in plain words, and SYNAPSE builds real nodes in your scene that you can inspect and edit. By default it makes changes without asking first, so start in a scratch scene.",
   "topics": [
     "ai-agents",
     "artist-tools",
