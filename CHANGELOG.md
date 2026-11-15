@@ -2,6 +2,53 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.101.1 - An optional ceiling on the panel worker's tools
+
+**Product code changes.** Two shipped code files change, both in the panel's
+worker policy, and only a seat that sets `SYNAPSE_WORKER_TOOL_ALLOWLIST` sees a
+difference. Unset, nothing changes. Nothing else is in this release. The full
+note, with every limit, is [docs/releases/v5.101.1.md](docs/releases/v5.101.1.md).
+
+- **The ceiling.** `SYNAPSE_WORKER_TOOL_ALLOWLIST` takes a comma-separated list of
+  exact tool names, as the panel gives them to its model (`houdini_create_node`,
+  not an MCP client's `mcp__synapse__houdini_create_node`). When it is set, the
+  panel's model worker refuses every unlisted tool with "outside the configured
+  worker tool allowlist" and leaves it out of the tool list it sends to the
+  model, in all five policy modes. Unset, empty or blank, it changes nothing.
+- **It only removes tools.** A listed tool still gets its mode's own decision:
+  listing `houdini_execute_python` does not make it callable in the default
+  `standard` mode.
+- **Read on every tool call; the tool list per prompt.**
+  `python/synapse/panel/worker_policy.py` reads the variable from the Houdini
+  process's environment on every dispatch check, and
+  `python/synapse/panel/tool_bridge.py` keys the worker's cached tool list by
+  mode and list together, so the list the model is offered changes from the
+  next prompt. A change to the user environment reaches Houdini when Houdini
+  restarts.
+- **Scope.** It limits the panel's model worker only. External MCP clients and
+  direct WebSocket callers do not consult the worker policy.
+- **Docs and tests, not shipped.** `docs/studio/DEPLOYMENT.md` gets the
+  variable's row and `docs/studio/EGRESS.md` four lines on it.
+  `tests/test_worker_tool_allowlist.py` adds 25 tests, and a session-scoped
+  fixture in `tests/conftest.py` runs the test session without the variable and
+  restores it afterwards.
+
+**Not changed:** anthropic 2.x is still unsupported, and the pin stays
+`anthropic>=1.0.0,<2`. Setup remains unsigned. Three items v5.101.0 planned for
+the next release remain, and this release does not carry them:
+
+- **The four account-folder paths in three files of the source ZIP.** By Joe's
+  ruling of 14 November 2026, "owner-path cleanup moves to v5.102.0": removing
+  them and widening the audit pattern is planned for v5.102.0.
+- **The import diagnostic's three known failure cases.** Their fixes are planned
+  for v5.102.0, as v5.101.0's release card set them.
+- **The four developer-side defects from v5.101.0's crux review.** They stay
+  queued with v5.101.0's decision-4 hardening lane.
+
+The source ZIP also carries other local paths recorded on this project's
+machines, from earlier releases, and two of those files also ship in Setup.
+The note's Limits names their files and gives the source of each item above.
+
 ## v5.101.0 - Render QC timing measured, and it does not clear budget; stricter release gates
 
 **Product code changes.** One shipped code file changes: the brain-stack import
