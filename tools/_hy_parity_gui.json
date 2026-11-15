@@ -27,7 +27,7 @@
       "verb": "capture_viewport",
       "gui": "ok",
       "headless": "headless_fail",
-      "detail": "{\"format\": \"jpeg\", \"height\": 600, \"image_path\": \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\houdini_temp\\\\synapse_cap_1789752304455.0001.jpg\", \"width\": 800}",
+      "detail": "{\"format\": \"jpeg\", \"height\": 600, \"image_path\": \"C:\\\\Users\\\\Example\\\\AppData\\\\Local\\\\Temp\\\\houdini_temp\\\\synapse_cap_1789752304455.0001.jpg\", \"width\": 800}",
       "ms": 169.3
     },
     {

@@ -142,8 +142,8 @@ never edit it.
 - **USD rules stated outright**: `class` is a specifier (with `def`/`over`) and class prims
   are not traversed by default; use `Scope` not `Xform` for organizational prims — on an
   instanceable reference, transforms only take effect on the top primitive.
-- Full cleaned transcript: `G:\VideoDecoder\Chris Rydalch - Creating USD Assets with
-  Component Builder\`.
+- Full cleaned transcript: Chris Rydalch - Creating USD Assets with
+  Component Builder.
 
 ## Sources
 - Live hython probes, Houdini 22.0.400, 2026-08-15 (anatomy, counts, paths, flags)
