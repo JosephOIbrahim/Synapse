@@ -71,7 +71,7 @@
     {
       "verb": "get_health",
       "status": "ok",
-      "preview": "{\"healthy\": true, \"houdini_available\": true, \"protocol_version\": \"4.0.0\", \"write_plane\": {\"status\": \"ok\", \"reason\": null, \"targets\": {\"memory\": {\"path\": \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\houdini_temp\\\\untitled\\\\.sy",
+      "preview": "{\"healthy\": true, \"houdini_available\": true, \"protocol_version\": \"4.0.0\", \"write_plane\": {\"status\": \"ok\", \"reason\": null, \"targets\": {\"memory\": {\"path\": \"C:\\\\Users\\\\Example\\\\AppData\\\\Local\\\\Temp\\\\houdini_temp\\\\untitled\\\\.sy",
       "ms": 2.5
     },
     {
