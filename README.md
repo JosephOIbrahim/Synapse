@@ -11,39 +11,39 @@
 
 <p align="center">By default it makes changes without asking first, so start in a scratch scene.</p>
 
-<p align="center"><sub>v5.101.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.101.1 is Latest</sub></p>
+<p align="center"><sub>v5.102.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.102.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Instructions](INSTRUCTIONS.md)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.101.1.md) · [Help](#when-you-get-stuck)
+**[Instructions](INSTRUCTIONS.md)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.102.0.md) · [Help](#when-you-get-stuck)
 
 How to read this page: Start here and Install get you running. Everything after them is reference you can come back to when you need it.
 
 ## Start here
 
-5.101.1 changes one thing on your seat, and only when you set it: a new environment variable, `SYNAPSE_WORKER_TOOL_ALLOWLIST`, limits which tools the panel's model worker can use. Leave it unset and nothing changes. [What changed in 5.101.1](#what-changed-in-51011) walks through it.
+5.102.0 changes no shipped code apart from the version string. It takes paths from this project's machines out of two files that Setup installs, and the account name out of four paths in three files of the source ZIP. [What changed in 5.102.0](#what-changed-in-51020) lists them.
 
-Otherwise the panel, the Setup behaviour, Moneta 1.3.0 and the native-artifact policy are unchanged from [5.101.0](docs/releases/v5.101.0.md).
+Otherwise the panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged from [5.101.1](docs/releases/v5.101.1.md).
 
 anthropic 2.x is still unsupported.
 
-### Get 5.101.1
+### Get 5.102.0
 
-- **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-source.zip).
+- **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-source.zip).
 
-- **Check the download:** Setup is unsigned. Compare it with its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SHA256SUMS.txt).
+- **Check the download:** Setup is unsigned. Compare it with its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt).
 
 - **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks, and explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
 
-- **What was checked:** read the [5.101.1 tests and limits](docs/releases/v5.101.1.md#tests). Setup is built from the release commit and qualified before it is published; the interactive wizard and the clean-machine checks are separate, and remain unqualified.
+- **What was checked:** read the [5.102.0 tests and limits](docs/releases/v5.102.0.md#tests). Setup is built from the release commit and qualified before it is published; the interactive wizard and the clean-machine checks are separate, and remain unqualified.
 
-Setup includes the panel as of v5.101.1, including Spatial, the Render footer row and the scene-reading Scatter recipe.
+Setup includes the panel as of v5.102.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
 ### Install in four steps
 
-01\. Save your scene and close Houdini. Follow [source installation](docs/getting-started/installation.md#source-installation) for v5.101.1, or run the v5.101.1 [Windows Setup](docs/getting-started/installation.md#windows-installer).
+01\. Save your scene and close Houdini. Follow [source installation](docs/getting-started/installation.md#source-installation) for v5.102.0, or run the v5.102.0 [Windows Setup](docs/getting-started/installation.md#windows-installer).
 
 02\. Restart Houdini. Open New Pane Tab, then Synapse.
 
@@ -57,65 +57,45 @@ Connect starts the separate Houdini bridge, and Doctor checks the setup without 
 
 **Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update.
 
-The 5.101.0 tag and its assets remain unchanged.
+The 5.101.1 tag and its assets remain unchanged.
 
-Jump to: [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-51011) · [Troubleshooting](#when-you-get-stuck)
+Jump to: [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-51020) · [Troubleshooting](#when-you-get-stuck)
 
-## What changed in 5.101.1
+## What changed in 5.102.0
 
-Apart from the version string, two shipped code files change, and only a seat that sets one environment variable sees the difference.
+No shipped code changes. Five files that reach you change, and only their text: two that Setup installs no longer name folders on this project's machines, and three in the source ZIP name a redaction token instead of the account.
 
-The rest of the release is tests and documentation, and none of that reaches your seat.
+The rest of the release is a test and the release audit, and neither reaches your seat.
 
-### An optional ceiling on the panel worker's tools
+### Paths from this project's machines, removed or redacted
 
-**`SYNAPSE_WORKER_TOOL_ALLOWLIST` limits which tools the panel's model worker can use.** Set it to a comma-separated list of exact tool names, such as `houdini_create_node,synapse_inspect_scene`. The worker then refuses every tool that is not on the list, and it leaves those tools out of what it sends to the model.
+- **Source ZIP, three files.** Four paths into the release machine's account folder now name `Example`, the repository's redaction token, instead of the account: `docs/SYNAPSE_MULTI_PROVIDER_LEG1_PROBE_DATA.json` (2), `tools/_hy_parity_gui.json` (1) and `tools/_hy_verbs_sweep_22.0.400.json` (1).
 
-Unset or empty, it changes nothing unless the `.env` file in SYNAPSE's root folder sets it. A value of only spaces and commas changes nothing.
+- **Setup, the SideFX Labs corpus.** 409 entries in `rag/corpus/sidefxlabs_entries.json` name their source file from `SideFXLabs` onward, not from a staging folder.
 
-The list only removes tools. A listed tool still gets the decision of the worker's policy mode, so listing `houdini_execute_python` does not make it callable in the default mode. The ceiling holds in every mode.
+- **Setup, a reference skill.** `rag/skills/houdini21-reference/solaris_compound_node_anatomy.md` keeps a transcript's title and drops its folder.
 
-In this diagram, a path that starts with `panel/` or `mcp/` is under `python/synapse/`. Every other path starts at the repository root.
+- **A test keeps them out.** [`tests/test_shipped_files_carry_no_owner_paths.py`](tests/test_shipped_files_carry_no_owner_paths.py) fails if any of the five files carries those paths again.
 
-```mermaid
-flowchart LR
-    accTitle: An optional list caps the tools the panel's model worker can use
-    accDescr: You set SYNAPSE_WORKER_TOOL_ALLOWLIST in the environment Houdini starts with. The panel worker then offers your model only the listed tools that its policy mode also permits. When the model calls a tool, a tool that is not on the list is refused in every mode and is not dispatched, and a listed tool still needs its mode's permission. Claude Code and other MCP clients never reach this check; read-only mode is the switch that limits them.
-    U["You set<br/>SYNAPSE_WORKER_TOOL_ALLOWLIST<br/>panel/worker_policy.py"] --> W["The worker offers only<br/>listed tools the mode permits<br/>panel/tool_bridge.py"]
-    W --> M["Your model<br/>picks a tool<br/>panel/claude_worker.py"]
-    M --> C{"On the list?<br/>panel/worker_policy.py"}
-    C -->|"no: in every mode"| X["Refused<br/>not dispatched<br/>panel/worker_policy.py"]
-    C -->|"yes"| P{"Does the mode<br/>permit it?<br/>panel/worker_policy.py"}
-    P -->|"no"| X
-    P -->|"yes"| T["The tool runs<br/>panel/tool_executor.py"]
-    O["Claude Code and<br/>other MCP clients<br/>mcp/server.py, mcp_server.py"] -->|"not limited by the list"| R["Read-only mode<br/>is their switch<br/>mcp/read_only_mode.py"]
-    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
-    class U artist
-    class W,M,C,P,X,T synapse
-    linkStyle default stroke:#D07020
-```
+The release audit now reads the spelling these paths used, so a path into the account folder written with any run of slashes or backslashes stops a release when it is in the source ZIP or in a Setup file with one of the audit's 16 text suffixes. The audit that passed v5.101.0 and v5.101.1 could not see it.
 
-Set it in the environment Houdini starts with, then restart Houdini. If your environment already sets it, the ceiling takes effect once 5.101.1 is installed and Houdini restarts. The release notes show [how to set it, with an example](docs/releases/v5.101.1.md#how-to-use-it).
-
-Producer: [`python/synapse/panel/worker_policy.py`](python/synapse/panel/worker_policy.py) and [`python/synapse/panel/tool_bridge.py`](python/synapse/panel/tool_bridge.py), the only shipped code files that `scripts/product_surface.py --diff v5.101.0 d7fc6b65` reports, and [their tests](tests/test_worker_tool_allowlist.py).
+Producer: `scripts/product_surface.py --diff v5.101.1 1194373d` reports no product change, and the [release notes](docs/releases/v5.102.0.md#what-changes) name the producer of every count.
 
 The version bump in the release commit also rewrites the version string in shipped files.
 
-5.101.1 keeps everything 5.101.0 changed: the import error that quotes what went wrong, the Render QC timing measurement and the stricter release gates. [What changed in 5.101.0](docs/releases/v5.101.0.md).
+5.102.0 keeps everything 5.101.1 changed, including the optional ceiling on the panel worker's tools, `SYNAPSE_WORKER_TOOL_ALLOWLIST`: [what it does and how to set it](docs/releases/v5.101.1.md#how-to-use-it). It also keeps everything 5.101.0 changed: the import error that quotes what went wrong, the Render QC timing measurement and the stricter release gates.
 
-### What 5.101.1 does not change, and its limits
+### What 5.102.0 does not change, and its limits
 
-- A name that matches no tool is ignored without a warning.
+- At least 77 paths from this project's machines remain in 17 files that only the source ZIP carries, including a scene path in `tools/_hy_parity_gui.json`. Setup does not install those files. The scan that counted them read only JSON, Markdown, text and log files, and two Python files that Setup installs name a local corpus folder in their comments.
 
-- A list in which no name is both real and permitted by the mode leaves the worker with no tools.
+- For the optional tool ceiling from 5.101.1:
 
-- The list limits tool names, not what a listed tool can do: in the default mode, with `houdini_create_node` and `houdini_set_parm` listed, the worker can still make a wrangle or Python node and write its code.
-
-- The ceiling limits the panel's model worker only. Claude Code and other MCP clients do not pass through it; [read-only mode](docs/mcp/SETUP.md#read-only-mode) is the switch that limits them.
-
-- Read-only mode also limits the panel's own worker while its calls go through `/mcp`, and it always lets the stop controls through.
+  - A name that matches no tool is ignored without a warning.
+  - A list in which no name is both real and permitted by the mode leaves the worker with no tools.
+  - The list limits tool names, not what a listed tool can do: in the default mode, with `houdini_create_node` and `houdini_set_parm` listed, the worker can still make a wrangle or Python node and write its code.
+  - The ceiling limits the panel's model worker only. Claude Code and other MCP clients do not pass through it; [read-only mode](docs/mcp/SETUP.md#read-only-mode) is the switch that limits them.
+  - Read-only mode also limits the panel's own worker while its calls go through `/mcp`, and it always lets the stop controls through.
 
 - No artist sees a finding from the timing harness or from Render QC.
 
@@ -130,11 +110,11 @@ The version bump in the release commit also rewrites the version string in shipp
   - A stub `anthropic` or `pydantic` module without an import spec, or an import finder that raises, replaces the diagnostic with its own error.
   - A local file named `anthropic.py` that shadows the package makes the message blame a dependency.
 
-  Nothing in SYNAPSE causes these today. They are not fixed in 5.101.1; the fixes are planned for 5.102.0.
+  Nothing in SYNAPSE causes these today. They are not fixed in 5.102.0, and no release is named for them.
 
 - Doctor behaviour from 5.100.0 is unchanged. Its limits are in [5.100.0's notes](docs/releases/v5.100.0.md#limits).
 
-The full list is in the release notes' [Limits](docs/releases/v5.101.1.md#limits) section.
+The full list is in the release notes' [Limits](docs/releases/v5.102.0.md#limits) section.
 
 ## Your first build
 
@@ -342,7 +322,7 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 
 - **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.101.1.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.102.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -403,11 +383,11 @@ The suites that need Houdini were not green on the 5.100.0 release host.
 
 Under hython 22.0.400 the 5.100.0 release tree (`00629530`) gave 116 failed and 4 errors, 120 failing nodes, and master `26861cf9` gave the same 120 on the same host; 1 failed on the release tree without also failing on `26861cf9` ([5.100.0's evidence](docs/releases/v5.100.0.md#tests)).
 
-The seat runs do not exercise Moneta, and those counts move between runs. They were not re-measured for 5.101.0 or 5.101.1, so this page carries no seat-suite figure for either.
+The seat runs do not exercise Moneta, and those counts move between runs. They were not re-measured for 5.101.0, 5.101.1 or 5.102.0, so this page carries no seat-suite figure for any of them.
 
 The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs.
 
-Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.101.1.md) before relying on it.
+Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.102.0.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -423,7 +403,7 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 Native policy depends on the installation route. The [source package](packages/synapse.json) retains OFF. Windows Setup can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks.
 
-5.101.1 changes no file under `installer/` or `packages/` (`git diff --stat v5.101.0 d7fc6b65 -- installer/ packages/` is empty).
+5.102.0 changes no file under `installer/` or `packages/` (`git diff --stat v5.101.1 1194373d -- installer/ packages/` is empty).
 
 Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host, artifact and execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 

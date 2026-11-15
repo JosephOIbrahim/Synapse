@@ -2,6 +2,36 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.102.0 - Paths from this project's machines removed or redacted in five files that reach users
+
+**No product code changes.** Five files that reach users change, and only their
+text: three in the source ZIP and two that Setup installs. An installed seat
+works as it did; its retrieval reads the two Setup files' new text. The full note, with every limit, is
+[docs/releases/v5.102.0.md](docs/releases/v5.102.0.md).
+
+- **Source ZIP.** Four paths into the release machine's account folder, in
+  `docs/SYNAPSE_MULTI_PROVIDER_LEG1_PROBE_DATA.json` (2),
+  `tools/_hy_parity_gui.json` (1) and `tools/_hy_verbs_sweep_22.0.400.json` (1),
+  now name `Example`, the repository's redaction token, instead of the account.
+- **Setup.** `rag/corpus/sidefxlabs_entries.json` names each of 409 source files
+  from `SideFXLabs` onward instead of from a staging folder, and
+  `rag/skills/houdini21-reference/solaris_compound_node_anatomy.md` keeps a
+  transcript's title and drops its folder.
+- **Test, not in Setup.** `tests/test_shipped_files_carry_no_owner_paths.py`
+  scans the five files with the release audit's widened pattern, and the two
+  Setup files for a path on the staging drive.
+- **Release audit, not in the repository.** Its account pattern now allows any
+  run of slash or backslash characters, which the four paths needed, and it also
+  scans the Setup payload's files that have one of its 16 text suffixes.
+
+**Not changed:** anthropic 2.x is still unsupported, and the pin stays
+`anthropic>=1.0.0,<2`. Setup remains unsigned. At least 77 local paths
+from this project's machines remain in 17 files that only the source ZIP carries,
+and two Python files that Setup installs name a local corpus folder in comments.
+The
+import diagnostic's three known failure cases and the four developer-side
+defects from v5.101.0's crux review remain, and no release is named for them.
+
 ## v5.101.1 - An optional ceiling on the panel worker's tools
 
 **Product code changes.** Two shipped code files change, both in the panel's
