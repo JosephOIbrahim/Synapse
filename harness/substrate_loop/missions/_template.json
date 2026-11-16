@@ -1,0 +1,30 @@
+{
+  "_note": "Copy, rename, fill in. Every field below is real; delete the ones you don't need. Files starting with _ are never run by name.",
+
+  "id": "moneta_fix_example",
+  "target": "moneta",
+  "objective": "One sentence the worker reads every iteration. Say what better means and what must not change.",
+  "focus": ["src/moneta/**/*.py"],
+
+  "metric": {
+    "_kinds": "ruff | mypy | pytest_failed | command",
+    "kind": "pytest_failed",
+    "cmd": ["{python}", "-m", "pytest", "tests/unit/test_decay.py", "-q", "-p", "no:cacheprovider"],
+    "direction": "min",
+    "timeout_s": 900
+  },
+  "_command_metric_example": {"kind": "command", "cmd": ["{python}", "bench.py"], "regex": "p95_ms=([0-9.]+)", "direction": "min"},
+
+  "gates": [{"name": "rest-of-suite", "cmd": ["{python}", "-m", "pytest", "tests", "-q", "-p", "no:cacheprovider",
+             "--deselect", "tests/unit/test_decay.py"]}],
+  "_gates_note": "Optional. Replaces the target's gates - only for a fix mission whose metric suite is red at baseline.",
+
+  "min_delta": 1,
+  "worker_tier": "worker",
+  "max_files": 3,
+  "forbid_added": [],
+  "budget": {"max_iterations": 200, "max_hours": 8, "no_progress": 30, "worker_errors": 5, "houdini_poll_s": 60},
+  "on_houdini": "pause",
+  "review_each_keep": false,
+  "reviewer_budget_usd": 2.0
+}
