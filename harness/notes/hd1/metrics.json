@@ -1,0 +1,2665 @@
+{
+ "schema": "hd1-m3-probe/1",
+ "producer": "harness/probes/hd1_physical_frame.py",
+ "written_utc": "2026-11-16T00:03:58Z",
+ "runs": [
+  {
+   "run_id": "v0",
+   "summary": null
+  },
+  {
+   "run_id": "20261115T1710Z-A",
+   "summary": {
+    "mode": "verify",
+    "variants": [
+     "A"
+    ],
+    "started_utc": "2026-11-15T17:09:58Z",
+    "finished_utc": "2026-11-15T17:10:35Z",
+    "checks_total": 66,
+    "checks_failed": 27,
+    "exit_code": 1
+   }
+  },
+  {
+   "run_id": "20261115T1713Z-AC",
+   "summary": {
+    "mode": "verify",
+    "variants": [
+     "A",
+     "C"
+    ],
+    "started_utc": "2026-11-15T17:13:07Z",
+    "finished_utc": "2026-11-15T17:14:14Z",
+    "checks_total": 71,
+    "checks_failed": 0,
+    "exit_code": 0
+   }
+  }
+ ],
+ "variants": {
+  "A": {
+   "run_id": "20261115T1713Z-AC",
+   "started_utc": "2026-11-15T17:13:09Z",
+   "finished_utc": "2026-11-15T17:13:43Z",
+   "fixture_digest": "e4dd165f18a113683f4c0ed2f2c4af00a99cf716fceededd1bac25f872683026",
+   "metrics": {
+    "chain.grid": {
+     "value": [
+      1280,
+      720
+     ]
+    },
+    "chain.mask_kept": {
+     "value": 919964
+    },
+    "chain.mask_total": {
+     "value": 921600
+    },
+    "chain.floor_inlier_fraction": {
+     "value": 1.0
+    },
+    "chain.floor_rms_over_median_depth": {
+     "value": 6.476746102358652e-17
+    },
+    "chain.level_angle_to_truth_deg": {
+     "value": 0.0,
+     "truth": 0.0,
+     "error": 0.0,
+     "unit": "deg"
+    },
+    "chain.tilt_deg": {
+     "value": 0.0,
+     "truth": 0.0,
+     "error": 0.0,
+     "unit": "deg"
+    },
+    "chain.floor_height_units": {
+     "value": -5.427757009278543e-17,
+     "truth": 0.0,
+     "error": -5.427757009278543e-17,
+     "unit": "raw units"
+    },
+    "chain.camera_height_units": {
+     "value": 1.5,
+     "truth": 1.5,
+     "error": 0.0,
+     "unit": "raw units"
+    },
+    "chain.scale_claim_m_per_unit": {
+     "value": 1.0,
+     "truth": 1.0,
+     "error": 0.0,
+     "unit": "m/unit"
+    },
+    "chain.scale_claim_rel_error": {
+     "value": 0.0,
+     "unit": "ratio"
+    },
+    "chain.ground_offset_m": {
+     "value": 5.427757009278543e-17,
+     "truth": 0.0,
+     "error": 5.427757009278543e-17,
+     "unit": "m"
+    },
+    "cloud.stride": {
+     "value": 2
+    },
+    "cloud.points": {
+     "value": 229991
+    },
+    "cloud.points_before_cap": {
+     "value": 919964
+    },
+    "cloud.radius_min_m": {
+     "value": 0.0033164802015756617,
+     "unit": "m"
+    },
+    "cloud.radius_median_m": {
+     "value": 0.005756181069769752,
+     "unit": "m"
+    },
+    "cloud.radius_max_m": {
+     "value": 0.009221814555833128,
+     "unit": "m"
+    },
+    "points.sop_count": {
+     "value": 229991
+    },
+    "collider.voxel_size_m": {
+     "value": 0.00221098680049181,
+     "unit": "m"
+    },
+    "collider.vdb_active_voxels": {
+     "value": 62220665
+    },
+    "collider.polygons": {
+     "value": 16767118
+    },
+    "collider.triangles": {
+     "value": 33534236
+    },
+    "collider.points": {
+     "value": 16733044
+    },
+    "collider.bounds_min_x_m": {
+     "value": -3.9437096118927,
+     "unit": "m"
+    },
+    "collider.bounds_max_x_m": {
+     "value": 3.931415319442749,
+     "unit": "m"
+    },
+    "collider.bounds_min_y_m": {
+     "value": -0.009074592031538486,
+     "unit": "m"
+    },
+    "collider.bounds_max_y_m": {
+     "value": 1.4872435331344604,
+     "unit": "m"
+    },
+    "collider.bounds_min_z_m": {
+     "value": -6.009082794189453,
+     "unit": "m"
+    },
+    "collider.bounds_max_z_m": {
+     "value": -1.8039805889129639,
+     "unit": "m"
+    },
+    "collider.cook_vdbfromparticles_s": {
+     "value": 0.12387799998396076,
+     "unit": "s"
+    },
+    "collider.cook_convertvdb_s": {
+     "value": 1.6568919999990612,
+     "unit": "s"
+    },
+    "collider.cook_total_s": {
+     "value": 1.780769999983022,
+     "unit": "s"
+    },
+    "collider.vdb_at_live_default_active_voxels": {
+     "value": 0
+    },
+    "usd.prims_traverse": {
+     "value": 4
+    },
+    "usd.prims_all": {
+     "value": 4
+    },
+    "usd.bytes": {
+     "value": 238075884
+    },
+    "usd.points": {
+     "value": 229991
+    },
+    "usd.collider_faces": {
+     "value": 16767118
+    },
+    "usd.collider_points": {
+     "value": 16733044
+    },
+    "usd.save_s": {
+     "value": 0.9549675000016578,
+     "unit": "s"
+    },
+    "usd.open_s": {
+     "value": 0.0014316999877337366,
+     "unit": "s"
+    },
+    "rest.sim_s": {
+     "value": 28.5999332999927,
+     "unit": "s"
+    },
+    "rest.collision_margin_m": {
+     "value": 0.02,
+     "unit": "m"
+    },
+    "rest.piece_margin_m": {
+     "value": 0.02,
+     "unit": "m"
+    },
+    "rest.S1.first_contact_frame": {
+     "value": 9
+    },
+    "rest.S1.left_site_frame": {
+     "value": 21
+    },
+    "rest.S1.on_site_frames": {
+     "value": 12
+    },
+    "rest.S1.on_site_height_median_m": {
+     "value": 0.1044442355632782
+    },
+    "rest.S1.on_site_height_min_m": {
+     "value": 0.10321265459060669
+    },
+    "rest.S1.on_site_height_max_m": {
+     "value": 0.11467677354812622
+    },
+    "rest.S1.on_site_height_minus_truth_m": {
+     "value": 0.004444235563278193
+    },
+    "rest.S1.below_floor_frame": {
+     "value": 107
+    },
+    "rest.S1.below_floor_xz_m": {
+     "value": [
+      -3.115616798400879,
+      -4.294622421264648
+     ]
+    },
+    "rest.S1.exit_nearest_observed_xz_m": {
+     "value": 0.1754569411277771
+    },
+    "rest.S1.max_drift_m": {
+     "value": 2.437536081025163
+    },
+    "rest.S1.final_height_m": {
+     "value": -2.6970021724700928,
+     "truth": 0.1,
+     "error": -2.797002172470093,
+     "unit": "m"
+    },
+    "rest.S1.settled": {
+     "value": false
+    },
+    "rest.S1.max_speed_last12_mps": {
+     "value": 7.21320431157014,
+     "unit": "m/s"
+    },
+    "rest.S1.fell_through": {
+     "value": true
+    },
+    "rest.S1.lowest_height_m": {
+     "value": -2.6970021724700928,
+     "unit": "m"
+    },
+    "rest.S1.horizontal_drift_m": {
+     "value": 2.437536081025163,
+     "unit": "m"
+    },
+    "rest.S1.observed_points_within_0.15m": {
+     "value": 562
+    },
+    "rest.S1.pscale_median_within_0.15m": {
+     "value": 0.0054175592958927155,
+     "unit": "m"
+    },
+    "rest.S2.first_contact_frame": {
+     "value": 9
+    },
+    "rest.S2.left_site_frame": {
+     "value": 14
+    },
+    "rest.S2.on_site_frames": {
+     "value": 5
+    },
+    "rest.S2.on_site_height_median_m": {
+     "value": 0.853080689907074
+    },
+    "rest.S2.on_site_height_min_m": {
+     "value": 0.8491817116737366
+    },
+    "rest.S2.on_site_height_max_m": {
+     "value": 0.8606342077255249
+    },
+    "rest.S2.on_site_height_minus_truth_m": {
+     "value": 0.003080689907073997
+    },
+    "rest.S2.below_floor_frame": {
+     "value": 110
+    },
+    "rest.S2.below_floor_xz_m": {
+     "value": [
+      -2.8820462226867676,
+      -3.878063201904297
+     ]
+    },
+    "rest.S2.exit_nearest_observed_xz_m": {
+     "value": 0.18980126082897186
+    },
+    "rest.S2.max_drift_m": {
+     "value": 3.3226958578219437
+    },
+    "rest.S2.final_height_m": {
+     "value": -1.9747025966644287,
+     "truth": 0.85,
+     "error": -2.824702596664429,
+     "unit": "m"
+    },
+    "rest.S2.settled": {
+     "value": false
+    },
+    "rest.S2.max_speed_last12_mps": {
+     "value": 6.236318505461169,
+     "unit": "m/s"
+    },
+    "rest.S2.fell_through": {
+     "value": true
+    },
+    "rest.S2.lowest_height_m": {
+     "value": -1.9747025966644287,
+     "unit": "m"
+    },
+    "rest.S2.horizontal_drift_m": {
+     "value": 3.3226958578219437,
+     "unit": "m"
+    },
+    "rest.S2.observed_points_within_0.15m": {
+     "value": 346
+    },
+    "rest.S2.pscale_median_within_0.15m": {
+     "value": 0.005030881147831678,
+     "unit": "m"
+    },
+    "rest.S3.first_contact_frame": {
+     "value": null
+    },
+    "rest.S3.left_site_frame": {
+     "value": null
+    },
+    "rest.S3.on_site_frames": {
+     "value": 0
+    },
+    "rest.S3.on_site_height_median_m": {
+     "value": null
+    },
+    "rest.S3.on_site_height_min_m": {
+     "value": null
+    },
+    "rest.S3.on_site_height_max_m": {
+     "value": null
+    },
+    "rest.S3.below_floor_frame": {
+     "value": 10
+    },
+    "rest.S3.below_floor_xz_m": {
+     "value": [
+      0.0,
+      -4.599999904632568
+     ]
+    },
+    "rest.S3.exit_nearest_observed_xz_m": {
+     "value": 0.8190843462944031
+    },
+    "rest.S3.max_drift_m": {
+     "value": 9.536743128535363e-08
+    },
+    "rest.S3.final_height_m": {
+     "value": -120.14999389648438,
+     "unit": "m"
+    },
+    "rest.S3.settled": {
+     "value": false
+    },
+    "rest.S3.max_speed_last12_mps": {
+     "value": 48.44091796875,
+     "unit": "m/s"
+    },
+    "rest.S3.fell_through": {
+     "value": true
+    },
+    "rest.S3.lowest_height_m": {
+     "value": -120.14999389648438,
+     "unit": "m"
+    },
+    "rest.S3.horizontal_drift_m": {
+     "value": 9.536743128535363e-08,
+     "unit": "m"
+    },
+    "rest.S3.observed_points_within_0.15m": {
+     "value": 0
+    }
+   },
+   "claim": {
+    "value": 1.0,
+    "tier": "derived",
+    "method": "derived:camera-height",
+    "probe": null,
+    "inputs": {
+     "declared_eye_height_m": 1.5,
+     "camera_height_units": 1.5,
+     "floor_seed": 20261114
+    }
+   },
+   "mask": {
+    "kept": 919964,
+    "total": 921600,
+    "dropped": {
+     "invalid": 0,
+     "low_confidence": 0,
+     "edge": 1636
+    }
+   },
+   "collider": {
+    "voxel_size_m": 0.00221098680049181,
+    "voxel_rule": "min(pscale) / minvoxelradius (live default 1.5)",
+    "minvoxelradius": 1.5,
+    "vdb": {
+     "prims": 1,
+     "intrinsic_names": [
+      "primitivetokens",
+      "memoryusage",
+      "vertexcount",
+      "indexorder",
+      "typename",
+      "typeid",
+      "bounds",
+      "measuredvolume",
+      "measuredarea",
+      "measuredperimeter",
+      "background",
+      "voxelsize",
+      "activevoxeldimensions",
+      "activevoxelcount",
+      "transform",
+      "taper",
+      "volumevisualmode",
+      "volumevisualdensity",
+      "volumevisualiso",
+      "volumevisuallod",
+      "volumetypeinfo",
+      "volumeminvalue",
+      "volumemaxvalue",
+      "volumeavgvalue",
+      "vdb_class",
+      "vdb_creator",
+      "vdb_is_local_space",
+      "vdb_is_saved_as_half_float",
+      "vdb_value_type",
+      "vdb_vector_type"
+     ],
+     "typename": "VDB",
+     "background": 0.0066329604014754295,
+     "voxelsize": [
+      0.00221098680049181,
+      0.00221098680049181,
+      0.00221098680049181
+     ],
+     "activevoxeldimensions": [
+      3568,
+      683,
+      1908
+     ],
+     "activevoxelcount": 62220665,
+     "vdb_class": "level set",
+     "vdb_creator": "",
+     "vdb_is_local_space": 0,
+     "vdb_is_saved_as_half_float": 0,
+     "vdb_value_type": "float",
+     "vdb_vector_type": "invariant"
+    },
+    "vdb_warnings": [],
+    "poly_warnings": [],
+    "points": 16733044,
+    "polygons": 16767118,
+    "vertices": 67068472,
+    "triangles": 33534236,
+    "bounds_m": {
+     "min": [
+      -3.9437096118927,
+      -0.009074592031538486,
+      -6.009082794189453
+     ],
+     "max": [
+      3.931415319442749,
+      1.4872435331344604,
+      -1.8039805889129639
+     ]
+    },
+    "cook_s": {
+     "vdbfromparticles": 0.12387799998396076,
+     "convertvdb": 1.6568919999990612,
+     "total": 1.780769999983022
+    }
+   },
+   "vdb_at_live_default": {
+    "voxelsize": 0.1,
+    "seconds": 0.003472099982900545,
+    "vdb": {
+     "prims": 1,
+     "intrinsic_names": [
+      "primitivetokens",
+      "memoryusage",
+      "vertexcount",
+      "indexorder",
+      "typename",
+      "typeid",
+      "bounds",
+      "measuredvolume",
+      "measuredarea",
+      "measuredperimeter",
+      "background",
+      "voxelsize",
+      "activevoxeldimensions",
+      "activevoxelcount",
+      "transform",
+      "taper",
+      "volumevisualmode",
+      "volumevisualdensity",
+      "volumevisualiso",
+      "volumevisuallod",
+      "volumetypeinfo",
+      "volumeminvalue",
+      "volumemaxvalue",
+      "volumeavgvalue",
+      "vdb_class",
+      "vdb_creator",
+      "vdb_is_local_space",
+      "vdb_is_saved_as_half_float",
+      "vdb_value_type",
+      "vdb_vector_type"
+     ],
+     "typename": "VDB",
+     "background": 0.30000001192092896,
+     "voxelsize": [
+      0.10000000149011612,
+      0.10000000149011612,
+      0.10000000149011612
+     ],
+     "activevoxeldimensions": [
+      0,
+      0,
+      0
+     ],
+     "activevoxelcount": 0,
+     "vdb_class": "level set",
+     "vdb_creator": "",
+     "vdb_is_local_space": 0,
+     "vdb_is_saved_as_half_float": 0,
+     "vdb_value_type": "float",
+     "vdb_vector_type": "invariant"
+    },
+    "warnings": [
+     "Ignored 12605 small and 0 large particles (hint: change Minimum Radius in Voxels)"
+    ],
+    "errors": []
+   },
+   "usd": {
+    "path": "<out>/20261115T1713Z-AC/A/hd1_A.usdc",
+    "bytes": 238075884,
+    "save_s": 0.9549675000016578,
+    "open_s": 0.0014316999877337366,
+    "prims_traverse": 4,
+    "prims_all": 4,
+    "prim_paths": [
+     "/HD1_A",
+     "/HD1_A/geo",
+     "/HD1_A/geo/points",
+     "/HD1_A/geo/collider"
+    ],
+    "up_axis": "Y",
+    "meters_per_unit_authored": true,
+    "meters_per_unit": 1.0,
+    "kind": "component",
+    "default_prim": "/HD1_A",
+    "custom_data_keys": [
+     "applied",
+     "fixture_sha256",
+     "ground_offset",
+     "level",
+     "scale",
+     "scale_null_keys",
+     "stride",
+     "tier"
+    ],
+    "level_xyzw_back": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "stride_back": 2,
+    "tier_back": "SYNTHETIC",
+    "scale_back": {
+     "method": "derived:camera-height",
+     "tier": "derived",
+     "value": 1.0
+    },
+    "applied_back": {
+     "ground": true,
+     "level": true,
+     "scale": true
+    },
+    "points_back": 229991,
+    "collider_faces_back": 16767118,
+    "collider_points_back": 16733044,
+    "collider_purpose": "proxy",
+    "collider_orientation": "leftHanded",
+    "physics_prims_or_schemas": [],
+    "scale_null_keys": [
+     "probe"
+    ]
+   },
+   "rest_settings": {
+    "collision_bullet_georep": "concave",
+    "collision_initialstate": 0,
+    "useground": 0,
+    "usecollisions": 1,
+    "startframe": 1,
+    "solvefirstframe": 0,
+    "substep": 1,
+    "substeps": 10,
+    "timescale": 1.0,
+    "margin": 0.02,
+    "collision_margin": 0.02,
+    "bounce": 0.25,
+    "friction": 1.0,
+    "collision_bounce": 0.5,
+    "collision_friction": 1.0,
+    "gravityy": -9.80665,
+    "density": 1000.0,
+    "collision_initialstate_token": "static"
+   },
+   "rest_solver": {
+    "warnings": [],
+    "sim_s": 28.5999332999927,
+    "frames": 120,
+    "fps": 24.0
+   },
+   "rest": {
+    "S1": {
+     "release_m": [
+      -1.3,
+      0.5,
+      -3.3
+     ],
+     "final_centre_m": [
+      -3.5103776454925537,
+      -2.6970021724700928,
+      -4.3275275230407715
+     ],
+     "final_height_m": -2.6970021724700928,
+     "truth_m": 0.1,
+     "error_m": -2.797002172470093,
+     "max_speed_last_frames_mps": 7.21320431157014,
+     "settle_frames": 12,
+     "settled": false,
+     "fell_through": true,
+     "fell_through_rule": "final centre y < collider min y (-0.00907459) - sphere radius",
+     "lowest_height_m": -2.6970021724700928,
+     "horizontal_drift_m": 2.437536081025163,
+     "expect": "rest",
+     "observed_points_within_0.15m": 562,
+     "pscale_median_within_0.15m": 0.0054175592958927155,
+     "solver_v_last": [
+      -0.7287886142730713,
+      -7.35991096496582,
+      -0.06074880436062813
+     ],
+     "diagnostics": {
+      "rules": {
+       "first_contact": "first frame whose centre y is not below the previous frame's",
+       "left_site": "first frame whose xz drift from release exceeds the sphere radius",
+       "on_site": "frames from first contact up to (not including) left_site",
+       "below_floor": "first frame whose centre y < -sphere radius",
+       "exit_nearest_observed_xz_m": "xz distance from the below_floor position to the nearest cloud point"
+      },
+      "first_contact_frame": 9,
+      "left_site_frame": 21,
+      "on_site_frames": 12,
+      "on_site_height_median_m": 0.1044442355632782,
+      "on_site_height_min_m": 0.10321265459060669,
+      "on_site_height_max_m": 0.11467677354812622,
+      "below_floor_frame": 107,
+      "below_floor_xz_m": [
+       -3.115616798400879,
+       -4.294622421264648
+      ],
+      "exit_nearest_observed_xz_m": 0.1754569411277771,
+      "max_drift_m": 2.437536081025163,
+      "on_site_height_minus_truth_m": 0.004444235563278193
+     }
+    },
+    "S2": {
+     "release_m": [
+      0.0,
+      1.25,
+      -3.3
+     ],
+     "final_centre_m": [
+      -3.2577192783355713,
+      -1.9747025966644287,
+      -3.953890562057495
+     ],
+     "final_height_m": -1.9747025966644287,
+     "truth_m": 0.85,
+     "error_m": -2.824702596664429,
+     "max_speed_last_frames_mps": 6.236318505461169,
+     "settle_frames": 12,
+     "settled": false,
+     "fell_through": true,
+     "fell_through_rule": "final centre y < collider min y (-0.00907459) - sphere radius",
+     "lowest_height_m": -1.9747025966644287,
+     "horizontal_drift_m": 3.3226958578219437,
+     "expect": "rest",
+     "observed_points_within_0.15m": 346,
+     "pscale_median_within_0.15m": 0.005030881147831678,
+     "solver_v_last": [
+      -0.9016156196594238,
+      -6.352001190185547,
+      -0.18198594450950623
+     ],
+     "diagnostics": {
+      "rules": {
+       "first_contact": "first frame whose centre y is not below the previous frame's",
+       "left_site": "first frame whose xz drift from release exceeds the sphere radius",
+       "on_site": "frames from first contact up to (not including) left_site",
+       "below_floor": "first frame whose centre y < -sphere radius",
+       "exit_nearest_observed_xz_m": "xz distance from the below_floor position to the nearest cloud point"
+      },
+      "first_contact_frame": 9,
+      "left_site_frame": 14,
+      "on_site_frames": 5,
+      "on_site_height_median_m": 0.853080689907074,
+      "on_site_height_min_m": 0.8491817116737366,
+      "on_site_height_max_m": 0.8606342077255249,
+      "below_floor_frame": 110,
+      "below_floor_xz_m": [
+       -2.8820462226867676,
+       -3.878063201904297
+      ],
+      "exit_nearest_observed_xz_m": 0.18980126082897186,
+      "max_drift_m": 3.3226958578219437,
+      "on_site_height_minus_truth_m": 0.003080689907073997
+     }
+    },
+    "S3": {
+     "release_m": [
+      0.0,
+      0.5,
+      -4.6
+     ],
+     "final_centre_m": [
+      0.0,
+      -120.14999389648438,
+      -4.599999904632568
+     ],
+     "final_height_m": -120.14999389648438,
+     "truth_m": null,
+     "error_m": null,
+     "max_speed_last_frames_mps": 48.44091796875,
+     "settle_frames": 12,
+     "settled": false,
+     "fell_through": true,
+     "fell_through_rule": "final centre y < collider min y (-0.00907459) - sphere radius",
+     "lowest_height_m": -120.14999389648438,
+     "horizontal_drift_m": 9.536743128535363e-08,
+     "expect": "fall_through",
+     "observed_points_within_0.15m": 0,
+     "pscale_median_within_0.15m": null,
+     "solver_v_last": [
+      0.0,
+      -48.62470626831055,
+      0.0
+     ],
+     "diagnostics": {
+      "rules": {
+       "first_contact": "first frame whose centre y is not below the previous frame's",
+       "left_site": "first frame whose xz drift from release exceeds the sphere radius",
+       "on_site": "frames from first contact up to (not including) left_site",
+       "below_floor": "first frame whose centre y < -sphere radius",
+       "exit_nearest_observed_xz_m": "xz distance from the below_floor position to the nearest cloud point"
+      },
+      "first_contact_frame": null,
+      "left_site_frame": null,
+      "on_site_frames": 0,
+      "on_site_height_median_m": null,
+      "on_site_height_min_m": null,
+      "on_site_height_max_m": null,
+      "below_floor_frame": 10,
+      "below_floor_xz_m": [
+       0.0,
+       -4.599999904632568
+      ],
+      "exit_nearest_observed_xz_m": 0.8190843462944031,
+      "max_drift_m": 9.536743128535363e-08
+     }
+    }
+   },
+   "checks": [
+    {
+     "id": "A-1-chain",
+     "label": "variant A: depth -> floor -> claim -> physical cloud",
+     "ok": true,
+     "detail": {
+      "stride": 2,
+      "points": 229991,
+      "claim": {
+       "value": 1.0,
+       "tier": "derived",
+       "method": "derived:camera-height",
+       "probe": null
+      }
+     }
+    },
+    {
+     "id": "A-2-points",
+     "label": "SOP points with pscale and Cd, bit-exact after bgeo",
+     "ok": true,
+     "detail": {
+      "path": "<out>/20261115T1713Z-AC/A/points_A.bgeo.sc",
+      "count": 229991,
+      "attribs": [
+       "P",
+       "Cd",
+       "pscale"
+      ]
+     }
+    },
+    {
+     "id": "A-3-collider",
+     "label": "vdbfromparticles -> convertvdb polygons",
+     "ok": true,
+     "detail": {
+      "voxel_size_m": 0.00221098680049181,
+      "polygons": 16767118,
+      "triangles": 33534236,
+      "cook_s": {
+       "vdbfromparticles": 0.12387799998396076,
+       "convertvdb": 1.6568919999990612,
+       "total": 1.780769999983022
+      }
+     }
+    },
+    {
+     "id": "A-4-usd",
+     "label": "write the .usdc, re-open it, count the prims (SPEC 8)",
+     "ok": true,
+     "detail": {
+      "path": "<out>/20261115T1713Z-AC/A/hd1_A.usdc",
+      "prims_all": 4,
+      "bytes": 238075884
+     }
+    },
+    {
+     "id": "A-5-rest",
+     "label": "Bullet rest test, 120 frames at 24 fps, static concave collider",
+     "ok": true,
+     "detail": {
+      "S1": {
+       "final_height_m": -2.6970021724700928,
+       "error_m": -2.797002172470093,
+       "settled": false,
+       "fell_through": true
+      },
+      "S2": {
+       "final_height_m": -1.9747025966644287,
+       "error_m": -2.824702596664429,
+       "settled": false,
+       "fell_through": true
+      },
+      "S3": {
+       "final_height_m": -120.14999389648438,
+       "error_m": null,
+       "settled": false,
+       "fell_through": true
+      }
+     }
+    }
+   ]
+  },
+  "C": {
+   "run_id": "20261115T1713Z-AC",
+   "started_utc": "2026-11-15T17:13:43Z",
+   "finished_utc": "2026-11-15T17:14:14Z",
+   "fixture_digest": "d338da5a97d3cdd582366f582d10735e257fc3ab544cd8844051c28c8abe2099",
+   "metrics": {
+    "chain.grid": {
+     "value": [
+      1280,
+      720
+     ]
+    },
+    "chain.mask_kept": {
+     "value": 919964
+    },
+    "chain.mask_total": {
+     "value": 921600
+    },
+    "chain.floor_inlier_fraction": {
+     "value": 1.0
+    },
+    "chain.floor_rms_over_median_depth": {
+     "value": 6.903095051644343e-17
+    },
+    "chain.level_angle_to_truth_deg": {
+     "value": 6.3611093629270335e-15,
+     "truth": 0.0,
+     "error": 6.3611093629270335e-15,
+     "unit": "deg"
+    },
+    "chain.tilt_deg": {
+     "value": 6.3611093629270335e-15,
+     "truth": 0.0,
+     "error": 6.3611093629270335e-15,
+     "unit": "deg"
+    },
+    "chain.floor_height_units": {
+     "value": 6.915809024826977e-16,
+     "truth": 0.0,
+     "error": 6.915809024826977e-16,
+     "unit": "raw units"
+    },
+    "chain.camera_height_units": {
+     "value": 3.749999999999999,
+     "truth": 3.75,
+     "error": -8.881784197001252e-16,
+     "unit": "raw units"
+    },
+    "chain.scale_claim_m_per_unit": {
+     "value": 0.4000000000000001,
+     "truth": 0.4,
+     "error": 5.551115123125783e-17,
+     "unit": "m/unit"
+    },
+    "chain.scale_claim_rel_error": {
+     "value": 1.3877787807814457e-16,
+     "unit": "ratio"
+    },
+    "chain.ground_offset_m": {
+     "value": -2.7663236099307914e-16,
+     "truth": 0.0,
+     "error": -2.7663236099307914e-16,
+     "unit": "m"
+    },
+    "cloud.stride": {
+     "value": 2
+    },
+    "cloud.points": {
+     "value": 229991
+    },
+    "cloud.points_before_cap": {
+     "value": 919964
+    },
+    "cloud.radius_min_m": {
+     "value": 0.0033164802015756625,
+     "unit": "m"
+    },
+    "cloud.radius_median_m": {
+     "value": 0.005756181069769752,
+     "unit": "m"
+    },
+    "cloud.radius_max_m": {
+     "value": 0.009221814555833128,
+     "unit": "m"
+    },
+    "points.sop_count": {
+     "value": 229991
+    },
+    "collider.voxel_size_m": {
+     "value": 0.00221098680049181,
+     "unit": "m"
+    },
+    "collider.vdb_active_voxels": {
+     "value": 62220665
+    },
+    "collider.polygons": {
+     "value": 16767118
+    },
+    "collider.triangles": {
+     "value": 33534236
+    },
+    "collider.points": {
+     "value": 16733044
+    },
+    "collider.bounds_min_x_m": {
+     "value": -3.9437096118927,
+     "unit": "m"
+    },
+    "collider.bounds_max_x_m": {
+     "value": 3.931415319442749,
+     "unit": "m"
+    },
+    "collider.bounds_min_y_m": {
+     "value": -0.009074592031538486,
+     "unit": "m"
+    },
+    "collider.bounds_max_y_m": {
+     "value": 1.4872435331344604,
+     "unit": "m"
+    },
+    "collider.bounds_min_z_m": {
+     "value": -6.009082794189453,
+     "unit": "m"
+    },
+    "collider.bounds_max_z_m": {
+     "value": -1.8039805889129639,
+     "unit": "m"
+    },
+    "collider.cook_vdbfromparticles_s": {
+     "value": 0.10293690001708455,
+     "unit": "s"
+    },
+    "collider.cook_convertvdb_s": {
+     "value": 1.574408799991943,
+     "unit": "s"
+    },
+    "collider.cook_total_s": {
+     "value": 1.6773457000090275,
+     "unit": "s"
+    },
+    "collider.vdb_at_live_default_active_voxels": {
+     "value": 0
+    },
+    "usd.prims_traverse": {
+     "value": 4
+    },
+    "usd.prims_all": {
+     "value": 4
+    },
+    "usd.bytes": {
+     "value": 238075892
+    },
+    "usd.points": {
+     "value": 229991
+    },
+    "usd.collider_faces": {
+     "value": 16767118
+    },
+    "usd.collider_points": {
+     "value": 16733044
+    },
+    "usd.save_s": {
+     "value": 0.8237964000145439,
+     "unit": "s"
+    },
+    "usd.open_s": {
+     "value": 0.0015469999925699085,
+     "unit": "s"
+    },
+    "rest.sim_s": {
+     "value": 26.25925959998858,
+     "unit": "s"
+    },
+    "rest.collision_margin_m": {
+     "value": 0.02,
+     "unit": "m"
+    },
+    "rest.piece_margin_m": {
+     "value": 0.02,
+     "unit": "m"
+    },
+    "rest.S1.first_contact_frame": {
+     "value": 9
+    },
+    "rest.S1.left_site_frame": {
+     "value": 21
+    },
+    "rest.S1.on_site_frames": {
+     "value": 12
+    },
+    "rest.S1.on_site_height_median_m": {
+     "value": 0.1044442355632782
+    },
+    "rest.S1.on_site_height_min_m": {
+     "value": 0.10321265459060669
+    },
+    "rest.S1.on_site_height_max_m": {
+     "value": 0.11467677354812622
+    },
+    "rest.S1.on_site_height_minus_truth_m": {
+     "value": 0.004444235563278193
+    },
+    "rest.S1.below_floor_frame": {
+     "value": 107
+    },
+    "rest.S1.below_floor_xz_m": {
+     "value": [
+      -3.115616798400879,
+      -4.294622421264648
+     ]
+    },
+    "rest.S1.exit_nearest_observed_xz_m": {
+     "value": 0.1754569411277771
+    },
+    "rest.S1.max_drift_m": {
+     "value": 2.437536081025163
+    },
+    "rest.S1.final_height_m": {
+     "value": -2.6970021724700928,
+     "truth": 0.1,
+     "error": -2.797002172470093,
+     "unit": "m"
+    },
+    "rest.S1.settled": {
+     "value": false
+    },
+    "rest.S1.max_speed_last12_mps": {
+     "value": 7.21320431157014,
+     "unit": "m/s"
+    },
+    "rest.S1.fell_through": {
+     "value": true
+    },
+    "rest.S1.lowest_height_m": {
+     "value": -2.6970021724700928,
+     "unit": "m"
+    },
+    "rest.S1.horizontal_drift_m": {
+     "value": 2.437536081025163,
+     "unit": "m"
+    },
+    "rest.S1.observed_points_within_0.15m": {
+     "value": 562
+    },
+    "rest.S1.pscale_median_within_0.15m": {
+     "value": 0.0054175592958927155,
+     "unit": "m"
+    },
+    "rest.S2.first_contact_frame": {
+     "value": 9
+    },
+    "rest.S2.left_site_frame": {
+     "value": 14
+    },
+    "rest.S2.on_site_frames": {
+     "value": 5
+    },
+    "rest.S2.on_site_height_median_m": {
+     "value": 0.853080689907074
+    },
+    "rest.S2.on_site_height_min_m": {
+     "value": 0.8491817116737366
+    },
+    "rest.S2.on_site_height_max_m": {
+     "value": 0.8606342077255249
+    },
+    "rest.S2.on_site_height_minus_truth_m": {
+     "value": 0.003080689907073997
+    },
+    "rest.S2.below_floor_frame": {
+     "value": 112
+    },
+    "rest.S2.below_floor_xz_m": {
+     "value": [
+      -3.1120383739471436,
+      -4.306338787078857
+     ]
+    },
+    "rest.S2.exit_nearest_observed_xz_m": {
+     "value": 0.16612611711025238
+    },
+    "rest.S2.max_drift_m": {
+     "value": 3.5593609504886636
+    },
+    "rest.S2.final_height_m": {
+     "value": -1.3161616325378418,
+     "truth": 0.85,
+     "error": -2.166161632537842,
+     "unit": "m"
+    },
+    "rest.S2.settled": {
+     "value": false
+    },
+    "rest.S2.max_speed_last12_mps": {
+     "value": 5.1407401584863415,
+     "unit": "m/s"
+    },
+    "rest.S2.fell_through": {
+     "value": true
+    },
+    "rest.S2.lowest_height_m": {
+     "value": -1.3161616325378418,
+     "unit": "m"
+    },
+    "rest.S2.horizontal_drift_m": {
+     "value": 3.5593609504886636,
+     "unit": "m"
+    },
+    "rest.S2.observed_points_within_0.15m": {
+     "value": 346
+    },
+    "rest.S2.pscale_median_within_0.15m": {
+     "value": 0.005030881147831678,
+     "unit": "m"
+    },
+    "rest.S3.first_contact_frame": {
+     "value": null
+    },
+    "rest.S3.left_site_frame": {
+     "value": null
+    },
+    "rest.S3.on_site_frames": {
+     "value": 0
+    },
+    "rest.S3.on_site_height_median_m": {
+     "value": null
+    },
+    "rest.S3.on_site_height_min_m": {
+     "value": null
+    },
+    "rest.S3.on_site_height_max_m": {
+     "value": null
+    },
+    "rest.S3.below_floor_frame": {
+     "value": 10
+    },
+    "rest.S3.below_floor_xz_m": {
+     "value": [
+      0.0,
+      -4.599999904632568
+     ]
+    },
+    "rest.S3.exit_nearest_observed_xz_m": {
+     "value": 0.8190843462944031
+    },
+    "rest.S3.max_drift_m": {
+     "value": 9.536743128535363e-08
+    },
+    "rest.S3.final_height_m": {
+     "value": -120.14999389648438,
+     "unit": "m"
+    },
+    "rest.S3.settled": {
+     "value": false
+    },
+    "rest.S3.max_speed_last12_mps": {
+     "value": 48.44091796875,
+     "unit": "m/s"
+    },
+    "rest.S3.fell_through": {
+     "value": true
+    },
+    "rest.S3.lowest_height_m": {
+     "value": -120.14999389648438,
+     "unit": "m"
+    },
+    "rest.S3.horizontal_drift_m": {
+     "value": 9.536743128535363e-08,
+     "unit": "m"
+    },
+    "rest.S3.observed_points_within_0.15m": {
+     "value": 0
+    }
+   },
+   "claim": {
+    "value": 0.4000000000000001,
+    "tier": "derived",
+    "method": "derived:camera-height",
+    "probe": null,
+    "inputs": {
+     "declared_eye_height_m": 1.5,
+     "camera_height_units": 3.749999999999999,
+     "floor_seed": 20261114
+    }
+   },
+   "mask": {
+    "kept": 919964,
+    "total": 921600,
+    "dropped": {
+     "invalid": 0,
+     "low_confidence": 0,
+     "edge": 1636
+    }
+   },
+   "collider": {
+    "voxel_size_m": 0.00221098680049181,
+    "voxel_rule": "min(pscale) / minvoxelradius (live default 1.5)",
+    "minvoxelradius": 1.5,
+    "vdb": {
+     "prims": 1,
+     "intrinsic_names": [
+      "primitivetokens",
+      "memoryusage",
+      "vertexcount",
+      "indexorder",
+      "typename",
+      "typeid",
+      "bounds",
+      "measuredvolume",
+      "measuredarea",
+      "measuredperimeter",
+      "background",
+      "voxelsize",
+      "activevoxeldimensions",
+      "activevoxelcount",
+      "transform",
+      "taper",
+      "volumevisualmode",
+      "volumevisualdensity",
+      "volumevisualiso",
+      "volumevisuallod",
+      "volumetypeinfo",
+      "volumeminvalue",
+      "volumemaxvalue",
+      "volumeavgvalue",
+      "vdb_class",
+      "vdb_creator",
+      "vdb_is_local_space",
+      "vdb_is_saved_as_half_float",
+      "vdb_value_type",
+      "vdb_vector_type"
+     ],
+     "typename": "VDB",
+     "background": 0.0066329604014754295,
+     "voxelsize": [
+      0.00221098680049181,
+      0.00221098680049181,
+      0.00221098680049181
+     ],
+     "activevoxeldimensions": [
+      3568,
+      683,
+      1908
+     ],
+     "activevoxelcount": 62220665,
+     "vdb_class": "level set",
+     "vdb_creator": "",
+     "vdb_is_local_space": 0,
+     "vdb_is_saved_as_half_float": 0,
+     "vdb_value_type": "float",
+     "vdb_vector_type": "invariant"
+    },
+    "vdb_warnings": [],
+    "poly_warnings": [],
+    "points": 16733044,
+    "polygons": 16767118,
+    "vertices": 67068472,
+    "triangles": 33534236,
+    "bounds_m": {
+     "min": [
+      -3.9437096118927,
+      -0.009074592031538486,
+      -6.009082794189453
+     ],
+     "max": [
+      3.931415319442749,
+      1.4872435331344604,
+      -1.8039805889129639
+     ]
+    },
+    "cook_s": {
+     "vdbfromparticles": 0.10293690001708455,
+     "convertvdb": 1.574408799991943,
+     "total": 1.6773457000090275
+    }
+   },
+   "vdb_at_live_default": {
+    "voxelsize": 0.1,
+    "seconds": 0.0015614000149071217,
+    "vdb": {
+     "prims": 1,
+     "intrinsic_names": [
+      "primitivetokens",
+      "memoryusage",
+      "vertexcount",
+      "indexorder",
+      "typename",
+      "typeid",
+      "bounds",
+      "measuredvolume",
+      "measuredarea",
+      "measuredperimeter",
+      "background",
+      "voxelsize",
+      "activevoxeldimensions",
+      "activevoxelcount",
+      "transform",
+      "taper",
+      "volumevisualmode",
+      "volumevisualdensity",
+      "volumevisualiso",
+      "volumevisuallod",
+      "volumetypeinfo",
+      "volumeminvalue",
+      "volumemaxvalue",
+      "volumeavgvalue",
+      "vdb_class",
+      "vdb_creator",
+      "vdb_is_local_space",
+      "vdb_is_saved_as_half_float",
+      "vdb_value_type",
+      "vdb_vector_type"
+     ],
+     "typename": "VDB",
+     "background": 0.30000001192092896,
+     "voxelsize": [
+      0.10000000149011612,
+      0.10000000149011612,
+      0.10000000149011612
+     ],
+     "activevoxeldimensions": [
+      0,
+      0,
+      0
+     ],
+     "activevoxelcount": 0,
+     "vdb_class": "level set",
+     "vdb_creator": "",
+     "vdb_is_local_space": 0,
+     "vdb_is_saved_as_half_float": 0,
+     "vdb_value_type": "float",
+     "vdb_vector_type": "invariant"
+    },
+    "warnings": [
+     "Ignored 3957 small and 0 large particles (hint: change Minimum Radius in Voxels)"
+    ],
+    "errors": []
+   },
+   "usd": {
+    "path": "<out>/20261115T1713Z-AC/C/hd1_C.usdc",
+    "bytes": 238075892,
+    "save_s": 0.8237964000145439,
+    "open_s": 0.0015469999925699085,
+    "prims_traverse": 4,
+    "prims_all": 4,
+    "prim_paths": [
+     "/HD1_C",
+     "/HD1_C/geo",
+     "/HD1_C/geo/points",
+     "/HD1_C/geo/collider"
+    ],
+    "up_axis": "Y",
+    "meters_per_unit_authored": true,
+    "meters_per_unit": 1.0,
+    "kind": "component",
+    "default_prim": "/HD1_C",
+    "custom_data_keys": [
+     "applied",
+     "fixture_sha256",
+     "ground_offset",
+     "level",
+     "scale",
+     "scale_null_keys",
+     "stride",
+     "tier"
+    ],
+    "level_xyzw_back": [
+     5.551115123125783e-17,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "stride_back": 2,
+    "tier_back": "SYNTHETIC",
+    "scale_back": {
+     "method": "derived:camera-height",
+     "tier": "derived",
+     "value": 0.4000000000000001
+    },
+    "applied_back": {
+     "ground": true,
+     "level": true,
+     "scale": true
+    },
+    "points_back": 229991,
+    "collider_faces_back": 16767118,
+    "collider_points_back": 16733044,
+    "collider_purpose": "proxy",
+    "collider_orientation": "leftHanded",
+    "physics_prims_or_schemas": [],
+    "scale_null_keys": [
+     "probe"
+    ]
+   },
+   "rest_settings": {
+    "collision_bullet_georep": "concave",
+    "collision_initialstate": 0,
+    "useground": 0,
+    "usecollisions": 1,
+    "startframe": 1,
+    "solvefirstframe": 0,
+    "substep": 1,
+    "substeps": 10,
+    "timescale": 1.0,
+    "margin": 0.02,
+    "collision_margin": 0.02,
+    "bounce": 0.25,
+    "friction": 1.0,
+    "collision_bounce": 0.5,
+    "collision_friction": 1.0,
+    "gravityy": -9.80665,
+    "density": 1000.0,
+    "collision_initialstate_token": "static"
+   },
+   "rest_solver": {
+    "warnings": [],
+    "sim_s": 26.25925959998858,
+    "frames": 120,
+    "fps": 24.0
+   },
+   "rest": {
+    "S1": {
+     "release_m": [
+      -1.3,
+      0.5,
+      -3.2999999999999994
+     ],
+     "final_centre_m": [
+      -3.5103776454925537,
+      -2.6970021724700928,
+      -4.3275275230407715
+     ],
+     "final_height_m": -2.6970021724700928,
+     "truth_m": 0.1,
+     "error_m": -2.797002172470093,
+     "max_speed_last_frames_mps": 7.21320431157014,
+     "settle_frames": 12,
+     "settled": false,
+     "fell_through": true,
+     "fell_through_rule": "final centre y < collider min y (-0.00907459) - sphere radius",
+     "lowest_height_m": -2.6970021724700928,
+     "horizontal_drift_m": 2.437536081025163,
+     "expect": "rest",
+     "observed_points_within_0.15m": 562,
+     "pscale_median_within_0.15m": 0.0054175592958927155,
+     "solver_v_last": [
+      -0.7287886142730713,
+      -7.35991096496582,
+      -0.06074880436062813
+     ],
+     "diagnostics": {
+      "rules": {
+       "first_contact": "first frame whose centre y is not below the previous frame's",
+       "left_site": "first frame whose xz drift from release exceeds the sphere radius",
+       "on_site": "frames from first contact up to (not including) left_site",
+       "below_floor": "first frame whose centre y < -sphere radius",
+       "exit_nearest_observed_xz_m": "xz distance from the below_floor position to the nearest cloud point"
+      },
+      "first_contact_frame": 9,
+      "left_site_frame": 21,
+      "on_site_frames": 12,
+      "on_site_height_median_m": 0.1044442355632782,
+      "on_site_height_min_m": 0.10321265459060669,
+      "on_site_height_max_m": 0.11467677354812622,
+      "below_floor_frame": 107,
+      "below_floor_xz_m": [
+       -3.115616798400879,
+       -4.294622421264648
+      ],
+      "exit_nearest_observed_xz_m": 0.1754569411277771,
+      "max_drift_m": 2.437536081025163,
+      "on_site_height_minus_truth_m": 0.004444235563278193
+     }
+    },
+    "S2": {
+     "release_m": [
+      0.0,
+      1.25,
+      -3.2999999999999994
+     ],
+     "final_centre_m": [
+      -3.401766777038574,
+      -1.3161616325378418,
+      -4.34739351272583
+     ],
+     "final_height_m": -1.3161616325378418,
+     "truth_m": 0.85,
+     "error_m": -2.166161632537842,
+     "max_speed_last_frames_mps": 5.1407401584863415,
+     "settle_frames": 12,
+     "settled": false,
+     "fell_through": true,
+     "fell_through_rule": "final centre y < collider min y (-0.00907459) - sphere radius",
+     "lowest_height_m": -1.3161616325378418,
+     "horizontal_drift_m": 3.5593609504886636,
+     "expect": "rest",
+     "observed_points_within_0.15m": 346,
+     "pscale_median_within_0.15m": 0.005030881147831678,
+     "solver_v_last": [
+      -0.869184136390686,
+      -5.249105930328369,
+      -0.12316625565290451
+     ],
+     "diagnostics": {
+      "rules": {
+       "first_contact": "first frame whose centre y is not below the previous frame's",
+       "left_site": "first frame whose xz drift from release exceeds the sphere radius",
+       "on_site": "frames from first contact up to (not including) left_site",
+       "below_floor": "first frame whose centre y < -sphere radius",
+       "exit_nearest_observed_xz_m": "xz distance from the below_floor position to the nearest cloud point"
+      },
+      "first_contact_frame": 9,
+      "left_site_frame": 14,
+      "on_site_frames": 5,
+      "on_site_height_median_m": 0.853080689907074,
+      "on_site_height_min_m": 0.8491817116737366,
+      "on_site_height_max_m": 0.8606342077255249,
+      "below_floor_frame": 112,
+      "below_floor_xz_m": [
+       -3.1120383739471436,
+       -4.306338787078857
+      ],
+      "exit_nearest_observed_xz_m": 0.16612611711025238,
+      "max_drift_m": 3.5593609504886636,
+      "on_site_height_minus_truth_m": 0.003080689907073997
+     }
+    },
+    "S3": {
+     "release_m": [
+      0.0,
+      0.5,
+      -4.6
+     ],
+     "final_centre_m": [
+      0.0,
+      -120.14999389648438,
+      -4.599999904632568
+     ],
+     "final_height_m": -120.14999389648438,
+     "truth_m": null,
+     "error_m": null,
+     "max_speed_last_frames_mps": 48.44091796875,
+     "settle_frames": 12,
+     "settled": false,
+     "fell_through": true,
+     "fell_through_rule": "final centre y < collider min y (-0.00907459) - sphere radius",
+     "lowest_height_m": -120.14999389648438,
+     "horizontal_drift_m": 9.536743128535363e-08,
+     "expect": "fall_through",
+     "observed_points_within_0.15m": 0,
+     "pscale_median_within_0.15m": null,
+     "solver_v_last": [
+      0.0,
+      -48.62470626831055,
+      0.0
+     ],
+     "diagnostics": {
+      "rules": {
+       "first_contact": "first frame whose centre y is not below the previous frame's",
+       "left_site": "first frame whose xz drift from release exceeds the sphere radius",
+       "on_site": "frames from first contact up to (not including) left_site",
+       "below_floor": "first frame whose centre y < -sphere radius",
+       "exit_nearest_observed_xz_m": "xz distance from the below_floor position to the nearest cloud point"
+      },
+      "first_contact_frame": null,
+      "left_site_frame": null,
+      "on_site_frames": 0,
+      "on_site_height_median_m": null,
+      "on_site_height_min_m": null,
+      "on_site_height_max_m": null,
+      "below_floor_frame": 10,
+      "below_floor_xz_m": [
+       0.0,
+       -4.599999904632568
+      ],
+      "exit_nearest_observed_xz_m": 0.8190843462944031,
+      "max_drift_m": 9.536743128535363e-08
+     }
+    }
+   },
+   "checks": [
+    {
+     "id": "C-1-chain",
+     "label": "variant C: depth -> floor -> claim -> physical cloud",
+     "ok": true,
+     "detail": {
+      "stride": 2,
+      "points": 229991,
+      "claim": {
+       "value": 0.4000000000000001,
+       "tier": "derived",
+       "method": "derived:camera-height",
+       "probe": null
+      }
+     }
+    },
+    {
+     "id": "C-2-points",
+     "label": "SOP points with pscale and Cd, bit-exact after bgeo",
+     "ok": true,
+     "detail": {
+      "path": "<out>/20261115T1713Z-AC/C/points_C.bgeo.sc",
+      "count": 229991,
+      "attribs": [
+       "P",
+       "Cd",
+       "pscale"
+      ]
+     }
+    },
+    {
+     "id": "C-3-collider",
+     "label": "vdbfromparticles -> convertvdb polygons",
+     "ok": true,
+     "detail": {
+      "voxel_size_m": 0.00221098680049181,
+      "polygons": 16767118,
+      "triangles": 33534236,
+      "cook_s": {
+       "vdbfromparticles": 0.10293690001708455,
+       "convertvdb": 1.574408799991943,
+       "total": 1.6773457000090275
+      }
+     }
+    },
+    {
+     "id": "C-4-usd",
+     "label": "write the .usdc, re-open it, count the prims (SPEC 8)",
+     "ok": true,
+     "detail": {
+      "path": "<out>/20261115T1713Z-AC/C/hd1_C.usdc",
+      "prims_all": 4,
+      "bytes": 238075892
+     }
+    },
+    {
+     "id": "C-5-rest",
+     "label": "Bullet rest test, 120 frames at 24 fps, static concave collider",
+     "ok": true,
+     "detail": {
+      "S1": {
+       "final_height_m": -2.6970021724700928,
+       "error_m": -2.797002172470093,
+       "settled": false,
+       "fell_through": true
+      },
+      "S2": {
+       "final_height_m": -1.3161616325378418,
+       "error_m": -2.166161632537842,
+       "settled": false,
+       "fell_through": true
+      },
+      "S3": {
+       "final_height_m": -120.14999389648438,
+       "error_m": null,
+       "settled": false,
+       "fell_through": true
+      }
+     }
+    }
+   ]
+  }
+ },
+ "v0": {
+  "node_types": {
+   "file": {
+    "type": "file",
+    "description": "File",
+    "hda_library": null
+   },
+   "vdbfromparticles": {
+    "type": "vdbfromparticles",
+    "description": "VDB from Particles",
+    "hda_library": null
+   },
+   "convertvdb": {
+    "type": "convertvdb",
+    "description": "Convert VDB",
+    "hda_library": null
+   },
+   "sphere": {
+    "type": "sphere",
+    "description": "Sphere",
+    "hda_library": null
+   },
+   "pack": {
+    "type": "pack",
+    "description": "Pack",
+    "hda_library": null
+   },
+   "name": {
+    "type": "name",
+    "description": "Name",
+    "hda_library": null
+   },
+   "merge": {
+    "type": "merge",
+    "description": "Merge",
+    "hda_library": null
+   },
+   "rbdbulletsolver": {
+    "type": "rbdbulletsolver",
+    "description": "RBD Bullet Solver",
+    "hda_library": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/houdini/otls/OPlibSop.hda"
+   },
+   "attribwrangle": {
+    "type": "attribwrangle",
+    "description": "Attribute Wrangle",
+    "hda_library": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/houdini/otls/OPlibSop.hda"
+   },
+   "grid": {
+    "type": "grid",
+    "description": "Grid",
+    "hda_library": null
+   }
+  },
+  "parms": [
+   {
+    "node": "file",
+    "parm": "file",
+    "exists": true,
+    "tuple": false,
+    "live_default": "default.bgeo",
+    "action": "set",
+    "probe_value": "<run>/<variant>/points_<variant>.bgeo.sc",
+    "why": "SPEC 7.1: SOP points from the cloud, read back from the probe's own bgeo"
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "voxelsize",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.1,
+    "action": "set",
+    "probe_value": "min(pscale) / minvoxelradius",
+    "why": "the live default (0.1) is far above the footprint radii; particles under minvoxelradius voxels are culled, so the default would drop the observation"
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "minvoxelradius",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1.5,
+    "action": "keep",
+    "probe_value": null,
+    "why": "the voxel rule's divisor, live default kept"
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "radiusscale",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1.0,
+    "action": "expect",
+    "probe_value": 1.0,
+    "why": "pscale is the SPEC 6 footprint, unscaled"
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "builddistance",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "expect",
+    "probe_value": 1,
+    "why": "an SDF surface"
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "distancename",
+    "exists": true,
+    "tuple": false,
+    "live_default": "surface",
+    "action": "keep",
+    "probe_value": null,
+    "why": "the SDF grid's name"
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "footprint",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0,
+    "action": "expect",
+    "probe_value": 0,
+    "why": "sphere footprint (menu index 0 = sphere)",
+    "menu": [
+     "sphere",
+     "trail"
+    ],
+    "menu_labels": [
+     "Spherical",
+     "Velocity Trail"
+    ]
+   },
+   {
+    "node": "vdbfromparticles",
+    "parm": "bandwidthvoxels",
+    "exists": true,
+    "tuple": false,
+    "live_default": 3.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "narrow band, live default"
+   },
+   {
+    "node": "convertvdb",
+    "parm": "conversion",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0,
+    "action": "set",
+    "probe_value": "poly",
+    "why": "SPEC 7.2: VDB surface -> polygons",
+    "menu": [
+     "volume",
+     "vdb",
+     "poly",
+     "polysoup"
+    ],
+    "menu_labels": [
+     "Volume",
+     "VDB",
+     "Polygons",
+     "Polygon Soup"
+    ],
+    "live_default_token": "volume"
+   },
+   {
+    "node": "convertvdb",
+    "parm": "isovalue",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.0,
+    "action": "expect",
+    "probe_value": 0.0,
+    "why": "the zero crossing of the SDF"
+   },
+   {
+    "node": "convertvdb",
+    "parm": "adaptivity",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.0,
+    "action": "expect",
+    "probe_value": 0.0,
+    "why": "no polygon reduction"
+   },
+   {
+    "node": "sphere",
+    "parm": "type",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "primitive type, live default",
+    "menu": [
+     "prim",
+     "poly",
+     "polymesh",
+     "mesh",
+     "nurbs",
+     "bezier",
+     "polysoup"
+    ],
+    "menu_labels": [
+     "Primitive",
+     "Polygon",
+     "Polygon Mesh",
+     "Mesh",
+     "NURBS",
+     "Bezier",
+     "Polygon Soup"
+    ]
+   },
+   {
+    "node": "sphere",
+    "parm": "rad",
+    "exists": true,
+    "tuple": true,
+    "live_default": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "action": "set",
+    "probe_value": "(r, r, r), r = SPEC 7 sphere radius",
+    "why": "SPEC 7.3: radius 0.1 m"
+   },
+   {
+    "node": "sphere",
+    "parm": "t",
+    "exists": true,
+    "tuple": true,
+    "live_default": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "action": "set",
+    "probe_value": "the site's release point",
+    "why": "SPEC 7.3: 0.5 m above each site"
+   },
+   {
+    "node": "pack",
+    "parm": "pivot",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "keep",
+    "probe_value": null,
+    "why": "pivot location, live default (centroid)",
+    "menu": [
+     "origin",
+     "centroid"
+    ],
+    "menu_labels": [
+     "Origin",
+     "Centroid"
+    ]
+   },
+   {
+    "node": "name",
+    "parm": "class",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0,
+    "action": "expect",
+    "probe_value": 0,
+    "why": "primitive names (menu index 0 = primitive)",
+    "menu": [
+     "primitive",
+     "point",
+     "vertex"
+    ],
+    "menu_labels": [
+     "Primitive",
+     "Point",
+     "Vertex"
+    ]
+   },
+   {
+    "node": "name",
+    "parm": "name1",
+    "exists": true,
+    "tuple": false,
+    "live_default": "",
+    "action": "set",
+    "probe_value": "S1 | S2 | S3",
+    "why": "one named piece per site"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "collision_bullet_georep",
+    "exists": true,
+    "tuple": false,
+    "live_default": "convexhull",
+    "action": "set",
+    "probe_value": "concave",
+    "why": "the live default (convexhull) would close the collider over the unobserved floor behind the box; SPEC 7 asks for the static collider the VDB surface describes",
+    "menu": [
+     "convexhull",
+     "concave",
+     "box",
+     "capsule",
+     "cylinder",
+     "compound",
+     "sphere",
+     "plane"
+    ],
+    "menu_labels": [
+     "Convex Hull",
+     "Concave",
+     "Box",
+     "Capsule",
+     "Cylinder",
+     "Compound",
+     "Sphere",
+     "Plane"
+    ]
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "collision_initialstate",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "set",
+    "probe_value": "static",
+    "why": "SPEC 7.3: a static collider; the live default is animatedstatic",
+    "menu": [
+     "static",
+     "animatedstatic",
+     "deformingstatic"
+    ],
+    "menu_labels": [
+     "Static",
+     "Animated",
+     "Deforming"
+    ],
+    "live_default_token": "animatedstatic"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "useground",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0,
+    "action": "expect",
+    "probe_value": 0,
+    "why": "menu index 0 = None: no ground plane under S3",
+    "menu": [
+     "0",
+     "1",
+     "2"
+    ],
+    "menu_labels": [
+     "None",
+     "Ground Plane",
+     "Height Field"
+    ],
+    "live_default_label": "None"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "usecollisions",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "expect",
+    "probe_value": 1,
+    "why": "input 4 is used as collision geometry"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "startframe",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "expect",
+    "probe_value": 1,
+    "why": "the solve starts on frame 1"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "solvefirstframe",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "frame 1 is the release state"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "substep",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "keep",
+    "probe_value": null,
+    "why": "global substeps, live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "substeps",
+    "exists": true,
+    "tuple": false,
+    "live_default": 10,
+    "action": "keep",
+    "probe_value": null,
+    "why": "Bullet substeps, live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "timescale",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "scale",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "Bullet world scale, live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "addgravity",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "gravityy",
+    "exists": true,
+    "tuple": false,
+    "live_default": -9.80665,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "margin",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.02,
+    "action": "keep",
+    "probe_value": null,
+    "why": "piece collision padding, live default (part of the bias)"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "collision_margin",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.02,
+    "action": "keep",
+    "probe_value": null,
+    "why": "collider collision padding, live default (part of the bias)"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "bounce",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.25,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "friction",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "collision_bounce",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.5,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "collision_friction",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "density",
+    "exists": true,
+    "tuple": false,
+    "live_default": 1000.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "bullet_linear_sleep_threshold",
+    "exists": true,
+    "tuple": false,
+    "live_default": 0.8,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "rbdbulletsolver",
+    "parm": "sleepingtime",
+    "exists": true,
+    "tuple": false,
+    "live_default": 2.0,
+    "action": "keep",
+    "probe_value": null,
+    "why": "live default"
+   },
+   {
+    "node": "attribwrangle",
+    "parm": "class",
+    "exists": true,
+    "tuple": false,
+    "live_default": 2,
+    "action": "set",
+    "probe_value": "vertex | primitive",
+    "why": "USD export only: the collider's topology as int arrays (no physics effect)",
+    "menu": [
+     "detail",
+     "primitive",
+     "point",
+     "vertex",
+     "number"
+    ],
+    "menu_labels": [
+     "Detail (only once)",
+     "Primitives",
+     "Points",
+     "Vertices",
+     "Numbers"
+    ]
+   },
+   {
+    "node": "attribwrangle",
+    "parm": "snippet",
+    "exists": true,
+    "tuple": false,
+    "live_default": "",
+    "action": "set",
+    "probe_value": "vertexpoint / primvertexcount",
+    "why": "USD export only",
+    "menu": [
+     "// Color from Bounding Box\n@Cd = relbbox(0, @P);\n\n",
+     "// Random Point Color\nfloat seed = 0.12345; // seed for rand\n@Cd = rand(seed + @ptnum);\n\n",
+     "// Color Based on Threshold\nint condition = (@P.x > 0) ? 1 : 0; // short form if() test\n@Cd = set(condition, 0, 0);        // write condition into red color\n\n",
+     "// Point Group on Threshold\nstring group = \"mygroup\";         // group name to add points to\nint condition = (@P.x > 0) ? 1: 0; // short form if() test\nsetpointgroup(geoself(), group, @ptnum, condition);\n@Cd = set( condition, 0, 0);      // color if in group\n\n",
+     "// Fetch Second Input Cd Attribute\n// Second input used as reference geometry\n// Use prim and @primnum to get a matching primitive attribute.\n@Cd = point(1, \"Cd\", @ptnum);\n\n",
+     "// Fetch Second Input Attribute by id/name\n\n// grab attribute by id match from second input\n// id attribute present on both inputs for indexing\nint match_pt = findattribval(1, \"point\", \"id\", @id); // matching point\n@P = point(1, \"P\", match_pt);  // use matching point to fetch attribute\n\n// grab attribute by name attribute\n// int match_prim = findattribval(1, \"prim\", \"name\", @name); // matching name\n// @Cd = prim(1, \"Cd\", match_prim);\n\n",
+     "// Nearest Point Distance\n// Second input used for reference geometry\nint closept = nearpoint(1, @P);\t  // get point number of near point\nvector value = point(1, \"P\", closept);// get position of near point\n@dist = length(@P - value);           // export distance from nearest point\n@Cd = set(@dist, 0, 0);\n\n",
+     "// Grow Hairs\nvector dir = { 0, 1, 0 };\n// dir = @N;\t// grow in normal direction\nfloat len = 1.0;\nint   steps = 10;\nfloat jitter = 0.1;\nfloat seed = 0.12345;\n\nvector\tpos = @P;\nint\t\tpr = addprim(geoself(), \"polyline\");\n\n// Start the curve with our point\naddvertex(geoself(), pr, @ptnum);\nfor (int i = 0; i < steps; i++)\n{\n    pos += dir * len / steps;\n    pos += (vector(rand( @ptnum + seed )) - 0.5) * jitter;\n\n    // Clone our point to copy attributes\n    int pt = addpoint(geoself(), @ptnum);\n    // But write a new position\n    setpointattrib(geoself(), \"P\", pt, pos);\n\n    // Connect the new point to our curve.\n    addvertex(geoself(), pr, pt);\n    seed += $PI;\n}\n\n",
+     "// Get Neighbouring Points into Attribute\ni[]@neighbours = neighbours(0, @ptnum);\n\n",
+     "// Average Neighbouring Points\nint n[] = neighbours(0, @ptnum);\nvector avgP = @P;\n\n// Loops over all elements of n, setting pt\n// to be the value of each element\nforeach (int pt; n)\n{\n    avgP += point(0, \"P\", pt);\n}\n\n// +1 because we included ourself.\navgP /= len(n)+1;\n@P = avgP;\n\n",
+     "/// Creates a new line between the given point numbers.\nint createLine(int pt_a; int pt_b)\n{\n    int prim = addprim(0, \"polyline\");\n    addvertex(0, prim, pt_a);\n    addvertex(0, prim, pt_b);\n    return prim;\n}\n\n// Creates a line between the first and the second input points.\ncreateLine(0, 1);",
+     "// Removes the last point on each incoming line.\n\nint vtx_count = primvertexcount(0, @primnum) - 1;\n\n// Remove the first points instead.\n// int vtx_count = 0;\nint ptnum = primvertex(0, @primnum, vtx_count);\nremovepoint(0, ptnum);\n\n"
+    ],
+    "menu_labels": [
+     "Color from Bounding Box",
+     "Random Point Color",
+     "Color Based on Threshold",
+     "Point Group on Threshold",
+     "Fetch Second Input Cd Attribute",
+     "Fetch Second Input Attribute by id/name",
+     "Nearest Point Distance",
+     "Grow Hairs",
+     "Get Neighbouring Points into Attribute",
+     "Average Neighbouring Points",
+     "Create Line Between Points",
+     "Remove Fist/Last Points on Lines"
+    ]
+   }
+  ],
+  "input_labels": {
+   "rbdbulletsolver": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Collision Geometry",
+    "Guide Sim"
+   ],
+   "vdbfromparticles": [
+    "Particles to Convert",
+    "Optional Reference VDB (for transform and narrow-band width matching)"
+   ]
+  },
+  "hou_calls": {
+   "hou.setFps": true,
+   "hou.fps": true,
+   "hou.setFrame": true,
+   "hou.frame": true,
+   "hou.expandString": true,
+   "hou.Geometry.createPoints": true,
+   "hou.Geometry.addAttrib": true,
+   "hou.Geometry.setPointFloatAttribValuesFromString": true,
+   "hou.Geometry.pointFloatAttribValuesAsString": true,
+   "hou.Geometry.vertexIntAttribValuesAsString": true,
+   "hou.Geometry.primIntAttribValuesAsString": true,
+   "hou.Geometry.saveToFile": true,
+   "hou.Geometry.intrinsicValue": true,
+   "hou.Geometry.countPrimType": true,
+   "hou.Geometry.boundingBox": true,
+   "hou.Geometry.findPointAttrib": true,
+   "hou.Prim.intrinsicNames": true,
+   "hou.Prim.intrinsicValue": true,
+   "hou.Prim.attribValue": true,
+   "hou.Vertex.point": true,
+   "hou.Polygon.normal": true,
+   "hou.primType.Polygon": true,
+   "hou.attribType.Point": true,
+   "hou.sopNodeTypeCategory": true,
+   "hou.nodeType": true
+  },
+  "node_methods": {
+   "cook": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "geometry": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "setInput": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "inputLabels": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "warnings": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "errors": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "parm": {
+    "present": true,
+    "on": "SopNode"
+   },
+   "parmTuple": {
+    "present": true,
+    "on": "SopNode"
+   }
+  },
+  "pxr_calls": {
+   "Usd.Stage.CreateNew": true,
+   "Usd.Stage.Open": true,
+   "Usd.Stage.Traverse": true,
+   "Usd.Stage.TraverseAll": true,
+   "Usd.Stage.SetDefaultPrim": true,
+   "Usd.ModelAPI.SetKind": true,
+   "Usd.ModelAPI.GetKind": true,
+   "Usd.Prim.SetCustomDataByKey": true,
+   "Usd.Prim.GetCustomDataByKey": true,
+   "Usd.Prim.GetAppliedSchemas": true,
+   "UsdGeom.Xform.Define": true,
+   "UsdGeom.Scope.Define": true,
+   "UsdGeom.Points.Define": true,
+   "UsdGeom.Mesh.Define": true,
+   "UsdGeom.SetStageUpAxis": true,
+   "UsdGeom.GetStageUpAxis": true,
+   "UsdGeom.SetStageMetersPerUnit": true,
+   "UsdGeom.GetStageMetersPerUnit": true,
+   "UsdGeom.StageHasAuthoredMetersPerUnit": true,
+   "UsdGeom.Tokens.y": true,
+   "UsdGeom.Tokens.proxy": true,
+   "UsdGeom.Tokens.vertex": true,
+   "UsdGeom.Tokens.none": true,
+   "UsdGeom.Tokens.leftHanded": true,
+   "UsdGeom.Tokens.rightHanded": true,
+   "Kind.Tokens.component": true,
+   "Vt.Vec3fArray.FromNumpy": true,
+   "Vt.IntArray.FromNumpy": true,
+   "Vt.FloatArray.FromNumpy": true,
+   "Vt.StringArray": true,
+   "Vt.Vec3fArray": true,
+   "Gf.Quatd": true,
+   "Gf.Vec3f": true,
+   "Gf.Vec3d": true,
+   "UsdGeom.PointBased.CreatePointsAttr": true,
+   "UsdGeom.Points.CreateWidthsAttr": true,
+   "UsdGeom.Points.SetWidthsInterpolation": true,
+   "UsdGeom.Gprim.CreateDisplayColorPrimvar": true,
+   "UsdGeom.Mesh.CreateFaceVertexCountsAttr": true,
+   "UsdGeom.Mesh.CreateFaceVertexIndicesAttr": true,
+   "UsdGeom.Mesh.CreateOrientationAttr": true,
+   "UsdGeom.Mesh.CreateSubdivisionSchemeAttr": true,
+   "UsdGeom.Imageable.CreatePurposeAttr": true,
+   "UsdGeom.Boundable.CreateExtentAttr": true
+  },
+  "winding": {
+   "houdini_normal": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "right_hand_cross": [
+    0.0,
+    -1.2345680189721406,
+    0.0
+   ],
+   "dot": -1.2345680189721406,
+   "usd_orientation": "leftHanded"
+  },
+  "usd_orientation": "leftHanded"
+ },
+ "environment": {
+  "utc": "2026-11-15T17:13:07Z",
+  "houdini": "22.0.400",
+  "licence": "licenseCategoryType.Indie",
+  "ui_available": false,
+  "home_houdini": "<lane>/scratch-m3/pref/houdini22.0",
+  "hip": "<lane>/scratch-m3",
+  "cwd": "<lane>/scratch-m3",
+  "python": "3.13.10",
+  "numpy": "2.3.2",
+  "usd": [
+   0,
+   26,
+   5
+  ],
+  "pref_dir_env": "<lane>/scratch-m3/pref/houdini22.0",
+  "home_env_inside_hython": "C:/Users/Example/OneDrive/Documents",
+  "argv": [
+   "<lane>/harness/probes/hd1_physical_frame.py",
+   "--verify",
+   "--repo",
+   ".",
+   "--out",
+   "<out>",
+   "--run-id",
+   "20261115T1713Z-AC",
+   "--variants",
+   "A",
+   "C"
+  ],
+  "repo": ".",
+  "out": "<out>",
+  "run_dir": "<out>/20261115T1713Z-AC",
+  "synapse_file": "python/synapse/__init__.py",
+  "physical_dir": "python/synapse/worldlabs/physical",
+  "fixture_file": "tests/fixtures/hd1_scene.py",
+  "fixture_version": "hd1-scene-v1",
+  "probe_sha256": "099f38efb6b826fb925c95173b94536fadfa8d29988d123a0d63be720c7a8c5d",
+  "chain_sha256": {
+   "__init__.py": "d23b817cd14299aeecbdfb07b81fba53198a6c961d59a6790b005a4343bf4252",
+   "depth.py": "736df76ca74a0e5c71b9bf71f5f2313093bd294096971505f6c3b01243a0655b",
+   "level.py": "8f8a8a57f3eefd8948fa27f61f79cead8f97e63a4ab0ef0efe52832ec9b54960",
+   "scale.py": "2492e6b782967f0de509dc4dd8baceb883f0d837aa9f093509d08c786f042a63",
+   "cloud.py": "f3feb68abda7ebcff9f740521e21ad5f4fd27fac7592d98a52719325b0a11f10"
+  },
+  "fixture_sha256": "db476e70c301685179d0cedb87d0bfe548ff811c393db576c114208c67984bee",
+  "spec7": {
+   "frames": 120,
+   "fps": 24.0,
+   "settle_frames": 12,
+   "settle_speed_mps_proposed": 0.01
+  }
+ },
+ "outputs": {
+  "<out>/20261115T1710Z-A/A/hd1_A.usdc": {
+   "sha256": "73a623d1e3c4819eed40d8d7c46a58c3ebc5e1d475be74d73ce9ab954ff6e1a8",
+   "bytes": 238075884
+  },
+  "<out>/20261115T1710Z-A/A/points_A.bgeo.sc": {
+   "sha256": "31d875822fe2e87227f508f772cd2f278e896e387a029aa5a575b3bbb658aed5",
+   "bytes": 1576010
+  },
+  "<out>/20261115T1710Z-A/A/record_A.json": {
+   "sha256": "f4c082ff1cd9ebd22111cb7d01afc78457346cd704fa9e3768404555275c6837",
+   "bytes": 28546
+  },
+  "<out>/20261115T1710Z-A/hython-exit.txt": {
+   "sha256": "56977e6eda379c2d4b22cc33d5f3cdffb3f1ae94aeaf5795c0fcce82929db6e2",
+   "bytes": 50
+  },
+  "<out>/20261115T1710Z-A/lock-held.txt": {
+   "sha256": "a18e088ab6fe556c6639198daf053c20c43f106c73e48d1a1a5a60a8648a37b5",
+   "bytes": 39
+  },
+  "<out>/20261115T1710Z-A/probe.log": {
+   "sha256": "596af4f5018e2e3cc98191765b1c0de32553d83a82e404a919ff4bc1ddab40bf",
+   "bytes": 19887
+  },
+  "<out>/20261115T1710Z-A/run.json": {
+   "sha256": "f3aef43346bcddad96a86c85a0506445cd5961b4fac976e5319738741b0f523d",
+   "bytes": 33185
+  },
+  "<out>/20261115T1710Z-A/snapshot-post.tsv": {
+   "sha256": "b4d395d48917bd9ef122a5ae40aa9b80fe2914c28fa51a29666a310b4c486d1a",
+   "bytes": 2587
+  },
+  "<out>/20261115T1710Z-A/snapshot-pre.tsv": {
+   "sha256": "7e9740ba5df794844531df3d8a69552eeeda15816c2f2ba18e4a592639e2d9ea",
+   "bytes": 2586
+  },
+  "<out>/20261115T1713Z-AC/A/hd1_A.usdc": {
+   "sha256": "73a623d1e3c4819eed40d8d7c46a58c3ebc5e1d475be74d73ce9ab954ff6e1a8",
+   "bytes": 238075884
+  },
+  "<out>/20261115T1713Z-AC/A/points_A.bgeo.sc": {
+   "sha256": "6a9714afb8584281d1ac5bbcf4c5286eca67da3143018e9b31040cde404ef924",
+   "bytes": 1576010
+  },
+  "<out>/20261115T1713Z-AC/A/record_A.json": {
+   "sha256": "32bab3bea5d7571a657ed7a8bf144a511d547b6b0a2f8095650683a4a4a803eb",
+   "bytes": 65424
+  },
+  "<out>/20261115T1713Z-AC/C/hd1_C.usdc": {
+   "sha256": "e90a240a2bfa9c516dcf1fb90b3794f7d92fc3b0c688c2fabeb0141bac946931",
+   "bytes": 238075892
+  },
+  "<out>/20261115T1713Z-AC/C/points_C.bgeo.sc": {
+   "sha256": "4fcbf181f12171c3e5e5c15eefd2c56447127acbfcc3c49f62c667559c0bef2b",
+   "bytes": 1586356
+  },
+  "<out>/20261115T1713Z-AC/C/record_C.json": {
+   "sha256": "a95c2c699db7643fb7ee9a1a2d67614cb7f474b59d651b3c92cb0ae1cfa93d37",
+   "bytes": 65972
+  },
+  "<out>/20261115T1713Z-AC/hython-exit.txt": {
+   "sha256": "4eb230047cd5fd42149846531fd6c0f5f89d59e4b9ff885362da3711786379ac",
+   "bytes": 50
+  },
+  "<out>/20261115T1713Z-AC/lock-held.txt": {
+   "sha256": "b888e53106b26ea833914d2a7e6bf0662e31ded8839e4b188de3af9a905db3d7",
+   "bytes": 40
+  },
+  "<out>/20261115T1713Z-AC/probe.log": {
+   "sha256": "d36f331bdc8a06f4529acef51dff3cae6812cf786f42cc02448b22c0da96960f",
+   "bytes": 21321
+  },
+  "<out>/20261115T1713Z-AC/run.json": {
+   "sha256": "cb9dcaf6942e40ce74083a5c84419538b353443d44e8162e0318524992b6751d",
+   "bytes": 40408
+  },
+  "<out>/20261115T1713Z-AC/snapshot-post.tsv": {
+   "sha256": "189aa9f29e75f7353c018de55e5f3b87ea1f9f55f2b594c44bc7fa6c553c8212",
+   "bytes": 2686
+  },
+  "<out>/20261115T1713Z-AC/snapshot-pre.tsv": {
+   "sha256": "b8888699410fdb499d8706770b4c97606d8fd006556f26c5426574fe3265ec05",
+   "bytes": 2587
+  },
+  "<out>/v0/batch1.log": {
+   "sha256": "725a3ee4782aad3b15c29a82265f54d131ea94cfdb6d459216847982cdd9f0ab",
+   "bytes": 526
+  },
+  "<out>/v0/catalogue_vs_live.json": {
+   "sha256": "1f609a48fb7c6201c59bc12345c65f96a00fde10c6ea043faf74774812d6b71f",
+   "bytes": 20455
+  },
+  "<out>/v0/snapshot-batch1-post.tsv": {
+   "sha256": "a39cf2dbffaecb533f4eec385f822f92d9acfb9a82d9f039411ed27d54176663",
+   "bytes": 2888
+  },
+  "<out>/v0/snapshot-batch1-pre.tsv": {
+   "sha256": "3f0d0302eff69e58b66c8e048bce9a514558fd6cc0b51bf97b1d1284e1f7833f",
+   "bytes": 2730
+  },
+  "<out>/v0/v0_live.json": {
+   "sha256": "b273b89bf43f6e99c86617dc5fc80c15c7af108c065c5618fa63f92af4057ae8",
+   "bytes": 150152
+  }
+ }
+}
