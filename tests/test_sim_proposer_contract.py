@@ -58,7 +58,7 @@ def _candidate(**overrides) -> dict:
         "cluster_id": _cluster().cluster_id,
         "edit_scope": EditScope.CONTEXT_ORCHESTRATION.value,
         "target_artifact": "python/synapse/core/tool_results.py",
-        "diff_patch": "--- a\n+++ b\n@@\n-96_000\n+120_000\n",
+        "diff_patch": CANDIDATE_DIFF,
         "ex_ante_prediction": {
             "expected_delta": 0.04,
             "target_metric": "bench.valid_json_rate",
@@ -76,7 +76,12 @@ def store(tmp_path: Path) -> SIMStore:
     return s
 
 
-def _negative_attempt(cluster: ProblemCluster, target: str, setting: SettingFingerprint, attempt_id: str) -> AttemptRecord:
+CANDIDATE_DIFF = "--- a\n+++ b\n@@\n-96_000\n+120_000\n"
+OTHER_DIFF = "--- a\n+++ b\n@@\n-raise\n+return\n"
+
+
+def _negative_attempt(cluster: ProblemCluster, target: str, setting: SettingFingerprint, attempt_id: str,
+                      diff: str = CANDIDATE_DIFF) -> AttemptRecord:
     return AttemptRecord(
         attempt_id=attempt_id,
         cluster_id=cluster.cluster_id,
@@ -86,7 +91,7 @@ def _negative_attempt(cluster: ProblemCluster, target: str, setting: SettingFing
         setting=setting,
         edit_scope=EditScope.CONTEXT_ORCHESTRATION,
         target_artifact=target,
-        diff_patch="--- a\n+++ b\n@@\n-bad\n",
+        diff_patch=diff,
         edit_rationale="raised the cap without rebinding the reader",
         ex_ante_prediction=Prediction(expected_delta=0.4, target_metric="bench.valid_json_rate", max_regression=0.0),
         ex_post_observation=Observation(measured_delta=-0.02),
@@ -142,6 +147,24 @@ class TestCandidateContract:
         assert result.new_cluster is not None
 
 
+class TestClusterCitation:
+    """The contract's first rule: cite a cluster that exists."""
+
+    def test_a_malformed_cluster_id_is_refused(self):
+        result = validate_candidate(_candidate(cluster_id="not-a-cluster"))
+        assert not result.ok
+        assert any("is not a cluster id" in reason for reason in result.reasons)
+
+    def test_a_well_formed_but_undeclared_cluster_is_refused(self, store: SIMStore):
+        result = validate_candidate(_candidate(cluster_id="pc-" + "0" * 16), store=store)
+        assert not result.ok
+        assert any("not declared in the ledger" in reason for reason in result.reasons)
+
+    def test_a_declared_cluster_passes(self, store: SIMStore):
+        result = validate_candidate(_candidate(), store=store)
+        assert result.ok, result.reasons
+
+
 class TestDuplicateRule:
     def test_a_known_negative_under_the_same_setting_is_refused(self, store: SIMStore):
         target = "python/synapse/core/tool_results.py"
@@ -149,6 +172,17 @@ class TestDuplicateRule:
         result = validate_candidate(_candidate(), store=store, setting=_setting())
         assert not result.ok
         assert any("known negative" in reason for reason in result.reasons)
+
+    def test_a_different_edit_on_the_same_artifact_is_allowed(self, store: SIMStore):
+        """The rule is about an edit, not a file.
+
+        A rejected patch must not block every future change to the same
+        artifact - which is what a file-scoped rule did.
+        """
+        target = "python/synapse/core/tool_results.py"
+        store.append(_negative_attempt(_cluster(), target, _setting(), "att-prior", diff=OTHER_DIFF))
+        result = validate_candidate(_candidate(), store=store, setting=_setting())
+        assert result.ok, result.reasons
 
     def test_the_same_edit_under_a_different_model_is_not_refused(self, store: SIMStore):
         target = "python/synapse/core/tool_results.py"

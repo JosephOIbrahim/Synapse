@@ -209,3 +209,67 @@ class TestQueries:
 
     def test_status_counts(self, store: SIMStore):
         assert cluster_status_counts(store)["OPEN"] == 1
+
+    def test_replace_is_a_retained_outcome_not_a_negative(self, store: SIMStore):
+        """REPLACE says the edit superseded an incumbent; it did not fail."""
+        cluster = _cluster()
+        store.append(_record(cluster, attempt="replaced", selector_verdict=SelectorVerdict.REPLACE))
+        negatives = store.known_negatives("python/synapse/panel/worker_policy.py", _setting())
+        assert negatives == []
+
+    def test_known_negatives_is_scoped_to_the_edit(self, store: SIMStore):
+        cluster = _cluster()
+        store.append(_record(cluster, attempt="killed", selector_verdict=SelectorVerdict.REMOVE))
+        same = store.known_negatives("python/synapse/panel/worker_policy.py", _setting(),
+                                     diff_patch="--- a\n+++ b\n@@\n+ allow\n")
+        other = store.known_negatives("python/synapse/panel/worker_policy.py", _setting(),
+                                      diff_patch="--- a\n+++ b\n@@\n- different\n")
+        assert [r.attempt_id for r in same] == ["killed"]
+        assert other == []
+
+
+class TestClusterFiles:
+    def test_a_cluster_filename_must_match_its_content_id(self, tmp_path: Path):
+        """Write keys by filename, read keys by content id.
+
+        Letting them disagree hides a cluster's attempts from every ledger-wide
+        query, including the duplicate check.
+        """
+        s = SIMStore(tmp_path / "ledger")
+        s.declare_cluster(_cluster())
+        cluster = _cluster()
+        right = s.root / f"{cluster.cluster_id}.cluster.json"
+        wrong = s.root / f"pc-{'0' * 16}.cluster.json"
+        wrong.write_bytes(right.read_bytes())
+        with pytest.raises(StoreError, match="filename must equal its id"):
+            s.clusters()
+
+    def test_a_failed_cluster_write_leaves_no_cluster_and_no_temp(self, tmp_path: Path, monkeypatch):
+        import harness.sim.store as store_module
+
+        s = SIMStore(tmp_path / "ledger")
+
+        def boom(*args, **kwargs):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(store_module.os, "link", boom)
+        with pytest.raises(OSError):
+            s.declare_cluster(_cluster())
+        cluster = _cluster()
+        assert not (s.root / f"{cluster.cluster_id}.cluster.json").exists()
+        assert list(s.root.glob(".*.tmp")) == []
+        assert s.clusters() == []
+
+    def test_a_successful_write_leaves_no_temp_behind(self, store: SIMStore):
+        assert list(store.root.glob(".*.tmp")) == []
+
+
+class TestTornTail:
+    def test_append_refuses_a_torn_tail(self, store: SIMStore):
+        """An interrupted write leaves a partial line; appending would corrupt a second record."""
+        cluster = _cluster()
+        store.append(_record(cluster, attempt="att-1"))
+        path = store._attempts_path(cluster.cluster_id)
+        path.write_bytes(path.read_bytes()[:-5])
+        with pytest.raises(StoreError, match="torn tail"):
+            store.append(_record(cluster, attempt="att-2"))

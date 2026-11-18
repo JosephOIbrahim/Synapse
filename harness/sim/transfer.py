@@ -27,11 +27,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Iterable, Mapping
 
-from .schema import AttemptRecord, EditScope, SelectorVerdict
+from .schema import RETAINED_VERDICTS, AttemptRecord, EditScope
 from .setting import SettingFingerprint
 from .store import SIMStore
-
-RETAINED_VERDICTS = frozenset({SelectorVerdict.RETAIN, SelectorVerdict.REPLACE})
 
 
 class Disposition(str, Enum):

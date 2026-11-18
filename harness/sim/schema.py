@@ -85,6 +85,12 @@ def _require(condition: bool, message: str) -> None:
         raise SchemaError(message)
 
 
+# Outcomes that mean "this edit is in force". RETAIN and REPLACE are both
+# retained: REPLACE says the new edit supersedes an incumbent, not that it
+# failed. Everything else - REVISE, REMOVE, REJECTED_SCREENING - is not retained.
+RETAINED_VERDICTS = frozenset({SelectorVerdict.RETAIN, SelectorVerdict.REPLACE})
+
+
 def _iso(value: str, field_name: str) -> None:
     _require(isinstance(value, str) and bool(value), f"{field_name} must be a non-empty ISO-8601 string")
     try:

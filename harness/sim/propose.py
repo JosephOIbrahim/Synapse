@@ -24,7 +24,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
-from .schema import ClusterStatus, EditScope, Prediction, ProblemCluster, SchemaError, cluster_id_for
+from .schema import (
+    CLUSTER_ID_RE,
+    ClusterStatus,
+    EditScope,
+    Prediction,
+    ProblemCluster,
+    SchemaError,
+    cluster_id_for,
+)
 from .setting import SettingFingerprint
 from .store import SIMStore, StoreError
 
@@ -114,6 +122,16 @@ def validate_candidate(
                 reasons.append(f"new cluster declaration is not valid: {exc}")
     if not cluster_id:
         reasons.append("candidate cites no problem cluster")
+    elif not CLUSTER_ID_RE.match(cluster_id):
+        # A string that merely looks like an id is not one. Without this check
+        # any non-empty value validated here and was refused much later, by the
+        # record constructor or by the store - after the candidate had already
+        # been adopted by the selector.
+        reasons.append(f"cluster id {cluster_id!r} is not a cluster id (pc-<16 lowercase hex>)")
+    elif store is not None and new_cluster is None and not store.has_cluster(cluster_id):
+        # The contract's first rule: the cluster must already exist in the
+        # ledger. A citation to a cluster nobody can find is not a citation.
+        reasons.append(f"cluster {cluster_id} is not declared in the ledger")
 
     # 2. What will change, and by how much?
     prediction: Prediction | None = None
@@ -141,13 +159,16 @@ def validate_candidate(
     if not target:
         reasons.append("candidate names no target artifact")
 
-    if not _first(candidate, "diff_patch", "diff"):
+    diff = _first(candidate, "diff_patch", "diff")
+    if not diff:
         reasons.append("candidate carries no diff")
 
     # 4. Not already a known negative under this setting.
     if store is not None and setting is not None and target and cluster_id:
         try:
-            negatives = store.known_negatives(str(target), setting)
+            # Scoped to the EDIT: passing the diff means one rejected patch does
+            # not block every different change to the same artifact.
+            negatives = store.known_negatives(str(target), setting, diff_patch=str(diff or ""))
         except StoreError as exc:
             reasons.append(f"ledger unreadable: {exc}")
             negatives = []
