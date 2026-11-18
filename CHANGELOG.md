@@ -2,6 +2,42 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.103.0 - The SIM plane: a problem-indexed ledger for harness changes
+
+**Additive and inert.** A new `harness/sim/` package records harness edits as
+claims that can be checked: which failure the edit addresses, what it predicted,
+what was measured, and whether it was kept. Nothing on the runtime path imports
+it, and a test pins that. The full note, with every limit, is
+[docs/releases/v5.103.0.md](docs/releases/v5.103.0.md).
+
+- **The ledger.** `harness/sim/` holds a schema (`ProblemCluster`,
+  `AttemptRecord`, `EditScope`), an append-only per-cluster store that validates
+  on read as well as write and refuses a second concurrent writer, a setting
+  fingerprint σ = (model, split, harness hash), and `harness_hash.py`, which
+  identifies the harness by a hash over a declared list of editable surfaces.
+- **The contract.** `propose.validate_candidate` refuses a candidate with no
+  cluster, no ex-ante prediction, no edit scope, no target artifact or no diff,
+  and refuses a repeat of a known negative on the same artifact under the same
+  setting. `select` turns prediction plus measurement into
+  `RETAIN / REVISE / REPLACE / REMOVE / REJECTED_SCREENING` by plain code.
+- **Two hooks, both opt-in.** `harness2/compositor.decide_compose` accepts
+  `sim_rejects` and the compose entry point computes it when handed a store;
+  `jev/jev_screen.decide` downgrades CLEAR to REFEREE for a known negative and
+  never softens FLAG. With no store, behaviour is unchanged.
+- **The held-out split is now data.** `loop/light_gate.py` records
+  `sample_index` on each observation and `training_run_ids` / `holdout_run_ids`
+  per validation round, and exposes `training_visible_runs()` as the only view a
+  proposer may read. The custody ledger still holds every row.
+- **The bench split.** `harness/bench/manifest.json` gains an explicit `split`
+  block: eight evolve tasks and four holdout, weight 35 against 15.
+
+**What this does not do.** It does not make any existing signal honest. The RSI
+registry already records that nothing in this codebase has improved itself; a
+ledger can record that a metric is dishonest, it cannot make it honest. No
+runtime turn yet persists which model ran it, so σ's model half is supplied by
+the caller. The held-out fence is a convention plus tests, not a type-level
+guarantee.
+
 ## v5.102.0 - Paths from this project's machines removed or redacted in five files that reach users
 
 **No product code changes.** Five files that reach users change, and only their
