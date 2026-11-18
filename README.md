@@ -17,7 +17,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Instructions](INSTRUCTIONS.md)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.102.0.md) · [Help](#when-you-get-stuck)
+**[Instructions](INSTRUCTIONS.md)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.103.0.md) · [Help](#when-you-get-stuck)
 
 How to read this page: Start here and Install get you running. Everything after them is reference you can come back to when you need it.
 
@@ -322,7 +322,7 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 
 - **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.102.0.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
 
 ## When you get stuck
 
@@ -387,7 +387,7 @@ The seat runs do not exercise Moneta, and those counts move between runs. They w
 
 The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs.
 
-Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.102.0.md) before relying on it.
+Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.103.0.md) before relying on it.
 
 ### How SYNAPSE remembers
 
