@@ -284,10 +284,20 @@ def files_disjoint(a: dict, b: dict) -> bool:
     return not (fa & fb)
 
 
-def decide_compose(answers: dict | None, candidates: list[dict], policy: dict) -> dict:
-    """Plain code applies the policy to the judgments. Never a model deciding policy."""
+def decide_compose(answers: dict | None, candidates: list[dict], policy: dict,
+                   *, sim_rejects: dict[str, list[str]] | None = None) -> dict:
+    """Plain code applies the policy to the judgments. Never a model deciding policy.
+
+    ``sim_rejects`` is the metrology-plane hook: candidate id -> reasons from the
+    SIM ledger. A rejected candidate cannot be adopted, and when Jev's choice is
+    one of them the decision falls back with the ledger's reason attached. With
+    no rejects supplied the behaviour is exactly what it was.
+    """
     fallback = {"adopted": [], "reason": policy.get("fallback", "NO ADOPTION"),
                 "needs_joe": [c["id"] for c in candidates], "per_candidate": {}}
+    if sim_rejects:
+        fallback["sim_rejected"] = {cid: list(why) for cid, why in sim_rejects.items()}
+        fallback["needs_joe"] = [c["id"] for c in candidates if c["id"] not in sim_rejects]
     if answers is None:
         fallback["reason"] = "fallback: no Jev answer (see the ledger row) - " + fallback["reason"]
         # The header's promise: the candidates are reported as needing Joe, WITH
@@ -314,6 +324,10 @@ def decide_compose(answers: dict | None, candidates: list[dict], policy: dict) -
 
     if choice not in by_id:
         return {**fallback, "reason": f"fallback: Jev chose {choice!r}, which is not a candidate id",
+                "jev": jev, "per_candidate": per}
+    if sim_rejects and choice in sim_rejects:
+        why = "; ".join(sim_rejects[choice])
+        return {**fallback, "reason": f"sim: {choice} is refused by the ledger - {why}",
                 "jev": jev, "per_candidate": per}
     if conf is None or conf < policy["adopt_min_confidence"]:
         return {**fallback, "reason": f"fallback: adopt confidence {conf} < {policy['adopt_min_confidence']}",
@@ -495,10 +509,31 @@ def decide_graph(answers: dict | None, nodes: list[dict], policy: dict) -> dict:
 
 # ---------------------------------------------------------------- entry points
 
+def _sim_rejections(candidates: list[dict], store, setting) -> dict[str, list[str]]:
+    """Candidates the SIM ledger refuses, or {} when SIM is not in play.
+
+    Opt-in: no store means no gate, and behaviour is exactly as before. When a
+    store IS supplied, a failure to load the plane fails closed — a gate that
+    cannot read its own ledger must not report "nothing refused".
+    """
+    if store is None or setting is None:
+        return {}
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    try:
+        from harness.sim.propose import rejected_ids, validate_candidates
+    except ImportError as exc:  # pragma: no cover - configuration error path
+        return {c["id"]: [f"SIM plane unavailable ({exc}); refusing rather than approving"] for c in candidates}
+    return rejected_ids(validate_candidates(candidates, store=store, setting=setting))
+
+
 def compose(candidates: list[dict], wave: str, harness: dict, standards: list[str],
-            evidence: list[str] | None = None, *, source: Path) -> dict:
+            evidence: list[str] | None = None, *, source: Path,
+            sim_store=None, sim_setting=None) -> dict:
     q = load_questions()
     guard = q["guards"]["compose"]
+    sim_rejects = _sim_rejections(candidates, sim_store, sim_setting)
     spec = compose_spec(candidates, guard)
     problems = check_policy("compose", guard, spec)
     if problems:
@@ -510,7 +545,7 @@ def compose(candidates: list[dict], wave: str, harness: dict, standards: list[st
         "evidence": evidence or [],
     })
     answers = jc.ask(state, spec, wave=wave, guard="compose", leg="COMPOSE")
-    decision = decide_compose(answers, candidates, guard["policy"])
+    decision = decide_compose(answers, candidates, guard["policy"], sim_rejects=sim_rejects)
     decision["candidates"] = [c["id"] for c in candidates]
     decision["wave"] = wave
     decision["state_scrubbed"] = True

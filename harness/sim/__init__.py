@@ -21,6 +21,8 @@ from .schema import (
     cluster_id_for,
     normalize_signature,
 )
+from .propose import CandidateValidation, rejected_ids, validate_candidate, validate_candidates
+from .select import DEFAULT_POLICY, SelectorPolicy, finalize, record_outcome, verdict_for
 from .setting import SettingFingerprint
 from .store import SIMStore, StoreError
 
@@ -34,9 +36,18 @@ __all__ = [
     "ProblemCluster",
     "SchemaError",
     "SelectorVerdict",
+    "CandidateValidation",
+    "DEFAULT_POLICY",
+    "SelectorPolicy",
     "SettingFingerprint",
     "SIMStore",
     "StoreError",
+    "finalize",
+    "record_outcome",
+    "rejected_ids",
+    "validate_candidate",
+    "validate_candidates",
+    "verdict_for",
     "cluster_id_for",
     "normalize_signature",
 ]

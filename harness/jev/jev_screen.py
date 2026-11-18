@@ -41,8 +41,14 @@ def screen_spec(n_rows: int) -> dict:
     return spec
 
 
-def decide(n_rows: int, answers: dict | None, policy: dict) -> dict:
+def decide(n_rows: int, answers: dict | None, policy: dict, *, sim_rejects: list[str] | None = None) -> dict:
     """CLEAR | REFEREE | FLAG from Jev's answers under the calibrated policy.
+
+    ``sim_rejects`` is the metrology-plane hook: ids or reasons for changes the
+    SIM ledger already records as non-retained under this setting. A leg that
+    would otherwise CLEAR cannot, because the evidence for this receipt does not
+    answer for a change that was tried before and did not hold. FLAG is never
+    softened — the hook can only make the screen stricter, never kinder.
 
     A row is FLAGged when Jev puts ``flag_does_not_support_min`` or more on
     does_not_support. A row the receipt marks UNKNOWN (``claims_unknown``, a
@@ -55,8 +61,11 @@ def decide(n_rows: int, answers: dict | None, policy: dict) -> dict:
     """
     fb = policy["fallback_verdict"]
     if answers is None:
-        return {"verdict": fb, "reason": "fallback: no Jev answer (see ledger)", "rows": [],
-                "unknown": [], "jev": None}
+        return _apply_sim(
+            {"verdict": fb, "reason": "fallback: no Jev answer (see ledger)", "rows": [],
+             "unknown": [], "jev": None},
+            sim_rejects,
+        )
     rows, flags, weak, unknown = [], [], [], []
     for i in range(n_rows):
         a = answers["choices"].get(f"acc_{i}") or {}
@@ -73,14 +82,20 @@ def decide(n_rows: int, answers: dict | None, policy: dict) -> dict:
     cn = (answers["scores"].get("crux_need") or {}).get("score")
     jev = {"rows": rows, "self_contradiction": sc, "crux_need": cn}
     if flags:
-        return {"verdict": "FLAG", "reason": f"row(s) {flags} evidence does not support predicate",
-                "rows": flags, "unknown": unknown, "jev": jev}
+        return _apply_sim(
+            {"verdict": "FLAG", "reason": f"row(s) {flags} evidence does not support predicate",
+             "rows": flags, "unknown": unknown, "jev": jev},
+            sim_rejects,
+        )
     clear = (not weak and sc is not None and sc <= policy["clear_max_self_contradiction"]
              and cn is not None and cn <= policy["clear_max_crux_need"])
     if clear:
-        return {"verdict": "CLEAR",
-                "reason": f"every checkable row supported; self_contradiction {sc:.2f}; crux_need {cn:.2f}",
-                "rows": [], "unknown": unknown, "jev": jev}
+        return _apply_sim(
+            {"verdict": "CLEAR",
+             "reason": f"every checkable row supported; self_contradiction {sc:.2f}; crux_need {cn:.2f}",
+             "rows": [], "unknown": unknown, "jev": jev},
+            sim_rejects,
+        )
     why = []
     if weak:
         why.append(f"weak rows {weak}")
@@ -88,8 +103,22 @@ def decide(n_rows: int, answers: dict | None, policy: dict) -> dict:
         why.append(f"self_contradiction {sc:.2f}")
     if cn is not None and cn > policy["clear_max_crux_need"]:
         why.append(f"crux_need {cn:.2f}")
-    return {"verdict": "REFEREE", "reason": "; ".join(why) or "no clear signal", "rows": weak,
-            "unknown": unknown, "jev": jev}
+    return _apply_sim(
+        {"verdict": "REFEREE", "reason": "; ".join(why) or "no clear signal", "rows": weak,
+         "unknown": unknown, "jev": jev},
+        sim_rejects,
+    )
+
+
+def _apply_sim(decision: dict, sim_rejects: list[str] | None) -> dict:
+    """A known negative can only make the screen stricter: CLEAR becomes REFEREE."""
+    if not sim_rejects:
+        return decision
+    reason = "sim: known negative under this setting - " + "; ".join(sorted(set(sim_rejects)))
+    if decision["verdict"] == "CLEAR":
+        return {**decision, "verdict": "REFEREE", "rows": list(decision.get("rows") or []),
+                "reason": f"{reason} | jev: {decision['reason']}", "sim_rejects": list(sim_rejects)}
+    return {**decision, "reason": f"{decision['reason']} | {reason}", "sim_rejects": list(sim_rejects)}
 
 
 def brief_line(leg: str, d: dict, n_rows: int) -> str:
@@ -126,7 +155,7 @@ def count_mismatch_rows(m: dict, r: dict) -> list[dict]:
     return out
 
 
-def screen_leg(m: dict, r: dict, wave: str) -> dict:
+def screen_leg(m: dict, r: dict, wave: str, *, sim_rejects: list[str] | None = None) -> dict:
     g = jc.load_questions()["guards"]["screen"]
     n = len(m.get("acceptance") or [])
     if n == 0 or not r.get("acceptance"):
@@ -134,7 +163,7 @@ def screen_leg(m: dict, r: dict, wave: str) -> dict:
     else:
         state = screen_state(m, r, g["state_fields"])
         answers = jc.ask(state, screen_spec(n), wave=wave, guard="screen", leg=m["id"])
-        d = decide(n, answers, g["policy"])
+        d = decide(n, answers, g["policy"], sim_rejects=sim_rejects)
         cm = count_mismatch_rows(m, r)
         if cm:  # code outranks judgment here: a count is a fact, and the referee re-counts anyway
             rows = sorted(set(d["rows"]) | {c["i"] for c in cm}) if d["verdict"] == "FLAG" else [c["i"] for c in cm]
