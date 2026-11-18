@@ -41,6 +41,43 @@ def source_identity():
     return digest({name: hashlib.sha256(Path(importlib.import_module("synapse." + name).__file__).read_bytes()).hexdigest() for name in names})
 
 
+# --- Held-out isolation ------------------------------------------------------
+# The custody ledger keeps every OBSERVED row: it is an append-only audit chain,
+# and a row cannot be un-written or moved to a second chain without breaking the
+# binding that makes it custody. What can be made explicit is the SPLIT. Each
+# validation round now names its training and held-out run ids as data, and the
+# only view a harness proposer may read is training_visible_runs(). A run that
+# was held out in any round stays excluded even when a later round uses it as
+# training, because its outcome has already been seen.
+HOLDOUT_ROWS = 6
+
+
+def split_run_ids(proofs, holdout=HOLDOUT_ROWS):
+    """(training run ids, held-out run ids) for a fit over the last ``holdout`` samples."""
+    ids = [p.get("run_id") for p in proofs if isinstance(p, dict) and p.get("run_id")]
+    if holdout <= 0 or len(ids) <= holdout:
+        return ids, []
+    return ids[:-holdout], ids[-holdout:]
+
+
+def holdout_runs(result):
+    """Every run id held out in any round of this calibration."""
+    held = set()
+    for entry in (result or {}).get("calibration_rounds") or []:
+        held.update(entry.get("holdout_run_ids") or ())
+    return sorted(held)
+
+
+def training_visible_runs(result):
+    """Run ids a proposer may read: every measured run that was never held out."""
+    measured = {
+        entry.get("run_id")
+        for entry in (result or {}).get("observations") or []
+        if isinstance(entry, dict) and entry.get("run_id")
+    }
+    return sorted(measured - set(holdout_runs(result)))
+
+
 class HeadlessLightGate:
     """Own the controller/fuel; borrow existing host/lifecycle/ledger owners."""
     def __init__(self, *, backend, lifecycle, ledger):
@@ -244,6 +281,11 @@ class HeadlessLightGate:
                             raise ProfileUnavailable("Calibration measurement-plan/source custody lost")
                         metrics, evidence = self._measure(prestate, candidate, target, trial_started, txn, histogram_width_ev)
                         evidence["memory_before"] = pre_peak
+                        # Ordinal of the measurement within the experiment. The
+                        # training/held-out split is decided at fit time, so the
+                        # split itself is recorded there (see split_run_ids) and
+                        # this index is what ties a ledger row to it.
+                        evidence["sample_index"] = index
                         if prestate != before:
                             raise CaptureUnavailable("Calibration prestate changed")
                         custody.append("OBSERVED", run_id, scope, request_sha, experiment_sha, evidence)
@@ -266,11 +308,13 @@ class HeadlessLightGate:
                     memory_baselines.append(pre_peak["peak_memory_mb"])
                     proofs.append({"target": target, "run_id": run_id, **evidence})
                     if len(rows) == len(planned_targets):
+                        train_ids, holdout_ids = split_run_ids(proofs)
                         try:
                             profile = fit_round()
                         except HoldoutOutsideTraining as exc:
                             validation_rounds.append({"training": len(rows) - 6, "fresh_heldout": 6,
                                                       "verdict": "UNAVAILABLE_OUTSIDE_POPULATION", "reason": str(exc),
+                                                      "training_run_ids": train_ids, "holdout_run_ids": holdout_ids,
                                                       "all_samples_sha256": digest([asdict(row) for row in rows])})
                             if len(rows) >= 30:
                                 raise
@@ -278,6 +322,7 @@ class HeadlessLightGate:
                         else:
                             validation_rounds.append({"training": len(rows) - 6, "fresh_heldout": 6,
                                                       "verdict": "PASS_INDEPENDENT_VALIDATION",
+                                                      "training_run_ids": train_ids, "holdout_run_ids": holdout_ids,
                                                       "all_samples_sha256": digest([asdict(row) for row in rows])})
             if self._context() != context or source_identity() != sources:
                 raise ProfileUnavailable("Final calibration context drift")

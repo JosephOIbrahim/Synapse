@@ -3,6 +3,11 @@
  "version": 3,
  "houdini": "22.0.400",
  "timeout_seconds": 90,
+ "split": {
+  "_comment": "Evaluation split for the SIM plane. 'evolve' tasks may inform a harness edit; 'holdout' tasks may only judge one, and their outcomes must never reach a proposer. Only a human edits this block. Held out: exp-02 and sop-02 (the second task in a category whose first stays in evolve), ari-02, and mem-01, whose parser/semantic ambiguity means it cannot certify memory competence in either direction. exp-01, the T4 ceiling task, stays in evolve because it is the product's central claim.",
+  "evolve": ["exp-01", "exp-03", "top-01", "sop-01", "sop-03", "ari-01", "ctx-01", "usd-01"],
+  "holdout": ["exp-02", "sop-02", "ari-02", "mem-01"]
+ },
  "tasks": [
   {
    "id": "exp-01",
