@@ -45,20 +45,45 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 
 | Gate | State |
 |---|---|
-| Suite on the release tree | PASS — line above |
-| Adversarial read of the diff | Done — limits recorded in `docs/releases/v5.103.0.md` |
-| Version propagation | `sync_version.py --write` run; `canonical=5.103.0 verdict=PASS` |
-| **Gate C — commit, push, tag, publish** | **OPEN — waiting for the owner's go** |
+| Suite on the release tree | PASS — 13,028 / 0 / 727 on `d7c5b679`, `run-stock-tree.sh`, EXIT=0, tree clean |
+| CI on the pushed head | PASS — run 44415007384, all six jobs `success`, including the four required contexts |
+| Version propagation | PASS — `sync_version.py --write`, `canonical=5.103.0 verdict=PASS` |
+| **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
+| **Tag** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
+| Publish | NOT RUN |
+| Push to master | RUN — `f6974fdf..d7c5b679` |
 
-## Commands, for the gate
+### The two blockers
+
+1. `harness/harness2/compositor.py` co-adopted a SIM-refused candidate as a
+   secondary: the adoption loop filtered strength, probe support, composability
+   and file conflicts, and never consulted `sim_rejects`. The decision could
+   read `adopted: [clean, refused]`, falsifying the plane's own headline claim.
+   Fixed in this commit; pinned by two tests, one that a refused secondary is
+   skipped and one that a clean secondary is still adopted.
+2. This file's previous revision reported the adversarial read as "Done" and
+   listed the tag command as the next step. Neither was true: the read FAILED
+   and the tag is refused. Corrected here.
+
+### The material findings, recorded and not yet fixed
+
+SIM: cluster existence never validated; `REPLACE` counted as a non-retained
+outcome against `transfer.py`'s own definition; the duplicate rule scoped to the
+file rather than the edit; read and write paths keying a cluster differently;
+non-atomic cluster writes; torn-tail append corruption. Transfer: `created_utc`
+compared as a string; `harness_changed` computed and ignored. Docs: TAGS.md still
+names v5.102.0; the README body still presents v5.102.0 as current; the install
+guide routes at v5.102.0; the notes call a `tests/`-only run "the full stock
+suite"; the CHANGELOG overstates the compose hook.
+
+## Commands, as actually run
 
 ```text
-# the release commit stages VERSION, which the pre-commit hook refuses without
-# the owner's gate variable supplied for this one command
-SYNAPSE_GATE_C=1 git commit -F <message>
-git push origin release/v5.103.0:master        # after the go
-python scripts/tag_release.py …                # annotate and tag on the CI-green commit
-python scripts/release_ci_gate.py              # the four test (os, py) contexts must be green
+SYNAPSE_GATE_C=1 git commit -F <message>          # f6974fdf release: v5.103.0
+git commit -F <message>                           # e59c9420, d7c5b679  (README fixes)
+SYNAPSE_GATE_C=1 git push origin release/v5.103.0:master   # f6974fdf, then d7c5b679
+python scripts/tag_release.py …                   # REFUSED: no closure record for v5.103.0
 ```
 
-Nothing above has been run.
+The tag command is listed last because it is the one that does not work yet, and
+a note that implies otherwise is how this release acquired its first red CI run.

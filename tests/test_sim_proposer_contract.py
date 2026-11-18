@@ -207,6 +207,41 @@ class TestComposeHook:
         assert "sim:" in decision["reason"]
         assert decision["sim_rejected"]["cand-1"] == ["known negative under this setting"]
 
+    def _two_candidates(self) -> list[dict]:
+        return [
+            _candidate(id="cand-1"),
+            _candidate(id="cand-2", target_artifact="harness/bench/prompts/p.md"),
+        ]
+
+    def _two_answers(self) -> dict:
+        answers = self._answers(choice="cand-1")
+        answers["scores"]["strength_cand-2"] = {"score": 3.0}
+        answers["nouls"]["probe_cand-2"] = {"noul": 0.8}
+        answers["nouls"]["composable_cand-2"] = {"noul": 0.8}
+        return answers
+
+    def test_a_refused_secondary_cannot_ride_in_beside_a_clean_primary(self):
+        """The refusal applies to every adoption, not only to Jev's primary.
+
+        Without this check a refused candidate was co-adopted and the decision
+        read adopted=[cand-1, cand-2], which falsified the plane's own claim
+        that a refused candidate cannot be adopted.
+        """
+        import compositor as C
+
+        decision = C.decide_compose(
+            self._two_answers(), self._two_candidates(), self._POLICY,
+            sim_rejects={"cand-2": ["known negative under this setting"]},
+        )
+        assert [c["id"] for c in decision["adopted"]] == ["cand-1"]
+        assert "cand-2: refused by the SIM ledger" in decision["reason"]
+
+    def test_a_clean_secondary_is_still_adopted(self):
+        import compositor as C
+
+        decision = C.decide_compose(self._two_answers(), self._two_candidates(), self._POLICY)
+        assert [c["id"] for c in decision["adopted"]] == ["cand-1", "cand-2"]
+
 
 class TestScreenHook:
     """harness/jev/jev_screen.py — a known negative cannot CLEAR."""

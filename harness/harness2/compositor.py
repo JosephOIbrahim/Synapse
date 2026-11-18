@@ -357,6 +357,14 @@ def decide_compose(answers: dict | None, candidates: list[dict], policy: dict,
     for c in candidates:
         if c["id"] == choice:
             continue
+        # The SIM ledger's refusal applies to EVERY adoption, not only to Jev's
+        # primary. Before this check the primary was filtered and secondaries
+        # were not, so a refused candidate could ride in beside a clean one and
+        # the decision read adopted=[A, B] - which falsified the plane's own
+        # claim that a refused candidate cannot be adopted.
+        if sim_rejects and c["id"] in sim_rejects:
+            skipped.append("%s: refused by the SIM ledger" % c["id"])
+            continue
         pc = per[c["id"]]
         if pc["strength"] is None or pc["strength"] < policy["min_strength"]:
             skipped.append("%s: strength %s" % (c["id"], pc["strength"]))
