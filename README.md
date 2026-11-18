@@ -11,7 +11,7 @@
 
 <p align="center">By default it makes changes without asking first, so start in a scratch scene.</p>
 
-<p align="center"><sub>v5.103.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.102.0 is Latest</sub></p>
+<p align="center"><sub>v5.103.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.103.0 is Latest</sub></p>
 
 [![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
