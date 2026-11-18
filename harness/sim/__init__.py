@@ -25,6 +25,13 @@ from .propose import CandidateValidation, rejected_ids, validate_candidate, vali
 from .select import DEFAULT_POLICY, SelectorPolicy, finalize, record_outcome, verdict_for
 from .setting import SettingFingerprint
 from .store import SIMStore, StoreError
+from .transfer import (
+    Disposition,
+    TransferBoundaryController,
+    TransferPlan,
+    TransferPolicy,
+    revalidation_list,
+)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -38,7 +45,12 @@ __all__ = [
     "SelectorVerdict",
     "CandidateValidation",
     "DEFAULT_POLICY",
+    "Disposition",
     "SelectorPolicy",
+    "TransferBoundaryController",
+    "TransferPlan",
+    "TransferPolicy",
+    "revalidation_list",
     "SettingFingerprint",
     "SIMStore",
     "StoreError",
