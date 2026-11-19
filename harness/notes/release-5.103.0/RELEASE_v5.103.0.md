@@ -49,15 +49,18 @@ release line is the fenced 3.14 `tests/` run above.
 git diff --shortstat 2037c268..HEAD -- python harness/sim harness/harness2 harness/jev harness/bench tests
 ```
 
-The pathspec is deliberate and narrow. A figure measured over the whole tree
-changes with every documentation commit, including the one that writes it, and
-three review passes failed on exactly that; `harness/notes/` is excluded here for
-the same reason, because this file lives there. Measured with this pathspec the
-figure is identical at `0bb06001`, at `78483670` and at HEAD — documentation
-cannot move it.
+The pathspec is deliberate. A figure measured over the whole tree changes with
+every documentation commit, including the one that writes it, and three review
+passes failed on exactly that. `harness/notes/` and `docs/` are outside this
+pathspec, so this file and the release note cannot move the figure. What the
+pathspec does still contain is documentation that lives inside the code tree —
+`harness/sim/ledger/README.md` is one of the 20 files, and `harness/jev/README.md`
+and vendored `python/**/*.md` are tracked too — so an edit to those would move
+it. Measured with this pathspec the figure is identical at `0bb06001`, at
+`78483670` and at HEAD.
 
-One product-runtime file: `python/synapse/loop/light_gate.py`,
-additive only. `harness2/compositor.py` and `harness/jev/jev_screen.py` gain
+Two product-runtime files: `python/synapse/loop/light_gate.py`, additive only,
+and `python/synapse/__init__.py`, whose two lines are the version string. `harness2/compositor.py` and `harness/jev/jev_screen.py` gain
 keyword-only parameters defaulting to `None`. `harness/sim/` is new and unimported
 by the runtime; `tests/test_sim_isolation.py` asserts that.
 
@@ -66,7 +69,7 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 | Gate | State |
 |---|---|
 | Suite on the release tree | PASS — 13,057 / 0 / 727 on `0bb06001`, `run-stock-tree.sh`, EXIT=0, tree clean |
-| CI on this tree | **NOT RUN.** Run 44415007384 is on `d7c5b679`, which is `origin/master`, not this branch. Every commit of this branch is unpushed, so no CI exists for any of them; CI follows the push and its run id is recorded then. |
+| CI | Run 44415007384 on `d7c5b679` (all six jobs `success`) and run 44408737718 on `f6974fdf` (six of six failed on the README pointers) are both in this branch's history — `d7c5b679` is `origin/master` and an ancestor of `release/v5.103.0`. No CI has run on any commit after `d7c5b679`; those are the commits this branch adds and they are unpushed. The run id for the tip is recorded here once the push produces one. |
 | Version propagation | PASS — `sync_version.py --write`, `canonical=5.103.0 verdict=PASS` |
 | **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
 | **Tag** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
@@ -107,5 +110,8 @@ SYNAPSE_GATE_C=1 git push origin release/v5.103.0:master   # f6974fdf, then d7c5
 python scripts/tag_release.py …                   # REFUSED: no closure record for v5.103.0
 ```
 
-The tag command is listed last because it is the one that does not work yet, and
-a note that implies otherwise is how this release acquired its first red CI run.
+The tag command is listed last because at the time of writing it was the one that
+did not work — `scripts/tag_release.py` refuses without a committed
+`CRUX-RECORD.json`, as it did then. Once a passing record is committed on top of
+this tree, that command runs. A note that implies it works now would be the same
+error that produced this release's first red CI run.
