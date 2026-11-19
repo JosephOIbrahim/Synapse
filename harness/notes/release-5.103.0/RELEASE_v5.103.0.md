@@ -10,24 +10,26 @@ table below is the authoritative state.
   moved).
 - Content: the four SIM commits, fast-forwarded — no merge commit.
   `19b4c32b` SIM-P2, `5aeb105d` SIM-P3, `5b602450` SIM-P4, `ec121502` SIM-P5.
-- Tree at `ec121502`, clean before and after the suite.
+- Tree at `413aefb3`, clean before and after the suite. Six fix commits followed
+  the four SIM commits (`e277f802`, `e102e7a7`, `63545262`, `413aefb3`); the
+  numbers below are the shipping tree's, not the merged candidate's.
 
 ## Evidence
 
-Fenced stock suite, `harness/githooks`-era runner `run-stock-tree.sh`, worktree
-`C:/synapse-build/rel-51030`, run id `sim-rel51030`:
+Fenced stock suite, `run-stock-tree.sh`, worktree `C:/synapse-build/rel-51030`,
+run id `sim-rel51030-crux2`:
 
 ```
-STOCK_START HEAD=ec121502… PY=Python 3.14.2
-STOCK_DONE  HEAD_AFTER=ec121502… EXIT=0
+STOCK_START HEAD=413aefb3… PY=Python 3.14.2
+STOCK_DONE  HEAD_BEFORE=413aefb3… HEAD_AFTER=413aefb3… EXIT=0
 TREE_STATE_AFTER clean
-= 13028 passed, 727 skipped, 11 deselected, 10 xfailed in 599.88s (0:09:59) =
+= 13046 passed, 727 skipped, 11 deselected, 10 xfailed in 575.88s (0:09:35) =
 ```
 
 Baseline `v5.102.0` head `2037c268`: 12,940 passed, 0 failed, 727 skipped,
 11 deselected, 10 xfailed.
 
-Delta: **+88 passed, 0 failed, 0 skips added, removed or moved.** The 88 are the
+Delta: **+106 passed, 0 failed, 0 skips added, removed or moved.** The 106 are the
 five new `tests/test_sim_*.py` files.
 
 Two earlier runs are recorded here and are **not** the evidence: a 3.12 run
@@ -37,7 +39,7 @@ release line is the fenced 3.14 `tests/` run above.
 
 ## Diff
 
-19 files, +2,554 / −16. One product-runtime file: `python/synapse/loop/light_gate.py`,
+30 files, +3,165 / −43. One product-runtime file: `python/synapse/loop/light_gate.py`,
 additive only. `harness2/compositor.py` and `harness/jev/jev_screen.py` gain
 keyword-only parameters defaulting to `None`. `harness/sim/` is new and unimported
 by the runtime; `tests/test_sim_isolation.py` asserts that.
@@ -46,7 +48,7 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 
 | Gate | State |
 |---|---|
-| Suite on the release tree | PASS — 13,028 / 0 / 727 on `d7c5b679`, `run-stock-tree.sh`, EXIT=0, tree clean |
+| Suite on the release tree | PASS — 13,046 / 0 / 727 on `413aefb3`, `run-stock-tree.sh`, EXIT=0, tree clean |
 | CI on the pushed head | PASS — run 44415007384, all six jobs `success`, including the four required contexts |
 | Version propagation | PASS — `sync_version.py --write`, `canonical=5.103.0 verdict=PASS` |
 | **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
