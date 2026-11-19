@@ -2,7 +2,7 @@
 
 [README](README.md) · [User instructions](INSTRUCTIONS.md) · [Release notes](docs/releases/v5.103.0.md)
 
-🏷️ **Current release: [v5.103.0](https://github.com/JosephOIbrahim/Synapse/tree/v5.103.0)** — a **source release with no installer assets**. Installation into a seat is a separate action, and v5.103.0 changes no product behaviour, so an installed 5.102.0 seat keeps working as it did. Its GitHub release page is published separately from this tag.
+🏷️ **Current release: [v5.103.0](https://github.com/JosephOIbrahim/Synapse/tree/v5.103.0)** — a **source release with no installer assets**. Installation into a seat is a separate action, and v5.103.0 changes no product behaviour, so an installed 5.102.0 seat keeps working as it did. Its [GitHub release page](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.103.0) carries the full note.
 
 | Tag | Commit identity | Downloads |
 |---|---|---|
