@@ -1,7 +1,10 @@
 # Release record — v5.103.0
 
-**Prepared 2026-11-18; committed and pushed, not tagged or published.** The Gates
-table below is the authoritative state.
+**Prepared 2026-11-18. This record describes the state at the commit that carries
+it, before the tag and the release page exist.** The Gates table is authoritative
+for that snapshot and for nothing later: the moment a tag and a page exist, the
+Tag and Publish rows below are superseded, and the tag is the authority. Every row
+that can change after this commit says so in its own text.
 
 ## Candidate
 
@@ -72,8 +75,8 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 | CI | Run 44415007384 on `d7c5b679` (all six jobs `success`) and run 44408737718 on `f6974fdf` (six of six failed on the README pointers) are both in this branch's history — `d7c5b679` is `origin/master` and an ancestor of `release/v5.103.0`. No CI has run on any commit after `d7c5b679`; those are the commits this branch adds and they are unpushed. The run id for the tip is recorded here once the push produces one. |
 | Version propagation | PASS — `sync_version.py --write`, `canonical=5.103.0 verdict=PASS` |
 | **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
-| **Tag** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
-| Publish | NOT RUN |
+| **Tag, at this commit** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
+| Publish, at this commit | NOT RUN |
 | Push to master | RUN — `f6974fdf..d7c5b679` |
 
 ### The two blockers
