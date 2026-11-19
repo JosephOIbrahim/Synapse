@@ -57,6 +57,11 @@ def cmd_transfer(args: argparse.Namespace) -> int:
         return 0
 
     print(f"transition: {', '.join(k for k, v in plan.transition.items() if v)}")
+    # Both lines matter more than the per-item table: a harness-only change
+    # reclassifies nothing but invalidates every measurement behind it, and a
+    # reader who saw only ANCHOR/CARRIED rows would read that as a clean plan.
+    print(f"comparison_invalidated: {plan.comparison_invalidated}")
+    print(f"requires_revalidation: {plan.requires_revalidation}")
     print(f"{'disposition':<24}{'scope':<26}artifact")
     for item in plan.items:
         print(f"{item.disposition.value:<24}{item.edit_scope.value:<26}{item.target_artifact}")

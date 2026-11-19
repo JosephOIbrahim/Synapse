@@ -27,8 +27,10 @@ from .setting import SettingFingerprint
 
 SCHEMA_VERSION = "sim/v1"
 
-CLUSTER_ID_RE = re.compile(r"^pc-[0-9a-f]{16}$")
-HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+# \Z, not $: in Python $ also matches before a trailing newline, so "pc-<16 hex>\n"
+# passed a check whose whole purpose is exact shape.
+CLUSTER_ID_RE = re.compile(r"^pc-[0-9a-f]{16}\Z")
+HASH_RE = re.compile(r"^[0-9a-f]{64}\Z")
 
 
 class SchemaError(ValueError):

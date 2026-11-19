@@ -253,3 +253,20 @@ class TestCli:
             rc = cli.main(self._argv(tmp_path / "nope"))
         assert rc == 1
         assert "error:" in err.getvalue()
+
+    def test_a_harness_only_change_is_visible_in_the_table(self, store: SIMStore):
+        """The plan's two plan-level facts must reach the human, not only the JSON.
+
+        A harness-only change reclassifies nothing, so the item table alone reads
+        as a clean plan; the comparison is invalidated all the same.
+        """
+        argv = self._argv(store.root)
+        argv[argv.index("--to-harness") + 1] = HASH_B
+        argv.remove("--json")
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = cli.main(argv)
+        assert rc == 0
+        text = out.getvalue()
+        assert "comparison_invalidated: True" in text
+        assert "requires_revalidation: True" in text

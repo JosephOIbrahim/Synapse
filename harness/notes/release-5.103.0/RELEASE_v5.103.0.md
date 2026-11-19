@@ -1,6 +1,7 @@
 # Release record — v5.103.0
 
-**Prepared 2026-11-18. Not yet committed, tagged, pushed or published.**
+**Prepared 2026-11-18; committed and pushed, not tagged or published.** The Gates
+table below is the authoritative state.
 
 ## Candidate
 
@@ -65,16 +66,16 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
    listed the tag command as the next step. Neither was true: the read FAILED
    and the tag is refused. Corrected here.
 
-### The material findings, recorded and not yet fixed
+### The material findings, all fixed in this tree
 
-SIM: cluster existence never validated; `REPLACE` counted as a non-retained
-outcome against `transfer.py`'s own definition; the duplicate rule scoped to the
-file rather than the edit; read and write paths keying a cluster differently;
-non-atomic cluster writes; torn-tail append corruption. Transfer: `created_utc`
-compared as a string; `harness_changed` computed and ignored. Docs: TAGS.md still
-names v5.102.0; the README body still presents v5.102.0 as current; the install
-guide routes at v5.102.0; the notes call a `tests/`-only run "the full stock
-suite"; the CHANGELOG overstates the compose hook.
+SIM: cluster citation validated; `REPLACE` counted as retained; the duplicate
+rule scoped to the edit; cluster filenames checked against content ids; atomic
+cluster writes; torn-tail refusal. Transfer: `created_utc` compared as an instant;
+`harness_changed` surfaces as `comparison_invalidated`. Docs: TAGS.md, the README
+body, the install guide, the evidence-line wording and the CHANGELOG hook sentence.
+The commits are `e102e7a7` (six SIM contracts) and `63545262` (transfer and docs).
+A second independent review followed; its surviving findings are fixed in the
+commit that carries this note.
 
 ## Commands, as actually run
 

@@ -94,6 +94,18 @@ class TestClusterIdentity:
         with pytest.raises(SchemaError):
             normalize_signature("   ")
 
+    def test_cluster_id_rejects_a_trailing_newline(self):
+        """`$` matches before a trailing newline; a shape check must use `\\Z`.
+
+        With `$`, "pc-<16 hex>\\n" passed a check whose whole purpose is exact
+        shape, so the id was accepted here and refused later by the store.
+        """
+        from harness.sim.schema import CLUSTER_ID_RE
+
+        good = "pc-" + "0" * 16
+        assert CLUSTER_ID_RE.match(good)
+        assert CLUSTER_ID_RE.match(good + "\n") is None
+
 
 class TestAttemptRecord:
     def test_round_trip(self):

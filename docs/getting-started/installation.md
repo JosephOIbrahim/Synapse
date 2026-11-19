@@ -14,7 +14,9 @@ That Setup packages the v5.102.0 source and the pinned Moneta 1.3.0 Python backe
 It includes the panel as of v5.102.0 — Spatial, the Render footer row and the
 scene-reading Scatter recipe. It does not contain the v5.103.0 `harness/sim/` plane:
 nothing on the runtime path imports that plane, so a 5.102.0 seat and a 5.103.0
-source checkout run the same commands and produce the same behaviour.
+source checkout run the same commands: the 5.103.0 source adds three helper
+functions and two fields to one calibration result, and no user-visible behaviour
+changes.
 Setup includes a pinned native Rust artifact. Fresh supported Windows x64 / H22.0.400 / Python 3.13.10 setups receive ON only after actual isolated native execution and encrypted-mirror reopen checks. Explicit OFF and existing default-OFF registrations remain OFF. An existing ON setup must pass qualification; unsupported ON or failed checks refuse activation.
 
 **Already using native Rust or custom package settings?** Read the
@@ -56,14 +58,15 @@ Python does not replace Houdini's own runtime.
 
 ### 1. Keep a copy of the repository
 
-Download the source ZIP from [release 5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.102.0)
-and extract it into a permanent folder. Open a terminal in the folder containing
-`install.py`.
+Check out the
+[v5.103.0 tag](https://github.com/JosephOIbrahim/Synapse/tree/v5.103.0) into a
+permanent folder. No source ZIP is published for this release. Open a terminal in
+the folder containing `install.py`.
 
 If you use Git instead:
 
 ```shell
-git clone --branch v5.102.0 https://github.com/JosephOIbrahim/Synapse.git
+git clone --branch v5.103.0 https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 ```
 

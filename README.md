@@ -23,7 +23,7 @@ How to read this page: Start here and Install get you running. Everything after 
 
 ## Start here
 
-5.103.0 changes no shipped code path. It adds a self-improvement memory plane under harness/sim - a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured - which nothing on the runtime path imports. 5.102.0 took paths from this project's machines out of two files that Setup installs. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
+5.103.0 changes no product behaviour. It adds a self-improvement memory plane under harness/sim - a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured - which nothing on the runtime path imports. 5.102.0 took paths from this project's machines out of two files that Setup installs. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
 
 Otherwise the panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged from [5.101.1](docs/releases/v5.101.1.md).
 
@@ -32,7 +32,7 @@ anthropic 2.x is still unsupported.
 ### Get 5.103.0
 
 **5.103.0 is a source release.** It publishes no Setup, no source ZIP and no checksum
-file, because it changes no shipped code path — the `harness/sim` plane it adds is
+file, because it changes no product behaviour — the `harness/sim` plane it adds is
 not imported by anything the product runs.
 
 - **If you want an installer:** the newest one is
