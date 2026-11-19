@@ -1,15 +1,13 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/synapse-lockup-dark.svg">
-    <img src="assets/synapse-lockup.svg" alt="SYNAPSE" width="160">
+    <img src="assets/synapse-lockup.svg" alt="SYNAPSE" width="331">
   </picture>
 </p>
 
 <p align="center"><strong>SYNAPSE is an AI assistant that runs inside Houdini 22.</strong></p>
 
-<p align="center">Connect a local or cloud AI model that can use tools, describe a task in plain words, and SYNAPSE builds real nodes in your scene that you can inspect and edit.</p>
-
-<p align="center">By default it makes changes without asking first, so start in a scratch scene.</p>
+<p align="center">Connect a local or cloud model, describe the task in plain words, and SYNAPSE builds real nodes you can inspect and edit. It acts without asking first, and the default worker refuses more than it allows — start in a scratch scene.</p>
 
 <p align="center"><sub>v5.103.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.103.0 is Latest</sub></p>
 
@@ -17,23 +15,21 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Instructions](INSTRUCTIONS.md)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.103.0.md) · [Help](#when-you-get-stuck)
+**[Install](#install)** · **[What it does](#what-it-does)** · **[What's ready](#whats-ready)** · **[Controls](#find-the-right-control)** · **[Troubleshooting](#when-you-get-stuck)** · [Versions and tags](TAGS.md) · [What's new in 5.103.0](docs/releases/v5.103.0.md)
 
-How to read this page: Start here and Install get you running. Everything after them is reference you can come back to when you need it.
+How to read this page: Install gets you running. What it does shows the five workflows, each with a diagram. Everything after that is reference you can come back to when you need it.
 
-## Start here
+## What's new in 5.103.0
 
-5.103.0 changes no product behaviour. It adds a self-improvement memory plane under harness/sim - a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured - which nothing on the runtime path imports. 5.102.0 took paths from this project's machines out of two files that Setup installs. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
-
-Otherwise the panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged from [5.101.1](docs/releases/v5.101.1.md).
+**No product behaviour changes.** 5.103.0 adds a self-improvement memory plane under `harness/sim` — a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured — which nothing on the runtime path imports. The panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
 
 anthropic 2.x is still unsupported.
 
+## Install
+
 ### Get 5.103.0
 
-**5.103.0 is a source release.** It publishes no Setup, no source ZIP and no checksum
-file, because it changes no product behaviour — the `harness/sim` plane it adds is
-not imported by anything the product runs.
+**5.103.0 is a source release.** It publishes no Setup, no source ZIP and no checksum file, because it changes no product behaviour — the `harness/sim` plane it adds is not imported by anything the product runs.
 
 - **If you want an installer:** the newest one is
   [Windows Setup v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe),
@@ -71,64 +67,11 @@ Connect starts the separate Houdini bridge, and Doctor checks the setup without 
 
 The 5.101.1 tag and its assets remain unchanged.
 
-Jump to: [First build](#your-first-build) · [Controls](#find-the-right-control) · [Stop safely](#three-ways-to-stop) · [What changed](#what-changed-in-51020) · [Troubleshooting](#when-you-get-stuck)
+## What it does
 
-## What changed in 5.102.0
+Five workflows, each short enough to read in a minute. The diagram is the whole mechanism; the prose under each one is what it does not do.
 
-No shipped code changes. Five files that reach you change, and only their text: two that Setup installs no longer name folders on this project's machines, and three in the source ZIP name a redaction token instead of the account.
-
-The rest of the release is a test and the release audit, and neither reaches your seat.
-
-### Paths from this project's machines, removed or redacted
-
-- **Source ZIP, three files.** Four paths into the release machine's account folder now name `Example`, the repository's redaction token, instead of the account: `docs/SYNAPSE_MULTI_PROVIDER_LEG1_PROBE_DATA.json` (2), `tools/_hy_parity_gui.json` (1) and `tools/_hy_verbs_sweep_22.0.400.json` (1).
-
-- **Setup, the SideFX Labs corpus.** 409 entries in `rag/corpus/sidefxlabs_entries.json` name their source file from `SideFXLabs` onward, not from a staging folder.
-
-- **Setup, a reference skill.** `rag/skills/houdini21-reference/solaris_compound_node_anatomy.md` keeps a transcript's title and drops its folder.
-
-- **A test keeps them out.** [`tests/test_shipped_files_carry_no_owner_paths.py`](tests/test_shipped_files_carry_no_owner_paths.py) fails if any of the five files carries those paths again.
-
-The release audit now reads the spelling these paths used, so a path into the account folder written with any run of slashes or backslashes stops a release when it is in the source ZIP or in a Setup file with one of the audit's 16 text suffixes. The audit that passed v5.101.0 and v5.101.1 could not see it.
-
-Producer: `scripts/product_surface.py --diff v5.101.1 1194373d` reports no product change, and the [release notes](docs/releases/v5.102.0.md#what-changes) name the producer of every count.
-
-The version bump in the release commit also rewrites the version string in shipped files.
-
-5.102.0 keeps everything 5.101.1 changed, including the optional ceiling on the panel worker's tools, `SYNAPSE_WORKER_TOOL_ALLOWLIST`: [what it does and how to set it](docs/releases/v5.101.1.md#how-to-use-it). It also keeps everything 5.101.0 changed: the import error that quotes what went wrong, the Render QC timing measurement and the stricter release gates.
-
-### What 5.102.0 does not change, and its limits
-
-- At least 77 paths from this project's machines remain in 17 files that only the source ZIP carries, including a scene path in `tools/_hy_parity_gui.json`. Setup does not install those files. The scan that counted them read only JSON, Markdown, text and log files, and two Python files that Setup installs name a local corpus folder in their comments.
-
-- For the optional tool ceiling from 5.101.1:
-
-  - A name that matches no tool is ignored without a warning.
-  - A list in which no name is both real and permitted by the mode leaves the worker with no tools.
-  - The list limits tool names, not what a listed tool can do: in the default mode, with `houdini_create_node` and `houdini_set_parm` listed, the worker can still make a wrangle or Python node and write its code.
-  - The ceiling limits the panel's model worker only. Claude Code and other MCP clients do not pass through it; [read-only mode](docs/mcp/SETUP.md#read-only-mode) is the switch that limits them.
-  - Read-only mode also limits the panel's own worker while its calls go through `/mcp`, and it always lets the stop controls through.
-
-- No artist sees a finding from the timing harness or from Render QC.
-
-- **anthropic 2.x is still unsupported.** The pin stays `anthropic>=1.0.0,<2`, and under 2.x the model-access guard still refuses every model call ([the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md)).
-
-- Setup remains unsigned.
-
-- Durable worker receipts are not in this release. That lane waits on its own review.
-
-- The import error from 5.101.0 still has rare failures of its own:
-
-  - A stub `anthropic` or `pydantic` module without an import spec, or an import finder that raises, replaces the diagnostic with its own error.
-  - A local file named `anthropic.py` that shadows the package makes the message blame a dependency.
-
-  Nothing in SYNAPSE causes these today. They are not fixed in 5.102.0, and no release is named for them.
-
-- Doctor behaviour from 5.100.0 is unchanged. Its limits are in [5.100.0's notes](docs/releases/v5.100.0.md#limits).
-
-The full list is in the release notes' [Limits](docs/releases/v5.102.0.md#limits) section.
-
-## Your first build
+### Build in plain words
 
 In a scratch scene, send:
 
@@ -148,12 +91,12 @@ flowchart LR
     P -->|"permitted"| T["The tool runs"]
     T --> R["Result or<br/>reason shown"]
     R --> I["Inspect in<br/>Houdini"]
-    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef default fill:#FFFFFF,stroke:#6A9BC3,stroke-width:1.5px,color:#0A0A0A
+    classDef artist fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A
+    classDef synapse fill:#E9F1F8,stroke:#2F5878,color:#0A0A0A
     class U,I artist
     class M,P,X,T synapse
-    linkStyle default stroke:#D07020
+    linkStyle default stroke:#6A9BC3
 ```
 
 **Undo covers a recorded operation.** It does not reverse a whole conversation, and it does not reverse files written to disk. A failed build can leave partial nodes until you deliberately undo them.
@@ -164,7 +107,7 @@ It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pru
 
 Three composite Solaris builders, listed in `_WORKER_BUILDER_ALLOWLIST` in `python/synapse/panel/worker_policy.py`, are the exception; each is one undo-wrapped call made only of inform-level primitives. [Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
 
-## Safer Solaris wiring
+### Safer Solaris wiring
 
 **An insertion keeps the exact upstream output.** Every connection into a node that already exists reserves its slot before other wires are appended. Merge-style targets also get an order warning, never a silent reorder.
 
@@ -188,12 +131,12 @@ flowchart LR
     A --> F["Read final<br/>connections"]
     F -->|"match"| V["Verified<br/>connections"]
     F -->|"mismatch"| E["Error: no verified<br/>connection claimed"]
-    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef default fill:#FFFFFF,stroke:#6A9BC3,stroke-width:1.5px,color:#0A0A0A
+    classDef artist fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A
+    classDef synapse fill:#E9F1F8,stroke:#2F5878,color:#0A0A0A
     class C,A,F synapse
     class N,P,V,E artist
-    linkStyle default stroke:#D07020
+    linkStyle default stroke:#6A9BC3
 ```
 
 Checked in Houdini 22.0.400: the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change.
@@ -202,7 +145,7 @@ These checks do not measure a complex scene's time savings, and they do not qual
 
 The inherited merge-warning fix has standalone tests; its original limits remain in the [5.97.3 notes](docs/releases/v5.97.3.md#solaris-merge-warning-side-fix).
 
-## Build from a verified recipe
+### Build from a verified recipe
 
 Some requests have a recipe that was built and checked on Houdini 22.0.400. Scatter Instances on an imported Gaussian-splat world is one that reads the scene for you before it builds.
 
@@ -235,12 +178,12 @@ flowchart LR
     E -->|"no"| S["Built as sent"]
     F --> V["Values read back<br/>after the build"]
     B --> V
-    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef default fill:#FFFFFF,stroke:#6A9BC3,stroke-width:1.5px,color:#0A0A0A
+    classDef artist fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A
+    classDef synapse fill:#E9F1F8,stroke:#2F5878,color:#0A0A0A
     class A,C artist
     class R,F,V,B,D,S,U synapse
-    linkStyle default stroke:#D07020
+    linkStyle default stroke:#6A9BC3
 ```
 
 The reader knows one scene shape today:
@@ -252,7 +195,7 @@ The reader knows one scene shape today:
 
 Anything else is UNKNOWN. The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.
 
-## See what nodes do
+### See what nodes do
 
 Select one or more nodes in a network editor. Then click Identify at the bottom of the panel, or send `/identify`.
 
@@ -277,15 +220,64 @@ flowchart LR
     C --> K["Remove old comment blocks<br/>in one undo group"]
     K --> W["Draw an overlay<br/>above the editor"]
     W --> V["Follow pan and zoom;<br/>overlay not saved"]
-    classDef default fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef artist fill:#F6B26B,stroke:#D07020,color:#000000
-    classDef synapse fill:#D07020,stroke:#D07020,color:#000000
+    classDef default fill:#FFFFFF,stroke:#6A9BC3,stroke-width:1.5px,color:#0A0A0A
+    classDef artist fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A
+    classDef synapse fill:#E9F1F8,stroke:#2F5878,color:#0A0A0A
     class S,I artist
     class F,L,C,K,W,V synapse
-    linkStyle default stroke:#D07020
+    linkStyle default stroke:#6A9BC3
 ```
 
 Each click reads and draws the first 60 selected nodes. The cap is `CAP = 60` in `python/synapse/identify/bubble.py`, applied before the fact read, and the chip still reports your full selection. The [release notes](docs/releases/v5.85.0.md) explain the details and the current limits.
+
+### Hands-off render
+
+`synapse_autonomous_render` takes an intent in plain words and runs the whole render loop: plan, validate, render through TOPS, score the result, and re-plan when the score falls short.
+
+Three bounds apply: `max_iterations` (3 by default, clamped to 10 on the server), `quality_threshold` (0.85 by default), and a per-run wall-clock bound of 600 seconds by default that stops at the next iteration boundary and reports `stop_reason='wall_clock_exceeded'`.
+
+```mermaid
+flowchart LR
+    accTitle: The autonomous render loop plans, validates, renders, scores and retries
+    accDescr: An intent becomes a render plan. Validation either stops and reports, or the plan renders through TOPS. The frames are scored against the quality threshold. A score below the threshold re-plans while iterations remain; otherwise the loop stops and reports. A score at or above the threshold produces the report.
+    I["Intent<br/>plain words"] --> P["Plan the<br/>render"]
+    P --> V["Validate<br/>the scene"]
+    V -->|"invalid"| X["Stop and<br/>report"]
+    V -->|"valid"| R["Render<br/>through TOPS"]
+    R --> E["Score the<br/>frames"]
+    E -->|"below threshold"| L{"Iterations<br/>left?"}
+    L -->|"yes"| P
+    L -->|"no"| S["Stop and<br/>report"]
+    E -->|"passes"| G["Report"]
+    classDef default fill:#FFFFFF,stroke:#6A9BC3,stroke-width:1.5px,color:#0A0A0A
+    classDef artist fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A
+    classDef synapse fill:#E9F1F8,stroke:#2F5878,color:#0A0A0A
+    class I,X,S,G artist
+    class P,V,R,E,L synapse
+    linkStyle default stroke:#6A9BC3
+```
+
+Producer: the loop is `python/synapse/autonomy/driver.py`; the tool contract, defaults and server clamp are `python/synapse/mcp/_tool_registry.py`.
+
+## What's ready
+
+- **Network work:** build and inspect through permitted tools, and keep the result editable in Houdini.
+
+- **Verified recipes:** Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
+
+- **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
+
+- **Hands-off render:** an intent becomes a validated, scored render loop with the bounds above; the reply carries the full report.
+
+- **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
+
+- **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
+
+- **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
+
+- **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
+
+[Current limits](docs/status.md) — reviewed for v5.99.0; the current release's limits are in [5.103.0's note](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
 
 ## Find the right control
 
@@ -318,29 +310,12 @@ Saving a JEV key keeps it in memory until Houdini closes.
 
 The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TURN_BUDGET_TOKENS` in `python/synapse/panel/claude_worker.py`.
 
-## What's ready
-
-- **Network work:** build and inspect through permitted tools, and keep the result editable in Houdini.
-
-- **Verified recipes:** Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
-
-- **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
-
-- **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
-
-- **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
-
-- **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
-
-- **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
-
-[Current limits](docs/status.md) · [Latest release notes](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
-
 ## When you get stuck
 
 | What you see | Try this first |
 |---|---|
 | No Synapse pane | Restart Houdini, then [verify installation](docs/getting-started/installation.md#verify-the-installation). |
+| "SynapseHandler could not be loaded (…)" | The message names the failing import and says it is a panel import/setup error, not a Houdini connection problem. Check the named module and the seat's Python environment. Producer: `python/synapse/panel/tool_executor.py`. |
 | Missing Ollama models | Start Ollama, then reopen Connect models and Check connection. |
 | Unsure where the TypeSafe key goes | [JEV key setup](docs/getting-started/jev-setup.md#add-your-key). |
 | No saved suggestion | Read its reason. A checked record, matching version and project memory owner are required. |
@@ -356,6 +331,64 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 [Watch the recorded demonstration on Vimeo](https://vimeo.com/1225720538)
 
 SYNAPSE does the work inside your Houdini scene through tools you can inspect, and what it builds stays yours to edit.
+
+<details>
+<summary><strong>Release history: what changed in 5.102.0</strong></summary>
+
+No shipped code changes. Five files that reach you change, and only their text: two that Setup installs no longer name folders on this project's machines, and three in the source ZIP name a redaction token instead of the account.
+
+The rest of the release is a test and the release audit, and neither reaches your seat.
+
+**Paths from this project's machines, removed or redacted**
+
+- **Source ZIP, three files.** Four paths into the release machine's account folder now name `Example`, the repository's redaction token, instead of the account: `docs/SYNAPSE_MULTI_PROVIDER_LEG1_PROBE_DATA.json` (2), `tools/_hy_parity_gui.json` (1) and `tools/_hy_verbs_sweep_22.0.400.json` (1).
+
+- **Setup, the SideFX Labs corpus.** 409 entries in `rag/corpus/sidefxlabs_entries.json` name their source file from `SideFXLabs` onward, not from a staging folder.
+
+- **Setup, a reference skill.** `rag/skills/houdini21-reference/solaris_compound_node_anatomy.md` keeps a transcript's title and drops its folder.
+
+- **A test keeps them out.** [`tests/test_shipped_files_carry_no_owner_paths.py`](tests/test_shipped_files_carry_no_owner_paths.py) fails if any of the five files carries those paths again.
+
+The release audit now reads the spelling these paths used, so a path into the account folder written with any run of slashes or backslashes stops a release when it is in the source ZIP or in a Setup file with one of the audit's 16 text suffixes. The audit that passed v5.101.0 and v5.101.1 could not see it.
+
+Producer: `scripts/product_surface.py --diff v5.101.1 1194373d` reports no product change, and the [release notes](docs/releases/v5.102.0.md#what-changes) name the producer of every count.
+
+The version bump in the release commit also rewrites the version string in shipped files.
+
+5.102.0 keeps everything 5.101.1 changed, including the optional ceiling on the panel worker's tools, `SYNAPSE_WORKER_TOOL_ALLOWLIST`: [what it does and how to set it](docs/releases/v5.101.1.md#how-to-use-it). It also keeps everything 5.101.0 changed: the import error that quotes what went wrong, the Render QC timing measurement and the stricter release gates.
+
+**What 5.102.0 does not change, and its limits**
+
+- At least 77 paths from this project's machines remain in 17 files that only the source ZIP carries, including a scene path in `tools/_hy_parity_gui.json`. Setup does not install those files. The scan that counted them read only JSON, Markdown, text and log files, and two Python files that Setup installs name a local corpus folder in their comments.
+
+- For the optional tool ceiling from 5.101.1:
+
+  - A name that matches no tool is ignored without a warning.
+  - A list in which no name is both real and permitted by the mode leaves the worker with no tools.
+  - The list limits tool names, not what a listed tool can do: in the default mode, with `houdini_create_node` and `houdini_set_parm` listed, the worker can still make a wrangle or Python node and write its code.
+  - The ceiling limits the panel's model worker only. Claude Code and other MCP clients do not pass through it; [read-only mode](docs/mcp/SETUP.md#read-only-mode) is the switch that limits them.
+  - Read-only mode also limits the panel's own worker while its calls go through `/mcp`, and it always lets the stop controls through.
+
+- No artist sees a finding from the timing harness or from Render QC.
+
+- **anthropic 2.x is still unsupported.** The pin stays `anthropic>=1.0.0,<2`, and under 2.x the model-access guard still refuses every model call ([the migration ticket](docs/tickets/ANTHROPIC_SDK_2X_MIGRATION.md)).
+
+- Setup remains unsigned.
+
+- Durable worker receipts are not in this release. That lane waits on its own review.
+
+- The import error from 5.101.0 still has rare failures of its own:
+
+  - A stub `anthropic` or `pydantic` module without an import spec, or an import finder that raises, replaces the diagnostic with its own error.
+  - A local file named `anthropic.py` that shadows the package makes the message blame a dependency.
+
+  Nothing in SYNAPSE causes these today. They are not fixed in 5.102.0, and no release is named for them.
+
+- Doctor behaviour from 5.100.0 is unchanged. Its limits are in [5.100.0's notes](docs/releases/v5.100.0.md#limits).
+
+The full list is in the release notes' [Limits](docs/releases/v5.102.0.md#limits) section.
+
+</details>
 
 <details>
 <summary><strong>For developers: architecture, checks and memory</strong></summary>

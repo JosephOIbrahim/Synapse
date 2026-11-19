@@ -2,7 +2,7 @@
 
 [Back to README](../README.md) · [Architecture](architecture/overview.md) · [Latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 
-Publication links and wording reviewed on **2026-11-08** for **v5.99.0**. The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
+Publication links and wording reviewed on **2026-11-08** for **v5.99.0**; not re-reviewed for later releases — the current release is [v5.103.0](releases/v5.103.0.md). The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
 
 ## At a glance
 

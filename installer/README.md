@@ -10,6 +10,13 @@ Published builds and their qualification notes are available in
 Artists can follow the [installation guide](../docs/getting-started/installation.md);
 the commands below reproduce a build.
 
+## Current line
+
+v5.103.0 published no Setup: it changed no product behaviour and its release is
+source-only. The newest published Setup is v5.102.0. A build from this tree
+stamps the canonical root `VERSION`, and publishing a Setup remains a separate
+release action with its own qualification.
+
 ## Inputs and build
 
 Start in a reviewed Git checkout containing this directory. Use Windows x64,
@@ -70,7 +77,7 @@ from Houdini. No developer virtual environment is copied into the product.
 
 ### Explicit Moneta artifact
 
-The 5.99.0 bundle uses Moneta 1.3.0 at commit
+The bundle uses Moneta 1.3.0 at commit
 `4f7afc73736aecce6d55d5e03f28fb3137d474d3`, under the MIT License by its
 copyright holder's written grant of 2026-10-19. The upstream metadata still
 declares "Proprietary"; the bundle preserves that metadata and includes the
@@ -114,7 +121,7 @@ Different native Houdini/Python builds need their own qualification.
 
 ## Optional native artifact
 
-The public 5.99.0 build includes the reviewed `moneta-native-0.1.0-win64-clean.zip`.
+The public 5.99.0 build first included the reviewed `moneta-native-0.1.0-win64-clean.zip`; [native_artifact.json](native_artifact.json) still pins it.
 Its SHA-256 is `f0c67e0642305ce9db5f71d355712b6af9eb7d5db05e0d72c65d44403e47bb1e`,
 independently bound in [native_artifact.json](native_artifact.json). Pass both
 `--native-bundle <archive>` and `--native-sha256 <digest>` to the build command.
