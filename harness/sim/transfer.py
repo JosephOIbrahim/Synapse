@@ -24,6 +24,7 @@ Default policy, from the architecture:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Iterable, Mapping
 
@@ -94,8 +95,23 @@ class TransferPlan:
         return any(self.transition.values())
 
     @property
+    def comparison_invalidated(self) -> bool:
+        """True when the harness itself changed, so no carried measurement compares.
+
+        A changed harness hash does not reclassify an edit - an invariant gate is
+        still structural - but every number behind it was measured against a
+        different H_t, so the baseline has to be re-established before anything
+        is judged again. Computing this and ignoring it, as the first version
+        did, produced a "transition" that revalidated nothing for the one change
+        that invalidates everything.
+        """
+        return bool(self.transition.get("harness_changed"))
+
+    @property
     def requires_revalidation(self) -> bool:
-        return any(item.disposition is Disposition.PROVISIONAL_REVALIDATE for item in self.items)
+        return self.comparison_invalidated or any(
+            item.disposition is Disposition.PROVISIONAL_REVALIDATE for item in self.items
+        )
 
     def counts(self) -> dict[str, int]:
         counts = {disposition.value: 0 for disposition in Disposition}
@@ -109,11 +125,24 @@ class TransferPlan:
             "to": self.to_setting.to_dict(),
             "transition": dict(self.transition),
             "is_transition": self.is_transition,
+            "comparison_invalidated": self.comparison_invalidated,
             "requires_revalidation": self.requires_revalidation,
             "counts": self.counts(),
             "superseded": list(self.superseded),
             "items": [item.as_dict() for item in self.items],
         }
+
+
+def _instant(value: str) -> datetime:
+    """An ISO-8601 stamp as a comparable instant.
+
+    Comparing `created_utc` as a string is not chronological once records carry
+    different UTC offsets - "2026-11-18T12:00:00+02:00" sorts after
+    "2026-11-18T11:30:00+00:00" as text and before it as time. A naive stamp is
+    read as UTC, which is what the schema writes by default.
+    """
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
 class TransferBoundaryController:
@@ -135,7 +164,7 @@ class TransferBoundaryController:
             if record.selector_verdict not in RETAINED_VERDICTS:
                 continue
             current = latest.get(record.target_artifact)
-            if current is None or record.created_utc >= current.created_utc:
+            if current is None or _instant(record.created_utc) >= _instant(current.created_utc):
                 latest[record.target_artifact] = record
         return sorted(latest.values(), key=lambda r: r.target_artifact)
 
@@ -146,7 +175,7 @@ class TransferBoundaryController:
             if record.selector_verdict not in RETAINED_VERDICTS:
                 continue
             current = seen.get(record.target_artifact)
-            if current is not None and record.created_utc < current.created_utc:
+            if current is not None and _instant(record.created_utc) < _instant(current.created_utc):
                 superseded.append(record.attempt_id)
             else:
                 if current is not None:

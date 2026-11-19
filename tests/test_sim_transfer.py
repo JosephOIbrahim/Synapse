@@ -113,6 +113,55 @@ class TestModelSwitch:
         assert [i.attempt_id for i in revalidation_list(plan)] == ["att-repair"]
 
 
+class TestHarnessChange:
+    """A changed harness hash invalidates the comparison, not the taxonomy."""
+
+    TARGET_HARNESS = SettingFingerprint(
+        model_id="claude-opus-5-5", eval_split_id="bench-12/evo", harness_hash=HASH_B
+    )
+
+    def test_a_harness_only_change_invalidates_the_comparison(self, store: SIMStore):
+        plan = TransferBoundaryController(store).plan(SOURCE, self.TARGET_HARNESS)
+        assert plan.is_transition
+        assert plan.comparison_invalidated is True
+        assert plan.requires_revalidation is True
+        assert plan.as_dict()["comparison_invalidated"] is True
+
+    def test_the_taxonomy_is_unchanged_by_a_harness_change(self, store: SIMStore):
+        plan = TransferBoundaryController(store).plan(SOURCE, self.TARGET_HARNESS)
+        gate = next(i for i in plan.items if i.attempt_id == "att-gate")
+        repair = next(i for i in plan.items if i.attempt_id == "att-repair")
+        assert gate.disposition is Disposition.ANCHOR
+        assert repair.disposition is Disposition.CARRIED
+        # ...but nothing is judged against the old baseline until it is re-established.
+        assert revalidation_list(plan) == []
+
+    def test_no_change_does_not_invalidate(self, store: SIMStore):
+        plan = TransferBoundaryController(store).plan(SOURCE, SOURCE)
+        assert plan.comparison_invalidated is False
+
+
+class TestTimestampOrdering:
+    def test_the_later_instant_wins_across_utc_offsets(self, store: SIMStore):
+        """String order is not time order once offsets differ.
+
+        "…T12:00:00+02:00" sorts after "…T11:30:00+00:00" as text and is half an
+        hour EARLIER as an instant. The active edit must be the later one.
+        """
+        target = "harness/bench/prompts/timestamp-order.md"
+        later_instant = _attempt(EditScope.INVARIANT_GATE, target, SOURCE, "att-later",
+                                 created="2026-11-18T11:30:00+00:00")
+        earlier_instant = _attempt(EditScope.INVARIANT_GATE, target, SOURCE, "att-earlier",
+                                   created="2026-11-18T12:00:00+02:00")
+        assert later_instant.created_utc < earlier_instant.created_utc  # as text
+        store.append(earlier_instant)
+        store.append(later_instant)
+        plan = TransferBoundaryController(store).plan(SOURCE, TARGET_MODEL)
+        carried = [i for i in plan.items if i.target_artifact == target]
+        assert [i.attempt_id for i in carried] == ["att-later"]
+        assert plan.superseded == ("att-earlier",)
+
+
 class TestSplitSwitch:
     def test_heuristic_becomes_provisional(self, store: SIMStore):
         plan = TransferBoundaryController(store).plan(SOURCE, TARGET_SPLIT)

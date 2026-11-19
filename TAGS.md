@@ -1,11 +1,12 @@
 # Versions and release tags
 
-[README](README.md) · [User instructions](INSTRUCTIONS.md) · [Release notes](docs/releases/v5.102.0.md)
+[README](README.md) · [User instructions](INSTRUCTIONS.md) · [Release notes](docs/releases/v5.103.0.md)
 
-🏷️ **Current release: [v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.102.0)**. Installation into a seat is a separate action.
+🏷️ **Current release: [v5.103.0](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.103.0)** — a **source release with no installer assets**. Installation into a seat is a separate action, and v5.103.0 does not change any shipped code path, so an installed 5.102.0 seat keeps working as it did.
 
 | Tag | Commit identity | Downloads |
 |---|---|---|
+| [v5.103.0](https://github.com/JosephOIbrahim/Synapse/tree/v5.103.0) | `git rev-parse 'v5.103.0^{commit}'` resolves the annotated tag to its source commit; compare the tag target | Source release — no Setup, SHA256SUMS or public-build record is published for this tag |
 | [v5.102.0](https://github.com/JosephOIbrahim/Synapse/tree/v5.102.0) | Exact source revision in the [public build record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.public-build.json); compare the tag target | [Minor release](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.102.0) |
 | [v5.101.1](https://github.com/JosephOIbrahim/Synapse/tree/v5.101.1) | Exact source revision in the [public build record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.1/SYNAPSE-5.101.1-Setup.public-build.json); compare the tag target | [Unchanged release](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.101.1) |
 | [v5.101.0](https://github.com/JosephOIbrahim/Synapse/tree/v5.101.0) | Exact source revision in the [public build record](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.101.0/SYNAPSE-5.101.0-Setup.public-build.json); compare the tag target | [Unchanged release](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.101.0) |

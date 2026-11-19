@@ -21,7 +21,9 @@ it, and a test pins that. The full note, with every limit, is
   setting. `select` turns prediction plus measurement into
   `RETAIN / REVISE / REPLACE / REMOVE / REJECTED_SCREENING` by plain code.
 - **Two hooks, both opt-in.** `harness2/compositor.decide_compose` accepts
-  `sim_rejects` and the compose entry point computes it when handed a store;
+  `sim_rejects`, and the compose entry point computes it only when handed both a store
+  and a setting — with either missing the gate is not armed, and it says so in the
+  docstring rather than silently passing;
   `jev/jev_screen.decide` downgrades CLEAR to REFEREE for a known negative and
   never softens FLAG. With no store, behaviour is unchanged.
 - **The held-out split is now data.** `loop/light_gate.py` records

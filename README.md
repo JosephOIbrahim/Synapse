@@ -23,27 +23,39 @@ How to read this page: Start here and Install get you running. Everything after 
 
 ## Start here
 
-5.102.0 changes no shipped code apart from the version string. It takes paths from this project's machines out of two files that Setup installs, and the account name out of four paths in three files of the source ZIP. [What changed in 5.102.0](#what-changed-in-51020) lists them.
+5.103.0 changes no shipped code path. It adds a self-improvement memory plane under harness/sim - a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured - which nothing on the runtime path imports. 5.102.0 took paths from this project's machines out of two files that Setup installs. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
 
 Otherwise the panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged from [5.101.1](docs/releases/v5.101.1.md).
 
 anthropic 2.x is still unsupported.
 
-### Get 5.102.0
+### Get 5.103.0
 
-- **Download:** [Windows Setup](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe) or [source ZIP](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-source.zip).
+**5.103.0 is a source release.** It publishes no Setup, no source ZIP and no checksum
+file, because it changes no shipped code path — the `harness/sim` plane it adds is
+not imported by anything the product runs.
 
-- **Check the download:** Setup is unsigned. Compare it with its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt).
+- **If you want an installer:** the newest one is
+  [Windows Setup v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe),
+  and a 5.102.0 seat behaves exactly as a 5.103.0 seat does.
 
-- **Rust when verified:** Setup includes a pinned native artifact. Fresh supported setups enable it after actual execution checks, and explicit OFF stays OFF. [Existing setups](INSTRUCTIONS.md#existing-native-on-or-off-setups).
+- **If you want the source:** it is the tag —
+  `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.103.0`.
 
-- **What was checked:** read the [5.102.0 tests and limits](docs/releases/v5.102.0.md#tests). Setup is built from the release commit and qualified before it is published; the interactive wizard and the clean-machine checks are separate, and remain unqualified.
+- **Check the tag:** `git rev-parse 'v5.103.0^{commit}'` resolves the annotated tag
+  to its source commit. Setup remains unsigned; the v5.102.0 Setup's
+  [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt)
+  still applies to that file and to nothing in this release.
+
+- **What was checked:** the [5.103.0 note](docs/releases/v5.103.0.md) carries the
+  stock-suite line, what it does not cover, and every limit. The v5.102.0
+  [tests and limits](docs/releases/v5.102.0.md#tests) still describe that Setup.
 
 Setup includes the panel as of v5.102.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
 
 ### Install in four steps
 
-01\. Save your scene and close Houdini. Follow [source installation](docs/getting-started/installation.md#source-installation) for v5.102.0, or run the v5.102.0 [Windows Setup](docs/getting-started/installation.md#windows-installer).
+01\. Save your scene and close Houdini. Follow [source installation](docs/getting-started/installation.md#source-installation) for v5.103.0, or run the v5.102.0 [Windows Setup](docs/getting-started/installation.md#windows-installer).
 
 02\. Restart Houdini. Open New Pane Tab, then Synapse.
 
