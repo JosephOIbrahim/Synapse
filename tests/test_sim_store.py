@@ -263,6 +263,49 @@ class TestClusterFiles:
     def test_a_successful_write_leaves_no_temp_behind(self, store: SIMStore):
         assert list(store.root.glob(".*.tmp")) == []
 
+    def test_the_store_is_usable_after_a_failed_cluster_write(self, tmp_path: Path, monkeypatch):
+        import harness.sim.store as store_module
+
+        s = SIMStore(tmp_path / "ledger")
+        real_link = store_module.os.link
+
+        def boom(*args, **kwargs):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(store_module.os, "link", boom)
+        with pytest.raises(OSError):
+            s.declare_cluster(_cluster())
+        monkeypatch.setattr(store_module.os, "link", real_link)
+        s.declare_cluster(_cluster())
+        assert [c.cluster_id for c in s.clusters()] == [_cluster().cluster_id]
+
+    def test_two_concurrent_declarations_publish_valid_bytes(self, tmp_path: Path):
+        """Same-cluster concurrency must never leave two writers' bytes interleaved."""
+        import json as _json
+        import threading
+
+        s = SIMStore(tmp_path / "ledger")
+        cluster = _cluster()
+        errors = []
+
+        def declare():
+            try:
+                s.declare_cluster(cluster)
+            except StoreError:
+                pass  # one of them may lose the race; that is the refusal working
+            except Exception as exc:  # pragma: no cover - a different failure
+                errors.append(exc)
+
+        threads = [threading.Thread(target=declare) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert errors == []
+        payload = _json.loads((s.root / f"{cluster.cluster_id}.cluster.json").read_text(encoding="utf-8"))
+        assert payload["cluster_id"] == cluster.cluster_id
+        assert list(s.root.glob(".*.tmp")) == []
+
 
 class TestTornTail:
     def test_append_refuses_a_torn_tail(self, store: SIMStore):
@@ -270,6 +313,10 @@ class TestTornTail:
         cluster = _cluster()
         store.append(_record(cluster, attempt="att-1"))
         path = store._attempts_path(cluster.cluster_id)
-        path.write_bytes(path.read_bytes()[:-5])
+        torn = path.read_bytes()[:-5]
+        path.write_bytes(torn)
         with pytest.raises(StoreError, match="torn tail"):
             store.append(_record(cluster, attempt="att-2"))
+        # The refusal must not touch the file: a store that truncated before
+        # raising would pass a test that only checked the exception.
+        assert path.read_bytes() == torn

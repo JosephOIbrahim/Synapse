@@ -79,10 +79,12 @@ def surface_tree_hash(repo_root: Path, surfaces: Sequence[str] | None = None) ->
 
 
 def changed_surfaces(repo_root: Path, before: str, after: str) -> list[str]:
-    """Which declared files differ between two checkouts of the same tree layout.
+    """Every declared file, when the two hashes differ.
 
-    Only useful when both hashes were taken over the same declaration; it exists
-    so Phase 3 can say *what* changed, not only that something did.
+    Two hash strings cannot identify WHICH file changed - that needs the trees the
+    hashes were taken over. This returns the declared surface list so a caller can
+    see the candidate set, and returns [] when nothing changed at all. A caller
+    that needs the changed subset has to compare file contents itself.
     """
     if before == after:
         return []

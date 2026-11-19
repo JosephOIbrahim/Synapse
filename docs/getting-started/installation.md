@@ -15,8 +15,9 @@ It includes the panel as of v5.102.0 — Spatial, the Render footer row and the
 scene-reading Scatter recipe. It does not contain the v5.103.0 `harness/sim/` plane:
 nothing on the runtime path imports that plane, so a 5.102.0 seat and a 5.103.0
 source checkout run the same commands: the 5.103.0 source adds three helper
-functions and two fields to one calibration result, and no user-visible behaviour
-changes.
+functions and three keys to one calibration result - `sample_index` on each
+observation, `training_run_ids` and `holdout_run_ids` on each validation round -
+and no user-visible behaviour changes.
 Setup includes a pinned native Rust artifact. Fresh supported Windows x64 / H22.0.400 / Python 3.13.10 setups receive ON only after actual isolated native execution and encrypted-mirror reopen checks. Explicit OFF and existing default-OFF registrations remain OFF. An existing ON setup must pass qualification; unsupported ON or failed checks refuse activation.
 
 **Already using native Rust or custom package settings?** Read the

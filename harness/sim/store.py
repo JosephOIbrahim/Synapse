@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from pathlib import Path
 from typing import Iterator
 
@@ -80,8 +81,9 @@ class SIMStore:
         # target appears by a single link() that refuses an existing name. A
         # crash mid-write leaves a dot-temp behind, never a half-written cluster
         # that every later query would trip over.
-        tmp = self.root / f".{cluster.cluster_id}.cluster.tmp"
-        tmp.unlink(missing_ok=True)
+        # Unique per call: a fixed temp name let two concurrent declarations of
+        # the same cluster unlink each other's file and publish the wrong bytes.
+        tmp = self.root / f".{cluster.cluster_id}.{uuid.uuid4().hex}.cluster.tmp"
         with tmp.open("x", encoding="utf-8", newline="\n") as handle:
             handle.write(payload)
             handle.flush()

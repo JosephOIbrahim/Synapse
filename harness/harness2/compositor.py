@@ -397,7 +397,7 @@ def decide_compose(answers: dict | None, candidates: list[dict], policy: dict,
               f"{len(adopted)} adopted, {len(conflicts)} file conflict(s)")
     if skipped:
         reason += ", %d not adopted (%s)" % (len(skipped), "; ".join(skipped))
-    return {
+    decision = {
         "adopted": adopted,
         "reason": reason,
         "needs_joe": [],
@@ -406,6 +406,12 @@ def decide_compose(answers: dict | None, candidates: list[dict], policy: dict,
         "jev": jev,
         "per_candidate": per,
     }
+    if sim_rejects:
+        # The success path used to record only a generic skip string, so an
+        # adopted receipt lost the ledger's actual reasons for refusing a
+        # co-candidate. The map belongs on both paths.
+        decision["sim_rejected"] = {cid: list(why) for cid, why in sim_rejects.items()}
+    return decision
 
 
 # ---------------------------------------------------------------- graph guard

@@ -107,6 +107,10 @@ def validate_candidate(
     if declared is not None:
         if not allow_new_cluster:
             reasons.append("new cluster declarations are not accepted here")
+        elif not isinstance(declared, Mapping):
+            # A string or list here used to raise TypeError from the subscript
+            # below, which escaped validate_candidate instead of refusing.
+            reasons.append("new cluster declaration is not a mapping")
         else:
             try:
                 signature = str(declared["symptom_signature"])
@@ -160,7 +164,7 @@ def validate_candidate(
         reasons.append("candidate names no target artifact")
 
     diff = _first(candidate, "diff_patch", "diff")
-    if not diff:
+    if not diff or not str(diff).strip():
         reasons.append("candidate carries no diff")
 
     # 4. Not already a known negative under this setting.

@@ -150,10 +150,29 @@ class TestCandidateContract:
 class TestClusterCitation:
     """The contract's first rule: cite a cluster that exists."""
 
-    def test_a_malformed_cluster_id_is_refused(self):
-        result = validate_candidate(_candidate(cluster_id="not-a-cluster"))
-        assert not result.ok
+    @pytest.mark.parametrize("bad", [
+        "not-a-cluster",
+        "pc-" + "0" * 15,            # too short
+        "pc-" + "0" * 17,            # too long
+        "pc-" + "A" * 16,            # uppercase hex
+        "pc-" + "0" * 16 + "\n",     # trailing newline
+        "PC-" + "0" * 16,            # wrong prefix case
+    ])
+    def test_a_malformed_cluster_id_is_refused(self, bad):
+        result = validate_candidate(_candidate(cluster_id=bad))
+        assert not result.ok, f"{bad!r} was accepted"
         assert any("is not a cluster id" in reason for reason in result.reasons)
+
+    def test_a_whitespace_only_diff_is_refused(self):
+        result = validate_candidate(_candidate(diff_patch="   \n\t "))
+        assert not result.ok
+        assert any("no diff" in reason for reason in result.reasons)
+
+    @pytest.mark.parametrize("declared", ["a string", ["a", "list"], 17])
+    def test_a_non_mapping_cluster_declaration_is_refused(self, declared):
+        result = validate_candidate(_candidate(cluster_id=None, new_cluster=declared))
+        assert not result.ok
+        assert any("not a mapping" in reason or "cluster" in reason for reason in result.reasons)
 
     def test_a_well_formed_but_undeclared_cluster_is_refused(self, store: SIMStore):
         result = validate_candidate(_candidate(cluster_id="pc-" + "0" * 16), store=store)
@@ -269,6 +288,8 @@ class TestComposeHook:
         )
         assert [c["id"] for c in decision["adopted"]] == ["cand-1"]
         assert "cand-2: refused by the SIM ledger" in decision["reason"]
+        # The adopted receipt carries the ledger's reasons, as the fallback does.
+        assert decision["sim_rejected"]["cand-2"] == ["known negative under this setting"]
 
     def test_a_clean_secondary_is_still_adopted(self):
         import compositor as C
