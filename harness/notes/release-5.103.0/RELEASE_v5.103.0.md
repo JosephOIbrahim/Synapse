@@ -3,8 +3,7 @@
 **Prepared 2026-11-18. This record describes the state at the commit that carries
 it, before the tag and the release page exist.** The Gates table is authoritative
 for that snapshot and for nothing later: the moment a tag and a page exist, the
-Tag and Publish rows below are superseded, and the tag is the authority. Every row
-that can change after this commit says so in its own text.
+Tag and Publish rows below are superseded, and the tag is the authority.
 
 ## Candidate
 
@@ -41,8 +40,7 @@ plus 7 extra cases from two parametrizations).
 
 Two earlier runs are recorded here and are **not** the evidence: a 3.12 run
 (817 skipped — `cv2` absent, a machine difference) and a 3.14 run on the default
-testpaths (271 more tests — the harness suites the baseline never collects). The
-release line is the fenced 3.14 `tests/` run above.
+testpaths. The release line is the fenced 3.14 `tests/` run above.
 
 ## Diff
 
@@ -52,9 +50,7 @@ release line is the fenced 3.14 `tests/` run above.
 git diff --shortstat 2037c268..HEAD -- python harness/sim harness/harness2 harness/jev harness/bench tests
 ```
 
-The pathspec is deliberate. A figure measured over the whole tree changes with
-every documentation commit, including the one that writes it, and three review
-passes failed on exactly that. `harness/notes/` and `docs/` are outside this
+The pathspec is deliberate. `harness/notes/` and `docs/` are outside this
 pathspec, so this file and the release note cannot move the figure. What the
 pathspec does still contain is documentation that lives inside the code tree —
 `harness/sim/ledger/README.md` is one of the 20 files, and `harness/jev/README.md`
@@ -77,7 +73,7 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 | **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
 | **Tag, at this commit** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
 | Publish, at this commit | NOT RUN |
-| Push to master | RUN — `f6974fdf..d7c5b679` |
+| Push to master, at this commit | RUN — `f6974fdf..d7c5b679` |
 
 ### The two blockers
 
@@ -99,10 +95,8 @@ cluster writes; torn-tail refusal. Transfer: `created_utc` compared as an instan
 `harness_changed` surfaces as `comparison_invalidated`. Docs: TAGS.md, the README
 body, the install guide, the evidence-line wording and the CHANGELOG hook sentence.
 The commits are `e102e7a7` (six SIM contracts) and `63545262` (transfer and docs),
-with `e277f802` closing the co-adoption blocker. Further independent reviews
-followed, and their surviving findings are fixed across the commits after
-`413aefb3` (`git log --oneline 413aefb3..HEAD`) — a range rather than a list,
-so this sentence cannot go stale when the next fix lands.
+with `e277f802` closing the co-adoption blocker. The commits after `413aefb3`
+carry the later reviews' fixes: `git log --oneline 413aefb3..HEAD`.
 
 ## Commands, as actually run
 
