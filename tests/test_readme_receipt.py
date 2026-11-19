@@ -1,6 +1,6 @@
 """BP12 item 17: the README receipt runs in the normal suite, and it fails when it should.
 
-harness/notes/readme_check.py resolves the README's diagram styling against the two-orange
+harness/notes/readme_check.py resolves the README's diagram styling against the signal-blue
 palette, checks the current-release pointers against VERSION, and checks the tool count. It sat
 stale for several releases because nothing ran it. Each mutation below is applied to the README
 text in memory (nothing is written), and each must trip the receipt on its own channel.
@@ -45,12 +45,12 @@ def test_the_receipt_passes_on_this_tree():
 
 
 def test_a_grey_stroke_is_caught():
-    fails = _failures(_mutated("#D07020", "#333333"))
+    fails = _failures(_mutated("#6A9BC3", "#333333"))
     assert any("resolves via class" in f and "stroke" in f for f in fails)
 
 
 def test_an_off_palette_fill_is_caught():
-    fails = _failures(_mutated("fill:#F6B26B", "fill:#333333"))
+    fails = _failures(_mutated("fill:#F4F7FA", "fill:#333333"))
     assert any("resolves via class" in f for f in fails)
 
 

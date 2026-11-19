@@ -9,8 +9,8 @@ careful. A stale version string is worse: the download button 404s.
 What this proves, and what it does not
 --------------------------------------
 It proves the SOURCE declares what this file checks: every diagram node resolves
-to the two-orange palette (light #F6B26B or deep #D07020 fill, #000000 ink, #D07020
-stroke, edges pinned by ``linkStyle default``), the page's current-release pointers
+to the signal-blue palette (white, pale or tinted fill, #0A0A0A ink, #6A9BC3 or
+#2F5878 stroke, edges pinned by ``linkStyle default``), the page's current-release pointers
 name VERSION, every release page it links exists, and the tool count matches the
 module the page itself names as its producer.
 
@@ -57,6 +57,11 @@ ran it. The version rule is now: VERSION is named, nothing named is newer, every
 release page exists, and the three current-release pointers equal VERSION (older tags
 such as the installer's v5.75.2 are history, not pointers). tests/test_readme_receipt.py
 runs it in the normal suite and mutates the README to prove it fails.
+
+Third revision: the README moved from the two-orange palette to the signal-blue
+palette, so WANT_FILLS, WANT_STROKES and WANT_LINK follow. The negative controls
+keep the same shapes - grey strokes, an off-palette fill, no linkStyle - against
+the new colours, so the instrument can still disagree.
 """
 from __future__ import annotations
 
@@ -67,10 +72,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 # The declared styling. One place, so the check and the expectation cannot drift.
-WANT_FILLS = ("#F6B26B", "#D07020")   # light "artist" fill, deep "synapse" fill
-WANT_INK = "#000000"
-WANT_STROKE = "#D07020"
-WANT_LINK = "linkStyle default stroke:#D07020"
+WANT_FILLS = ("#FFFFFF", "#F4F7FA", "#E9F1F8")  # default, artist, synapse fills
+WANT_INK = "#0A0A0A"
+WANT_STROKES = ("#6A9BC3", "#2F5878")  # artist-side and synapse-side stroke
+WANT_LINK = "linkStyle default stroke:#6A9BC3"
 
 NODE_REF = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=[\[\{\(])")
 CLASS_DEF = re.compile(r"^classDef\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.*)$")
@@ -194,11 +199,11 @@ def check_block(rd: Verdict, index: int, block: str) -> int:
             continue
         stroke = defs.get(cls, {}).get("stroke")
         if ((fill or "").upper() not in WANT_FILLS or (ink or "").upper() != WANT_INK
-                or (stroke or "").upper() != WANT_STROKE):
+                or (stroke or "").upper() not in WANT_STROKES):
             rd.fail(
                 f"block {index}: node {node} resolves via class {cls!r} to fill={fill} "
                 f"ink={ink} stroke={stroke}, expected fill in {'/'.join(WANT_FILLS)} "
-                f"ink={WANT_INK} stroke={WANT_STROKE}"
+                f"ink={WANT_INK} stroke in {'/'.join(WANT_STROKES)}"
             )
     rd.check(
         any(l.strip() == WANT_LINK for l in lines),
@@ -218,16 +223,16 @@ WRONG_INK_CONTROL = """flowchart LR
     class A,B dark
 """
 
-_LINK = "    linkStyle default stroke:#D07020\n"
+_LINK = "    linkStyle default stroke:#6A9BC3\n"
 GREY_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
                 "    classDef default fill:#333333,stroke:#333333,color:#FFFFFF\n" + _LINK)
 OFF_DEFAULT_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
-                       "    classDef default fill:#FF0000,stroke:#D07020,color:#000000\n" + _LINK)
+                       "    classDef default fill:#FF0000,stroke:#6A9BC3,color:#0A0A0A\n" + _LINK)
 NO_LINK_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
-                   "    classDef default fill:#F6B26B,stroke:#D07020,color:#000000\n")
+                   "    classDef default fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A\n")
 GOOD_CONTROL = ("flowchart LR\n    A[\"one\"] --> B[\"two\"]\n"
-                "    classDef default fill:#F6B26B,stroke:#D07020,color:#000000\n"
-                "    classDef synapse fill:#D07020,stroke:#D07020,color:#000000\n"
+                "    classDef default fill:#F4F7FA,stroke:#6A9BC3,color:#0A0A0A\n"
+                "    classDef synapse fill:#E9F1F8,stroke:#2F5878,color:#0A0A0A\n"
                 "    class B synapse\n" + _LINK)
 
 BAD_CONTROLS = (
@@ -360,7 +365,7 @@ def report(rd: Verdict) -> int:
         print()
         print(f"RESULT: FAIL - {len(rd.failures)} check(s) did not hold")
         return 1
-    print("RESULT: PASS - source declares the two-orange palette on every node and edge,")
+    print("RESULT: PASS - source declares the signal-blue palette on every node and edge,")
     print("        the current-release pointers name VERSION, every linked release page")
     print("        exists, and the tool count matches its producer.")
     print("        NOT PROVEN: that GitHub renders those colours. No renderer was invoked.")

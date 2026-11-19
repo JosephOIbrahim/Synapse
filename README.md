@@ -15,7 +15,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**[Install](#install)** · **[What it does](#what-it-does)** · **[What's ready](#whats-ready)** · **[Controls](#find-the-right-control)** · **[Troubleshooting](#when-you-get-stuck)** · [Versions and tags](TAGS.md) · [What's new in 5.103.0](docs/releases/v5.103.0.md)
+**[Install](#install)** · **[What it does](#what-it-does)** · **[What's ready](#whats-ready)** · **[Controls](#find-the-right-control)** · **[Troubleshooting](#when-you-get-stuck)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.103.0.md)
 
 How to read this page: Install gets you running. What it does shows the five workflows, each with a diagram. Everything after that is reference you can come back to when you need it.
 
@@ -277,7 +277,7 @@ Producer: the loop is `python/synapse/autonomy/driver.py`; the tool contract, de
 
 - **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) — reviewed for v5.99.0; the current release's limits are in [5.103.0's note](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) (reviewed for v5.99.0) · [Latest release notes](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
 
 ## Find the right control
 
