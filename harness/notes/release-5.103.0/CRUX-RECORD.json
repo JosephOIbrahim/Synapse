@@ -1,0 +1,102 @@
+{
+  "version": "5.103.0",
+  "review": "REL-5.103.0-EIGHT-PASS",
+  "reviewer": "Claude Code adversarial review agents, eight independent passes (2026-11-18 to 2026-11-19)",
+  "reviewed_date": "2026-11-19",
+  "verdict": "FAIL",
+  "passed": false,
+  "commit_range": "2037c268..f1a03901",
+  "finding_summary": {
+    "blocker": 0,
+    "material": 11,
+    "minor": 15,
+    "code_defects_found": 0,
+    "note": "All eight passes reviewed the code and the release account. No pass found a defect in the shipped code; every surviving finding is in prose."
+  },
+  "evidence_outside_this_review": {
+    "fenced_stock_suite": "13,057 passed, 727 skipped, 11 deselected, 10 xfailed, 0 failed",
+    "runs": [
+      "sim-rel51030-minors2 on 0bb06001 (513.80s)",
+      "sim-rel51030-crux4 on 78483670 (557.83s)",
+      "sim-rel51030-crux5 on 59e6d330 (613.50s)",
+      "sim-rel51030-scope on 0315ad45 (533.24s)",
+      "sim-rel51030-cut on f1a03901 (590.78s)"
+    ],
+    "runner": "C:/synapse-build/hd1-up/run-stock-tree.sh, Python 3.14.2, tests/, -m \"not live\"",
+    "note": "The suite runs separately from the review; no review pass re-ran it."
+  },
+  "surviving_findings": [
+    {
+      "severity": "material",
+      "path": "docs/releases/v5.103.0.md",
+      "line": "23",
+      "claim": "The transfer.py row says model-specific repairs and domain heuristics go provisional and 'everything else is carried'. On a split-only change DOMAIN_HEURISTIC is carried and MODEL_SPECIFIC_REPAIR is carried; the row's universal is false against tests/test_sim_transfer.py."
+    },
+    {
+      "severity": "material",
+      "path": "docs/releases/v5.103.0.md",
+      "line": "35-36",
+      "claim": "'now stamps each observation with its sample_index' is true only for the calibration measurement (light_gate.py:288); the run-path OBSERVED append (light_gate.py:433) writes no sample_index."
+    },
+    {
+      "severity": "material",
+      "path": "CHANGELOG.md",
+      "line": "30",
+      "claim": "The same sample_index universal, repeated."
+    },
+    {
+      "severity": "material",
+      "path": "docs/getting-started/installation.md",
+      "line": "18-19",
+      "claim": "The same sample_index universal, repeated a third time."
+    },
+    {
+      "severity": "material",
+      "path": "harness/sim/ledger/README.md",
+      "line": "12-13",
+      "claim": "'A hand-edited ledger line fails to load rather than being silently trusted' is not enforced for values inside the accepted domain: Observation.from_dict coerces regressions through str(), so an in-domain hand edit loads."
+    },
+    {
+      "severity": "material",
+      "path": "docs/releases/v5.103.0.md",
+      "line": "75-76",
+      "claim": "'SIM reads no artifact that records the model' is false as written: every AttemptRecord carries SettingFingerprint.model_id in its own ledger."
+    },
+    {
+      "severity": "material",
+      "path": "CHANGELOG.md",
+      "line": "39",
+      "claim": "'No runtime turn yet persists which model ran it' is false: python/synapse/panel/claude_worker.py:330 writes model into the per-turn usage ledger."
+    },
+    {
+      "severity": "material",
+      "path": "docs/releases/v5.103.0.md",
+      "line": "102-103",
+      "claim": "'the release suite is the evidence that nothing else changed' is false as an evidence claim: the gate collects tests/ only, while the release diff changes 30 files."
+    },
+    {
+      "severity": "material",
+      "path": "harness/notes/release-5.103.0/RELEASE_v5.103.0.md",
+      "line": "98-99",
+      "claim": "'The commits after 413aefb3 carry the later reviews' fixes' is a closure claim the tree does not support while the findings above stand."
+    },
+    {
+      "severity": "material",
+      "path": "harness/notes/release-5.103.0/RELEASE_v5.103.0.md",
+      "line": "84-88",
+      "claim": "'Fixed in this commit' and 'Corrected here' read as the carrying commit; the co-adoption fix is e277f802."
+    },
+    {
+      "severity": "material",
+      "path": "harness/notes/release-5.103.0/RELEASE_v5.103.0.md",
+      "line": "73",
+      "claim": "'two blockers, thirteen material findings' are counts not bound to a committed review record."
+    }
+  ],
+  "owner_direction": {
+    "date": "2026-11-19",
+    "decision": "Release v5.103.0 with the open prose findings disclosed. The owner directed the release after eight adversarial reviews, none of which found a defect in the shipped code, and after five fenced stock-suite runs at 13,057 passed / 0 failed / 727 skipped.",
+    "verbatim_scope": "Direct the v5.103.0 release with the open prose findings disclosed: write harness/notes/release-5.103.0/CRUX-RECORD.json recording eight failed reviews and the surviving findings, commit it on f1a03901, push to master behind Gate C, take CI green, and tag v5.103.0 without publishing."
+  },
+  "gate_note": "scripts/tag_release.py requires passed=true and therefore refuses this record by design; the tag for this release is created under the owner's direction above, and this file is the disclosure that the gate's condition was not met. A reader should treat v5.103.0 as a release whose code passed every check available and whose documentation carries the eleven findings listed here."
+}
