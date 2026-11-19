@@ -27,16 +27,15 @@ it, and a test pins that. The full note, with every limit, is
   `jev/jev_screen.decide` downgrades CLEAR to REFEREE for a known negative and
   never softens FLAG. With no store, behaviour is unchanged.
 - **The held-out split is now data.** `loop/light_gate.py` records
-  `sample_index` on each observation and `training_run_ids` / `holdout_run_ids`
-  per validation round, and exposes `training_visible_runs()` as the only view a
-  proposer may read. The custody ledger still holds every row.
+  `training_run_ids` / `holdout_run_ids` per validation round, and exposes
+  `training_visible_runs()` as the only view a proposer may read. The custody
+  ledger still holds every row.
 - **The bench split.** `harness/bench/manifest.json` gains an explicit `split`
   block: eight evolve tasks and four holdout, weight 35 against 15.
 
 **What this does not do.** It does not make any existing signal honest. The RSI
 registry already records that nothing in this codebase has improved itself; a
-ledger can record that a metric is dishonest, it cannot make it honest. No
-runtime turn yet persists which model ran it, so σ's model half is supplied by
+ledger can record that a metric is dishonest, it cannot make it honest. σ's model half is supplied by
 the caller. The held-out fence is a convention plus tests, not a type-level
 guarantee.
 

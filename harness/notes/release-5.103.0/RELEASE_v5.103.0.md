@@ -70,7 +70,7 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 | Suite on the release tree | PASS — 13,057 / 0 / 727 on `0bb06001`, `run-stock-tree.sh`, EXIT=0, tree clean |
 | CI | Run 44415007384 on `d7c5b679` (all six jobs `success`) and run 44408737718 on `f6974fdf` (six of six failed on the README pointers) are both in this branch's history — `d7c5b679` is `origin/master` and an ancestor of `release/v5.103.0`. No CI has run on any commit after `d7c5b679`; those are the commits this branch adds and they are unpushed. The run id for the tip is recorded here once the push produces one. |
 | Version propagation | PASS — `sync_version.py --write`, `canonical=5.103.0 verdict=PASS` |
-| **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
+| **Adversarial read of the diff** | **FAIL — the read returned blockers and material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
 | **Tag, at this commit** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
 | Publish, at this commit | NOT RUN |
 | Push to master, at this commit | RUN — `f6974fdf..d7c5b679` |
@@ -81,13 +81,13 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
    secondary: the adoption loop filtered strength, probe support, composability
    and file conflicts, and never consulted `sim_rejects`. The decision could
    read `adopted: [clean, refused]`, falsifying the plane's own headline claim.
-   Fixed in this commit; pinned by two tests, one that a refused secondary is
+   Fixed in `e277f802`; pinned by two tests, one that a refused secondary is
    skipped and one that a clean secondary is still adopted.
 2. This file's previous revision reported the adversarial read as "Done" and
    listed the tag command as the next step. Neither was true: the read FAILED
-   and the tag is refused. Corrected here.
+   and the tag is refused. Corrected in a later revision of this file.
 
-### The material findings, all fixed in this tree
+### The material findings, fixed in this tree
 
 SIM: cluster citation validated; `REPLACE` counted as retained; the duplicate
 rule scoped to the edit; cluster filenames checked against content ids; atomic
@@ -95,8 +95,7 @@ cluster writes; torn-tail refusal. Transfer: `created_utc` compared as an instan
 `harness_changed` surfaces as `comparison_invalidated`. Docs: TAGS.md, the README
 body, the install guide, the evidence-line wording and the CHANGELOG hook sentence.
 The commits are `e102e7a7` (six SIM contracts) and `63545262` (transfer and docs),
-with `e277f802` closing the co-adoption blocker. The commits after `413aefb3`
-carry the later reviews' fixes: `git log --oneline 413aefb3..HEAD`.
+with `e277f802` closing the co-adoption blocker.
 
 ## Commands, as actually run
 
