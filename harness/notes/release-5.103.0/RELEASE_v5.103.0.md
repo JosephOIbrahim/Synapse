@@ -10,10 +10,12 @@ table below is the authoritative state.
   moved).
 - Content: the four SIM commits, fast-forwarded — no merge commit.
   `19b4c32b` SIM-P2, `5aeb105d` SIM-P3, `5b602450` SIM-P4, `ec121502` SIM-P5.
-- Tree at `0bb06001`, clean before and after the suite. Seven commits followed the
-  four SIM commits — `e277f802`, `e102e7a7`, `63545262`, `413aefb3`, `96fbc6b7`,
-  `0bb06001`, `c1dc30a8` — of which the last two are documentation only. The
-  numbers below are the shipping tree's, not the merged candidate's.
+- Tree at `0bb06001`, clean before and after the suite. Every commit after
+  `ec121502` is in the release range `ec121502..HEAD` — read it with
+  `git log --oneline ec121502..HEAD` rather than a count here, because a count
+  written into this file changes with the commit that writes it. The suite
+  numbers below are the shipping tree's; the evidence paragraph names the commit
+  that ran.
 
 ## Evidence
 
@@ -41,7 +43,20 @@ release line is the fenced 3.14 `tests/` run above.
 
 ## Diff
 
-30 files, +3,251 / −44. One product-runtime file: `python/synapse/loop/light_gate.py`,
+**20 files, +2,985 / −19 over the code and test paths** —
+
+```
+git diff --shortstat 2037c268..HEAD -- python harness/sim harness/harness2 harness/jev harness/bench tests
+```
+
+The pathspec is deliberate and narrow. A figure measured over the whole tree
+changes with every documentation commit, including the one that writes it, and
+three review passes failed on exactly that; `harness/notes/` is excluded here for
+the same reason, because this file lives there. Measured with this pathspec the
+figure is identical at `0bb06001`, at `78483670` and at HEAD — documentation
+cannot move it.
+
+One product-runtime file: `python/synapse/loop/light_gate.py`,
 additive only. `harness2/compositor.py` and `harness/jev/jev_screen.py` gain
 keyword-only parameters defaulting to `None`. `harness/sim/` is new and unimported
 by the runtime; `tests/test_sim_isolation.py` asserts that.
@@ -51,7 +66,7 @@ by the runtime; `tests/test_sim_isolation.py` asserts that.
 | Gate | State |
 |---|---|
 | Suite on the release tree | PASS — 13,057 / 0 / 727 on `0bb06001`, `run-stock-tree.sh`, EXIT=0, tree clean |
-| CI on this tree | **NOT RUN.** Run 44415007384 is on `d7c5b679`, which is `origin/master` and seven commits behind this tree. The shipping commits are unpushed, so no CI exists for them; CI follows the push and its run id is recorded then. |
+| CI on this tree | **NOT RUN.** Run 44415007384 is on `d7c5b679`, which is `origin/master`, not this branch. Every commit of this branch is unpushed, so no CI exists for any of them; CI follows the push and its run id is recorded then. |
 | Version propagation | PASS — `sync_version.py --write`, `canonical=5.103.0 verdict=PASS` |
 | **Adversarial read of the diff** | **FAIL — two blockers, thirteen material findings. The review is what `scripts/tag_release.py` requires; it returned FAIL, so no `CRUX-RECORD.json` with `passed: true` is committed here.** |
 | **Tag** | **BLOCKED by the gate, not by choice.** `scripts/tag_release.py` refuses with *no closure record for v5.103.0*. |
@@ -78,9 +93,10 @@ cluster writes; torn-tail refusal. Transfer: `created_utc` compared as an instan
 `harness_changed` surfaces as `comparison_invalidated`. Docs: TAGS.md, the README
 body, the install guide, the evidence-line wording and the CHANGELOG hook sentence.
 The commits are `e102e7a7` (six SIM contracts) and `63545262` (transfer and docs),
-with `e277f802` closing the co-adoption blocker. Three further independent reviews
-followed; their surviving findings are fixed across `96fbc6b7`, `0bb06001`,
-`c1dc30a8` and the commit that carries this note.
+with `e277f802` closing the co-adoption blocker. Further independent reviews
+followed, and their surviving findings are fixed across the commits after
+`413aefb3` (`git log --oneline 413aefb3..HEAD`) — a range rather than a list,
+so this sentence cannot go stale when the next fix lands.
 
 ## Commands, as actually run
 
