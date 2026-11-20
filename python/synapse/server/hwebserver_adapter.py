@@ -358,6 +358,26 @@ if HWEBSERVER_AVAILABLE:
             except Exception as e:
                 from ..core.outcomes import info as _outcome
 
+                # BRAINSTEM-5: a main-thread timeout means the call may STILL be
+                # running. Unknown outcome, check the scene; never a definite
+                # failure that invites a blind retry. Resolved from the LIVE
+                # main_thread module, as run_on_main does, so a reload cannot
+                # split the class identity.
+                from .main_thread import MainThreadTimeout as _LiveMainThreadTimeout
+                if isinstance(e, _LiveMainThreadTimeout):
+                    if _circuit_breaker is not None:
+                        _circuit_breaker.record_failure()
+                    code = ("transport.read_retry"
+                            if getattr(command, "type", "") in _READ_ONLY_COMMANDS
+                            else "transport.timeout")
+                    await self.send(SynapseResponse(
+                        id=getattr(command, "id", None) or "unknown",
+                        success=False,
+                        error=str(e),
+                        data={"outcome": _outcome(code, str(e)).to_dict()},
+                    ).to_json(), is_binary=False)
+                    return
+
                 # H-3: reply under the request's own id. A client matches
                 # replies by id; "unknown" is discarded and the caller waits
                 # out its whole timeout instead of seeing this error.

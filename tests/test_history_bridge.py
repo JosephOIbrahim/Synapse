@@ -20,7 +20,9 @@ class History:
     def __init__(self):
         self.depth = 0
         self.groups = 0
-        self.undo = ['Artist edit', 'SYNAPSE build']
+        # Top-first, as hou.undos.undoLabels() reports it: element 0 is the
+        # entry performUndo() would step over next.
+        self.undo = ['SYNAPSE build', 'Artist edit']
         self.redo = []
         self.calls = []
         self.fail = False
@@ -43,7 +45,7 @@ class History:
         source, target = (self.undo, self.redo) if direction == 'undo' else (self.redo, self.undo)
         if not source:
             raise RuntimeError('No history entry')
-        target.append(source.pop())
+        target.insert(0, source.pop(0))
 
     def performUndo(self):
         self.step('undo')
@@ -104,9 +106,20 @@ def test_real_adapter_handler_undo_redo_keeps_artist_entry(env):
     assert undo.data['_integrity']['hash_target'] == '/obj,/stage'
     redo = dispatch(handler, 'redo')
     assert redo.success, redo.error
-    assert history.undo == ['Artist edit', 'SYNAPSE build'] and not history.redo
+    assert history.undo == ['SYNAPSE build', 'Artist edit'] and not history.redo
     assert [c[0] for c in history.calls] == ['undo', 'redo']
     assert bridge.operation_stats()['operations_verified'] == 2
+
+
+def test_real_adapter_handler_undo_refuses_an_artist_edit_on_top(env):
+    """R-012: the agent's undo must refuse the artist's own step and name it."""
+    history, bridge, handler = env
+    history.undo = ['Artist edit', 'SYNAPSE build']
+    response = dispatch(handler, 'undo')
+    assert not response.success
+    assert 'Artist edit' in response.error
+    assert 'did not record' in response.error
+    assert history.calls == [] and history.groups == 0
 
 
 @pytest.mark.parametrize('failure', ['exception', 'handler_error', 'empty'])
@@ -122,9 +135,13 @@ def test_history_failure_never_undoes_an_extra_artist_entry(env, failure):
     else:
         response = dispatch(handler, 'undo')
     assert not response.success
-    assert ('History unavailable' if history.fail else 'No history entry') in response.error
+    expected = 'History unavailable' if history.fail else 'nothing to undo'
+    assert expected in response.error
     assert history.undo == before and not history.redo
-    assert len(history.calls) == 1 and history.groups == 0
+    # An empty stack is refused before the native call; a failing history is
+    # attempted exactly once. Neither may touch a second entry.
+    expected_calls = 0 if failure == 'empty' else 1
+    assert len(history.calls) == expected_calls and history.groups == 0
     assert bridge.operation_stats()['operations_verified'] == 0
 
 
@@ -142,7 +159,12 @@ def test_history_stays_mutating_and_respects_worker_mode(monkeypatch):
     for direction in ('undo', 'redo'):
         name = 'houdini_' + direction
         assert not adapter.is_read_only(name)
+        # R-012: history is review-gated, so the autonomous worker may no
+        # longer step the undo stack in the default (standard) mode.
         monkeypatch.setenv('SYNAPSE_WORKER_TOOL_MODE', 'standard')
+        allowed, reason = worker_policy.is_tool_allowed_for_worker(name)
+        assert not allowed and 'review' in reason
+        monkeypatch.setenv('SYNAPSE_WORKER_TOOL_MODE', 'unrestricted')
         assert worker_policy.is_tool_allowed_for_worker(name)[0]
         monkeypatch.setenv('SYNAPSE_WORKER_TOOL_MODE', 'strict')
         assert not worker_policy.is_tool_allowed_for_worker(name)[0]

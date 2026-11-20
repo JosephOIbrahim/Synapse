@@ -41,6 +41,30 @@ from synapse.core.tool_results import failure_detail, result_misses, unpack_tool
 MISSES_NOTE_KEY = "synapse_reported_misses"
 
 
+def _counts_as_abandon(exc, tool_name):
+    """True when a failed call may still be running and the tool changes the scene.
+
+    BRAINSTEM-5: the panel's MCP client keeps the server-attached outcome on the
+    exception (``tool_executor._MCPLocalClient.call_tool``). An
+    ``unknown_outcome`` on a MUTATING tool is an abandon the F2 retry breaker
+    must count, exactly like the legacy text variant it used to rely on. A read
+    changes nothing, so it never counts. If the read-only classification cannot
+    be loaded, count it: the breaker only throttles re-issues, and undercounting
+    an unknown outcome is the failure mode that re-issues a running change.
+    """
+    outcome = getattr(exc, "outcome", None)
+    if not isinstance(outcome, dict) or outcome.get("outcome") != "unknown_outcome":
+        return False
+    try:
+        from .bridge_adapter import is_read_only
+        return not is_read_only(tool_name)
+    except Exception:  # noqa: BLE001 -- unloadable classification counts, never crashes
+        logger.debug(
+            "read-only classification unavailable for %s; counting the "
+            "unknown outcome as an abandon", tool_name, exc_info=True)
+        return True
+
+
 def _result_content(payload, misses):
     """The tool_result text for a landed call.
 
@@ -826,11 +850,14 @@ class ClaudeWorker(QThread):
                     pass
                 return result
         except RuntimeError as exc:
-            # MCP returned a JSON-RPC error — tool-level failure. The
-            # main-thread-timeout variant ("...may STILL be running inside
-            # Houdini...") is an ABANDON: the tool may still be executing, so
-            # it counts toward the F2 retry circuit-breaker.
-            if "STILL be running inside Houdini" in str(exc):
+            # MCP returned a JSON-RPC error — tool-level failure. A call that
+            # may STILL be running inside Houdini is an ABANDON: it may have
+            # started, so it counts toward the F2 retry circuit-breaker. Two
+            # sources say so: the legacy text variant ("...may STILL be running
+            # inside Houdini...") and, since BRAINSTEM-5, the typed one — an
+            # unknown_outcome on a MUTATING tool, attached by the MCP client.
+            if ("STILL be running inside Houdini" in str(exc)
+                    or _counts_as_abandon(exc, tool_name)):
                 self._note_abandon(cmd_key)
             self.tool_status.emit(
                 tool_name, "error", translate_tool_error(tool_name, str(exc))[:120])

@@ -627,7 +627,7 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
             raise MainThreadTimeout(
                 "Houdini's main thread didn't respond in time -- "
                 "it may be busy cooking or rendering. "
-                "Try again in a moment."
+                "The call may still be running; check the scene before trying again."
             )
 
         # A delivered payload proves the main thread responded, even when fn()

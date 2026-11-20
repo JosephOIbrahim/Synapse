@@ -89,12 +89,48 @@ class ValidationError(SynapseUserError):
         super().__init__(msg)
 
 
+class HistoryScopeRefused(SynapseUserError):
+    """An agent history call would step over work SYNAPSE did not record.
+
+    R-012: the undo/redo tools read ``hou.undos`` labels and refuse unless the
+    next step is a SYNAPSE group recorded in this session. The rule stops the
+    call BEFORE dispatch, so the outcome is ``policy.safety_guard`` (refused,
+    nothing ran) and it never trips the circuit breaker.
+    """
+
+    outcome_code = "policy.safety_guard"
+
+
 class ExecutionError(SynapseServiceError):
     """Python/VEX execution failed inside Houdini."""
 
     def __init__(self, message: str, partial_result=None):
         self.partial_result = partial_result
         super().__init__(message)
+
+
+class ExecutionAborted(ExecutionError):
+    """execute_python's script raised SystemExit/KeyboardInterrupt/GeneratorExit.
+
+    Raised at the exec boundary (BRAINSTEM-3), where provenance is known: the
+    payload raised these inside its own frame, so they are that call's failure,
+    not a signal to stop the server. The transport-wide re-raise in
+    ``SynapseHandler.handle`` still covers genuine shutdown raised outside the
+    exec frame. ``outcome_code`` is read by ``core.outcomes.for_exception`` and
+    put on the failed response's data by ``handlers._failure_receipt_data``.
+    """
+
+    outcome_code = "tool.internal"
+
+
+class ExecutionDeadlineExceeded(ExecutionError):
+    """A main-thread deadline stopped execute_python/execute_vex (BRAINSTEM-4).
+
+    The script ran until its budget expired, so the scene may be partial; the
+    outcome says exactly that and tells the caller to check the scene.
+    """
+
+    outcome_code = "execution.deadline_exceeded"
 
 
 class HoudiniUnavailableError(SynapseServiceError):

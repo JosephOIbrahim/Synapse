@@ -397,7 +397,14 @@ class _MCPLocalClient:
             from synapse.core.outcomes import describe
 
             data = error.get("data") if isinstance(error.get("data"), dict) else {}
-            raise RuntimeError(describe(data.get("outcome"), error.get("message", "Unknown MCP error")))
+            outcome = data.get("outcome")
+            exc = RuntimeError(describe(outcome, error.get("message", "Unknown MCP error")))
+            # BRAINSTEM-5: keep the server-attached outcome on the exception so
+            # the F2 breaker can read WHAT KIND of failure this was instead of
+            # re-deriving it from the text.
+            if isinstance(outcome, dict) and outcome.get("outcome"):
+                exc.outcome = outcome
+            raise exc
 
         payload = result.get("result")
         if not isinstance(payload, dict):
@@ -415,6 +422,12 @@ class _MCPLocalClient:
             from synapse.core.tool_results import failure_receipt
 
             exc = RuntimeError(self._failure_text(payload))
+            meta = payload.get("_meta")
+            outcome = meta.get("synapse/outcome") if isinstance(meta, dict) else None
+            # BRAINSTEM-5: the same attachment for a result flagged isError —
+            # the F2 breaker reads the typed outcome, never the prose.
+            if isinstance(outcome, dict) and outcome.get("outcome"):
+                exc.outcome = outcome
             receipt = failure_receipt(payload)
             if receipt is not None:
                 exc.receipt = receipt

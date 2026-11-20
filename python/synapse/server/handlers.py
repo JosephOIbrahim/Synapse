@@ -35,7 +35,12 @@ from ..core.protocol import (
     PROTOCOL_VERSION,
     normalize_command_type,
 )
-from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
+from ..core.aliases import (
+    PARAM_ALIASES,
+    resolve_param,
+    resolve_param_with_default,
+    USD_PARM_ALIASES,
+)
 from ..core.audit import audit_log, AuditLevel, AuditCategory
 from ..core.floor_gate import FloorGate, FloorContext
 from ..core.errors import (
@@ -44,10 +49,15 @@ from ..core.errors import (
     NodeNotFoundError,
     ParameterError,
     HoudiniUnavailableError,
+    HistoryScopeRefused,
+    ExecutionAborted,
+    ExecutionDeadlineExceeded,
 )
+from ..core.outcomes import info as _outcome_info, for_exception as _for_exception
 from .handlers_node import NodeHandlerMixin
 from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
+from .undo_scope import UndoScope
 from .handlers_render import (
     RenderHandlerMixin, _undo_labels_snapshot, _rollback_if_group_left_entry,
 )
@@ -454,9 +464,21 @@ def _failure_receipt_data(exc: BaseException) -> Optional[Dict]:
     exception (``ParmWriteRefused.receipt``) because the failure arm that
     formats the response does not know the handler. Returning None keeps the
     response shape of every exception that carries no receipt.
+
+    An exception that declares ``outcome_code`` (BRAINSTEM-3/4: ExecutionAborted,
+    ExecutionDeadlineExceeded) also carries its typed outcome here, so the wire
+    says WHAT KIND of failure this was instead of defaulting to ``tool.failed``.
+    ``with_failure_outcome`` preserves a data-level outcome unchanged.
     """
+    data: Optional[Dict] = None
     receipt = getattr(exc, "receipt", None)
-    return {"receipt": receipt} if isinstance(receipt, dict) else None
+    if isinstance(receipt, dict):
+        data = {"receipt": receipt}
+    outcome = _for_exception(exc)
+    if outcome is not None:
+        data = dict(data or {})
+        data["outcome"] = outcome.to_dict()
+    return data
 
 
 class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, SpatialHandlerMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
@@ -472,6 +494,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         self._session_id: Optional[str] = None
         self._user_id: str = ""
         self._bridge = None
+        # R-012: the agent's history tools may only step over SYNAPSE's own
+        # entries. The baseline is recorded in handle() before the first
+        # command runs (main thread only -- hou.undos is not thread-safe).
+        self._undo_scope = UndoScope()
         # Per-tool call-duration accumulator (Mile 0). Thread-safe: handle()
         # may run under the FastMCP executor on worker threads.
         self._tool_durations: Dict[str, Dict[str, Any]] = {}
@@ -550,6 +576,18 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 )
 
             _t0 = time.perf_counter()
+            # R-012: record the history this handler started from BEFORE this
+            # command can add to it, so a SYNAPSE group this session creates
+            # counts as this session's. Main thread only: hou.undos is not
+            # thread-safe, and a handler that never sees a main-thread command
+            # degrades to the prefix-only check rather than guessing. History
+            # commands are excluded -- capturing at an undo would baseline the
+            # very step being judged.
+            if (cmd_type not in ("undo", "redo")
+                    and threading.current_thread() is threading.main_thread()):
+                scope = getattr(self, "_undo_scope", None)
+                if scope is not None and scope.needs_baseline and HOU_AVAILABLE:
+                    scope.note_session_start(hou)
             # C5: serialize mutating commands across clients (skip on the main
             # thread — already serialized there, and locking would deadlock
             # run_on_main). Read-only commands never contend.
@@ -632,13 +670,36 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             )
         except SynapseServiceError as e:
             # Service errors: Houdini down, execution crash. DO trip CB.
+            # A typed subclass (ExecutionAborted, ExecutionDeadlineExceeded)
+            # carries its outcome here, so the wire type survives (BRAINSTEM-3/4).
             return SynapseResponse(
                 id=command.id,
                 success=False,
+                data=_failure_receipt_data(e),
                 error=str(e),
                 sequence=command.sequence,
             )
         except Exception as e:
+            # BRAINSTEM-5: a main-thread timeout is NOT a definite failure. The
+            # payload may have started and may still be running, so this is an
+            # unknown outcome that tells the caller to check the scene — never
+            # the old generic "failed / Hit a snag" that invited a blind retry.
+            # A read changes nothing, so a read that timed out stays retryable.
+            # The class is resolved from the LIVE main_thread module (as
+            # run_on_main itself does) so a reload cannot split the identity.
+            from .main_thread import MainThreadTimeout as _LiveMainThreadTimeout
+            if isinstance(e, _LiveMainThreadTimeout):
+                _timeout_code = (
+                    "transport.read_retry" if cmd_type in _READ_ONLY_COMMANDS
+                    else "transport.timeout"
+                )
+                return SynapseResponse(
+                    id=command.id,
+                    success=False,
+                    data={"outcome": _outcome_info(_timeout_code, str(e)).to_dict()},
+                    error=str(e),
+                    sequence=command.sequence,
+                )
             # A setter can fail with an exception that is not a ValueError
             # (hou.OperationFailed is a RuntimeError). The receipt rides on the
             # exception; dropping it here is what lost the record for exactly
@@ -1041,24 +1102,33 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     # =========================================================================
 
     def _handle_undo(self, payload: Dict) -> Dict:
-        """Undo the last operation in Houdini.
+        """Undo SYNAPSE's own last recorded step.
 
-        Uses hou.undos.performUndo() to step back one undo level.
-        No parameters required.
+        Reads hou.undos.undoLabels() and refuses unless the next step is a
+        SYNAPSE group recorded in this session (R-012): the global history may
+        hold the artist's own edit, and an agent must never take that back.
+        The refusal names the top label. No parameters required.
         """
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError(_HOUDINI_UNAVAILABLE)
+        refusal = self._undo_scope.refusal(hou.undos, "undo")
+        if refusal:
+            raise HistoryScopeRefused(refusal)
         hou.undos.performUndo()
         return {"status": "ok", "message": "Undid last operation"}
 
     def _handle_redo(self, payload: Dict) -> Dict:
-        """Redo the last undone operation in Houdini.
+        """Redo SYNAPSE's own last undone step.
 
-        Uses hou.undos.performRedo() to step forward one undo level.
-        No parameters required.
+        Reads hou.undos.redoLabels() and refuses unless the next step is a
+        SYNAPSE group recorded in this session (R-012). The refusal names the
+        top label. No parameters required.
         """
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError(_HOUDINI_UNAVAILABLE)
+        refusal = self._undo_scope.refusal(hou.undos, "redo")
+        if refusal:
+            raise HistoryScopeRefused(refusal)
         hou.undos.performRedo()
         return {"status": "ok", "message": "Redid last undone operation"}
 
@@ -1071,8 +1141,22 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         Payload:
             commands: list of {type: str, payload: dict}
-            atomic: bool (default True) -- wrap in single undo group
+            atomic: accepted for compatibility but cannot disable grouping
             stop_on_error: bool (default False) -- halt on first error
+
+        R-012 (SIDEFXCTO-2): ``synapse_batch`` is model-reachable and the live
+        ``/synapse`` handlers are not bridge-routed, so a batch payload must not
+        be able to turn undo grouping off. Two enforcements, both structural:
+
+        * the undo toggle (``atomic`` / ``use_undo``) is stripped from every
+          sub-command payload before ``registry.invoke`` -- execute_python then
+          takes its default (grouped, one ``synapse_execute`` entry); a nested
+          batch re-applies the same strip at its own dispatch.
+        * the envelope group opens whenever Houdini is available, whatever the
+          payload's ``atomic`` says -- execute_vex has no group of its own, and
+          the other mutating handlers depend on their own inline group either
+          way. The old flag could only ever skip this group; that skip was the
+          bypass.
         """
         commands = payload.get("commands")
         if not commands or not isinstance(commands, list):
@@ -1081,7 +1165,6 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                in ((FARM_CONTROL_COMMANDS | FARM_READ_COMMANDS) - {"farm_inspect"}) for item in commands):
             raise ValueError("Use render preparation, submission and status tools as separate requests, outside a scene-edit batch.")
 
-        atomic = payload.get("atomic", True)
         stop_on_error = payload.get("stop_on_error", False)
 
         # The batch envelope's provenance record is the +1 emitted by the outer
@@ -1104,9 +1187,30 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             errors: list = []
 
             def _run_batch():
+                # R-012: every alias that resolve_param() maps to the execute
+                # handlers' undo toggle. Read live from the alias table, so a
+                # future spelling (add_alias) cannot reopen this hole either.
+                undo_toggle_keys = frozenset(
+                    PARAM_ALIASES.get("atomic", ("atomic", "use_undo")))
                 for i, cmd_spec in enumerate(commands):
+                    if not isinstance(cmd_spec, dict):
+                        # Malformed step: fail it as data, never let it reach
+                        # a handler or the grouping decision.
+                        errors.append(f"Step {i}: command entry must be an object")
+                        statuses.append("error")
+                        results.append(None)
+                        if stop_on_error:
+                            break
+                        continue
                     cmd_type = cmd_spec.get("type", "")
                     cmd_payload = cmd_spec.get("payload", {})
+                    if isinstance(cmd_payload, dict):
+                        # R-012: a sub-command may not opt out of undo grouping.
+                        # Copy -- the caller's payload is left as sent.
+                        cmd_payload = {
+                            key: value for key, value in cmd_payload.items()
+                            if key not in undo_toggle_keys
+                        }
                     handler = self._registry.get(cmd_type)
 
                     if handler is None:
@@ -1134,7 +1238,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                         if stop_on_error:
                             break
 
-            if atomic and HOU_AVAILABLE:
+            if HOU_AVAILABLE:
+                # R-012: not conditional on the payload's `atomic` -- see the
+                # handler docstring. A model-reachable batch may not skip the
+                # group that makes its work one artist Ctrl+Z.
                 with hou.undos.group("synapse_batch"):
                     _run_batch()
             else:
@@ -1473,7 +1580,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         Options:
             dry_run (bool): Compile-only syntax check -- no execution.
             atomic (bool): Wrap in one undo group; roll it back on coding
-                errors only (default True). False runs ungrouped.
+                errors only (default True). False runs ungrouped. Internal
+                only: the MCP tool schema does not advertise it, and every
+                registered transport builds its payload through
+                _tool_registry, which never forwards it (R-012).
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -1503,6 +1613,35 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         exec_locals: dict = {}
 
         from .main_thread import _SLOW_TIMEOUT
+        from .deadline import DeadlineExceeded, run_under_deadline
+
+        def _run_payload():
+            """Execute the compiled script under the main-thread deadline.
+
+            BRAINSTEM-3: SystemExit/KeyboardInterrupt/GeneratorExit raised by
+            the exec frame are that call's failure, not a server-shutdown
+            signal. This is the only place that knows the frame's provenance,
+            so they are converted here; the transport-wide re-raise in
+            ``handle()`` still covers genuine shutdown raised outside it.
+
+            BRAINSTEM-4: ``run_under_deadline`` arms sys.settrace for the
+            payload's own compiled unit, so a pure-Python loop is interruptible
+            even when this payload is ALREADY on the main thread — where the
+            run_on_main budget below is discarded (fast path 2). A C call is
+            the documented residual (server/deadline.py).
+            """
+            try:
+                run_under_deadline(
+                    lambda: _run_compiled(compiled, exec_globals, exec_locals),
+                    _SLOW_TIMEOUT, label="execute_python",
+                    watch_filename="<synapse_exec>",
+                )
+            except (SystemExit, KeyboardInterrupt, GeneratorExit) as exc:
+                raise ExecutionAborted(
+                    "execute_python stopped: the script raised %s inside its "
+                    "exec frame. The call may have run in part; check the scene "
+                    "before trying again." % type(exc).__name__,
+                ) from None
 
         def _on_main():
             # Execute inside undo group with smart rollback:
@@ -1522,7 +1661,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 with hou.undos.group("synapse_execute"):
                     with cook_sandwich(label="execute_python"):
                         try:
-                            _run_compiled(compiled, exec_globals, exec_locals)
+                            _run_payload()
                         except _ROLLBACK_ERRORS as e:
                             # Don't call performUndo() inside the undo group —
                             # that raises "Cannot undo within an undo group".
@@ -1535,7 +1674,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     raise _rollback_exc
             else:
                 with cook_sandwich(label="execute_python"):
-                    _run_compiled(compiled, exec_globals, exec_locals)
+                    _run_payload()
 
             # Try to extract a result variable. A script that SET `result` gets
             # that value back even when it is falsy: a measured 0 / False / []
@@ -1549,13 +1688,17 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED -- this is the shipped
         # budget for arbitrary user code and off-main behaviour must not change.
-        # This is the site called out as unbounded main-thread capture: on the
-        # /mcp path dispatch is ALREADY on the main thread, so run_on_main takes
-        # fast path 2 and this 30s is discarded. We cannot bound work on our own
-        # thread and refuse to fake it -- instead the overrun is now reported.
-        return run_on_main_observed(
-            _on_main, timeout=_SLOW_TIMEOUT, label="execute_python",
-        )
+        # On the /mcp path dispatch is ALREADY on the main thread, so run_on_main
+        # takes fast path 2 and this 30s is discarded: the payload itself is now
+        # bounded by the deadline inside _run_payload. A deadline that fires is
+        # an explicit outcome that says the scene may be partial (BRAINSTEM-4),
+        # never a silent overrun.
+        try:
+            return run_on_main_observed(
+                _on_main, timeout=_SLOW_TIMEOUT, label="execute_python",
+            )
+        except DeadlineExceeded as exc:
+            raise ExecutionDeadlineExceeded(str(exc)) from None
 
     def _handle_write_report(self, payload: Dict) -> Dict:
         """Write a report/file to a confined local dir — OFF the main thread.
@@ -1616,8 +1759,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             ]
 
         from .main_thread import _SLOW_TIMEOUT
+        from .deadline import Deadline, DeadlineExceeded
 
         def _on_main():
+            deadline = Deadline(_SLOW_TIMEOUT, "execute_vex")
+            # Bounded-cook policy (BRAINSTEM-4), check 1: nothing has been
+            # created yet, so a budget already spent costs the scene nothing.
+            deadline.check()
             # F1 freeze-relief: execute_vex has no undo group of its
             # own — sandwich wraps the whole create/set/cook payload.
             # Flag-off/headless = identical behavior to today.
@@ -1657,6 +1805,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 # Try to cook and capture any VEX errors
                 cook_errors = []
                 diagnosis_text = ""
+                # Bounded-cook policy, check 2: a cook is a C call — no Python
+                # line event fires inside it, and Houdini exposes no cook
+                # cancel on the main thread (see server/deadline.py's residual
+                # note). So the bound is placed where it can hold: refuse to
+                # START a cook whose budget is already spent by the setup above.
+                deadline.check()
+                cook_started = time.perf_counter()
                 try:
                     wrangle.cook(force=True)
                 except Exception as cook_exc:
@@ -1666,6 +1821,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     diagnoses = diagnose_vex_error(error_msg, snippet, wrangle.path())
                     if diagnoses:
                         diagnosis_text = format_diagnosis(diagnoses, snippet)
+                finally:
+                    cook_elapsed_s = time.perf_counter() - cook_started
 
                 # Also check node error state (Houdini may set errors without raising)
                 node_errors = []
@@ -1703,15 +1860,35 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     result["errors"] = cook_errors + node_errors
                 if diagnosis_text:
                     result["diagnosis"] = diagnosis_text
+                # A cook that started could not be stopped from Python. Report
+                # the overrun beside the result it produced — never claim the
+                # cook was interrupted, and never discard a real result.
+                if deadline.expired():
+                    result["deadline_exceeded"] = {
+                        "budget_s": deadline.budget_s,
+                        "elapsed_s": round(deadline.elapsed(), 3),
+                        "cook_s": round(cook_elapsed_s, 3),
+                        "detail": (
+                            "The cook finished after the main-thread budget. A "
+                            "cook cannot be interrupted from Python, so it was "
+                            "not stopped; the result above is what it produced."
+                        ),
+                    }
 
                 return result
 
         # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED. A wrangle cook is
         # arbitrarily long; 30s is the shipped off-main budget and changing it
-        # would break working VEX. Same inline-discard story as execute_python.
-        result = run_on_main_observed(
-            _on_main, timeout=_SLOW_TIMEOUT, label="execute_vex",
-        )
+        # would break working VEX. On the inline (/mcp) path the budget is a
+        # no-op, so the bounded-cook policy inside _on_main is what actually
+        # refuses a cook whose budget is spent; a cook already started reports
+        # its overrun instead (BRAINSTEM-4).
+        try:
+            result = run_on_main_observed(
+                _on_main, timeout=_SLOW_TIMEOUT, label="execute_vex",
+            )
+        except DeadlineExceeded as exc:
+            raise ExecutionDeadlineExceeded(str(exc)) from None
 
         # Mile 6: capture successful, non-trivial wrangles as recall-able
         # session memory. Best-effort and off the Houdini main thread -- a

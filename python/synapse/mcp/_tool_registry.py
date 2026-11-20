@@ -86,8 +86,10 @@ def _execute_python_payload(args: dict) -> dict:
     p = {"content": args["code"]}
     if "dry_run" in args:
         p["dry_run"] = args["dry_run"]
-    if "atomic" in args:
-        p["atomic"] = args["atomic"]
+    # R-012: `atomic` is deliberately NOT forwarded. The public schema no
+    # longer advertises it, and a client that sends it anyway cannot turn
+    # undo grouping off -- every registered transport builds its payload
+    # through here, so execute_python always opens one undo group.
     return p
 
 
@@ -297,11 +299,10 @@ TOOL_DEFS: list[tuple] = [
     # -- Execution --
     ("houdini_execute_python", "execute_python", _execute_python_payload,
      "Execute Python code in Houdini's runtime environment. "
-     "ONE mutation per call. Wrapped in undo group -- automatic rollback on failure.",
+     "ONE mutation per call. Always wrapped in one undo group -- automatic rollback on failure.",
      {"type": "object", "properties": {
          "code": {"type": "string", "description": "Python code to execute"},
          "dry_run": {"type": "boolean", "description": "Syntax-check only (default: false)"},
-         "atomic": {"type": "boolean", "description": "Wrap in undo group (default: true)"},
      }, "required": ["code"]},
      False, True, False),
 

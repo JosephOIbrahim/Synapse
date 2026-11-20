@@ -1,0 +1,198 @@
+"""SIDEFXCTO-2 / R-012 — the agent history tools cannot take the artist's work.
+
+Predicates from REPAIR_SCAFFOLD_2026-11-20 (audit commit 4aab502a):
+
+* An agent-initiated undo with an artist edit on top refuses and NAMES the top
+  label (and performs no native undo). Same for redo.
+* No model-reachable schema field disables undo grouping: the
+  ``houdini_execute_python`` schema no longer advertises ``atomic``, and the
+  registry payload builder drops it even when a client sends it.
+* The history tools stay registered (the 139-tool count is pinned) but are
+  gated at ``review``, so the default standard-mode worker may not call them.
+
+The real undo-history check needs Houdini; these unit tests drive a fake
+``hou.undos`` through the real handler, which the node explicitly permits.
+"""
+
+import json
+from types import SimpleNamespace
+
+import pytest
+
+from synapse.core.protocol import SynapseCommand
+
+
+class _Undos:
+    """Top-first undo/redo stacks, mirroring hou.undos label order."""
+
+    def __init__(self, undo=(), redo=(), enabled=True):
+        self.undo = list(undo)
+        self.redo = list(redo)
+        self.enabled = enabled
+        self.calls = []
+
+    def areEnabled(self):
+        return self.enabled
+
+    def undoLabels(self):
+        return tuple(self.undo)
+
+    def redoLabels(self):
+        return tuple(self.redo)
+
+    def performUndo(self):
+        self.calls.append("undo")
+        self.redo.insert(0, self.undo.pop(0))
+
+    def performRedo(self):
+        self.calls.append("redo")
+        self.undo.insert(0, self.redo.pop(0))
+
+
+@pytest.fixture
+def env(monkeypatch):
+    import synapse.server.handlers as handlers_mod
+
+    undos = _Undos()
+    monkeypatch.setattr(handlers_mod, "hou", SimpleNamespace(undos=undos), raising=False)
+    monkeypatch.setattr(handlers_mod, "HOU_AVAILABLE", True)
+    monkeypatch.setenv("SYNAPSE_LIVE_ENVELOPE", "0")
+    handler = handlers_mod.SynapseHandler()
+    monkeypatch.setattr(handler._registry._floor_gate, "wrap",
+                        lambda kind, payload, fn, **kw: fn(payload))
+    monkeypatch.setattr(handler, "_submit_logs", lambda *a, **kw: None)
+    return handler, undos, handlers_mod
+
+
+def _capture_baseline(handler, undos):
+    """Record the session baseline the way handle() does, before any command."""
+    assert handler._undo_scope.note_session_start(undos) is True
+    assert handler._undo_scope.needs_baseline is False
+
+
+# ---------------------------------------------------------------------------
+# The artist's work is untouchable
+# ---------------------------------------------------------------------------
+
+def test_undo_with_artist_edit_on_top_refuses_and_names_it(env):
+    handler, undos, mod = env
+    undos.undo = ["Artist edit", "SYNAPSE: create_node"]
+    _capture_baseline(handler, _Undos())
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_undo({})
+
+    message = str(caught.value)
+    assert 'the next undo step is "Artist edit"' in message
+    assert "artist's own work" in message
+    assert undos.calls == []
+
+
+def test_redo_with_artist_edit_on_top_refuses_and_names_it(env):
+    handler, undos, mod = env
+    undos.redo = ["Artist edit", "SYNAPSE: create_node"]
+    _capture_baseline(handler, _Undos())
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_redo({})
+
+    assert 'the next redo step is "Artist edit"' in str(caught.value)
+    assert undos.calls == []
+
+
+def test_refusal_is_a_refused_outcome_on_the_wire(env):
+    handler, undos, _mod = env
+    undos.undo = ["Artist edit"]
+    _capture_baseline(handler, _Undos())
+
+    response = handler.handle(SynapseCommand(id="r-012", type="undo", payload={}))
+
+    assert response.success is False
+    assert "Artist edit" in response.error
+    wire = json.loads(response.to_json())
+    outcome = wire["data"]["outcome"]
+    assert outcome["code"] == "policy.safety_guard"
+    assert outcome["outcome"] == "refused"
+    assert outcome["dispatched"] == "no"
+    assert undos.calls == []
+
+
+# ---------------------------------------------------------------------------
+# SYNAPSE's own, this-session step is allowed
+# ---------------------------------------------------------------------------
+
+def test_session_synapse_step_is_allowed_and_performed(env):
+    handler, undos, _mod = env
+    _capture_baseline(handler, undos)          # empty stack at session start
+    undos.undo = ["synapse_execute"]           # created after the baseline
+
+    result = handler._handle_undo({})
+
+    assert result["status"] == "ok"
+    assert undos.calls == ["undo"]
+
+
+def test_synapse_step_from_before_this_session_refuses(env):
+    handler, undos, mod = env
+    undos.undo = ["SYNAPSE: old session build"]
+    _capture_baseline(handler, undos)          # it was already there
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_undo({})
+
+    message = str(caught.value)
+    assert '"SYNAPSE: old session build"' in message
+    assert "before this SYNAPSE session started" in message
+    assert undos.calls == []
+
+
+def test_disabled_history_refuses(env):
+    handler, undos, mod = env
+    undos.enabled = False
+
+    with pytest.raises(mod.HistoryScopeRefused):
+        handler._handle_undo({})
+
+    assert undos.calls == []
+
+
+# ---------------------------------------------------------------------------
+# No model-reachable field disables undo grouping
+# ---------------------------------------------------------------------------
+
+def test_execute_python_schema_has_no_atomic_field():
+    from synapse.mcp._tool_registry import TOOL_JSON
+
+    props = TOOL_JSON["houdini_execute_python"]["inputSchema"]["properties"]
+    assert "atomic" not in props
+    assert set(props) == {"code", "dry_run"}
+
+
+def test_execute_python_builder_drops_atomic():
+    from synapse.mcp._tool_registry import _execute_python_payload
+
+    payload = _execute_python_payload(
+        {"code": "x = 1", "dry_run": False, "atomic": False})
+    assert "atomic" not in payload
+    assert payload == {"content": "x = 1", "dry_run": False}
+
+
+# ---------------------------------------------------------------------------
+# Still registered (139), now review-gated
+# ---------------------------------------------------------------------------
+
+def test_history_tools_stay_registered_but_are_review_gated(monkeypatch):
+    from synapse.mcp._tool_registry import TOOL_DEFS, TOOL_DISPATCH
+    from shared.constants import OPERATION_GATES
+
+    assert len(TOOL_DEFS) == 139, "R-012 must not change the registered tool count"
+    assert "houdini_undo" in TOOL_DISPATCH and "houdini_redo" in TOOL_DISPATCH
+    assert OPERATION_GATES["history_undo"] == "review"
+    assert OPERATION_GATES["history_redo"] == "review"
+
+    from synapse.panel import worker_policy
+    monkeypatch.delenv("SYNAPSE_WORKER_TOOL_PROFILE", raising=False)
+    monkeypatch.setenv("SYNAPSE_WORKER_TOOL_MODE", "standard")
+    for name in ("houdini_undo", "houdini_redo"):
+        allowed, reason = worker_policy.is_tool_allowed_for_worker(name)
+        assert not allowed and "review" in reason

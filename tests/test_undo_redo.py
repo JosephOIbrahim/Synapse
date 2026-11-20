@@ -38,8 +38,13 @@ def _make_hou_stub():
     hou.Parm = MagicMock
     hou.session = types.ModuleType("hou.session")
     hou.ui = MagicMock()
-    # Undo support
+    # Undo support. undoLabels()/redoLabels() are read by the R-012 scope
+    # check (top entry first); a SYNAPSE-labelled top is the only step the
+    # history tools may take.
     undos = MagicMock()
+    undos.areEnabled = MagicMock(return_value=True)
+    undos.undoLabels = MagicMock(return_value=["SYNAPSE: create_node"])
+    undos.redoLabels = MagicMock(return_value=["SYNAPSE: create_node"])
     undos.performUndo = MagicMock()
     undos.performRedo = MagicMock()
     hou.undos = undos
@@ -122,6 +127,24 @@ class TestUndoHandler:
         """undo should be registered in the handler registry."""
         handler, _ = _get_handler_instance()
         assert "undo" in handler._registry.registered_types
+
+    def test_undo_refuses_an_artist_edit_on_top(self, _hou_stub):
+        """R-012: the agent may not take back the artist's last edit.
+
+        The refusal must name the top label, and performUndo() must not run.
+        The exception class comes from the FRESH handlers module: _load_handlers
+        imports its own module graph, so the resident class is a different
+        object (the repo's fake-residency trap).
+        """
+        handler, handlers_mod = _get_handler_instance()
+        handlers_mod.hou.undos.undoLabels.return_value = [
+            "Artist edit", "SYNAPSE: create_node",
+        ]
+        with patch.object(handlers_mod.hou.undos, "performUndo") as mock_undo:
+            with pytest.raises(handlers_mod.HistoryScopeRefused) as caught:
+                handler._handle_undo({})
+            mock_undo.assert_not_called()
+        assert "Artist edit" in str(caught.value)
 
 
 class TestRedoHandler:

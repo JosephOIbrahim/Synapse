@@ -890,9 +890,30 @@ class SynapseServer:
                 data={"outcome": _outcome("request.invalid", str(e)).to_dict()},
             ).to_json())
         except Exception as e:
-            # Notify circuit breaker on handler exceptions (service errors)
-            # Also catch main-thread timeouts (RuntimeError) which aren't
-            # in SERVICE_ERROR_TYPES but indicate infrastructure failure
+            # BRAINSTEM-5: a main-thread timeout means the call may STILL be
+            # running. That is an unknown outcome, not a definite failure: say
+            # so and tell the model to check the scene. A read changes nothing,
+            # so a read that timed out stays retryable. Resolved from the LIVE
+            # main_thread module, as run_on_main does, so a reload cannot split
+            # the class identity.
+            from .main_thread import MainThreadTimeout as _LiveMainThreadTimeout
+            if isinstance(e, _LiveMainThreadTimeout):
+                if self._circuit_breaker:
+                    self._circuit_breaker.record_failure()
+                code = ("transport.read_retry"
+                        if getattr(command, "type", "") in _READ_ONLY_COMMANDS
+                        else "transport.timeout")
+                websocket.send(SynapseResponse(
+                    id=getattr(command, "id", None) or "unknown",
+                    success=False,
+                    error=str(e),
+                    data={"outcome": _outcome(code, str(e)).to_dict()},
+                ).to_json())
+                return
+            # Notify circuit breaker on handler exceptions (service errors).
+            # MainThreadTimeout was answered above; this keeps the existing
+            # treatment of any OTHER error whose text blames the main thread
+            # (e.g. a RuntimeError from a nested marshal) as infrastructure.
             is_timeout = (
                 isinstance(e, RuntimeError)
                 and "main thread" in str(e).lower()

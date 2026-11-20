@@ -78,6 +78,12 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
     "tool.failed": (Outcome.FAILED, "yes", "Read the error; it names what failed."),
     "tool.internal": (Outcome.UNKNOWN_OUTCOME, "maybe",
                       "Check the scene before trying again; the call may have run in part."),
+    # BRAINSTEM-4: a script stopped at its main-thread deadline. It ran (and may
+    # have mutated) before it stopped, and the stop is not a rollback — the
+    # scene has to be looked at, never blindly retried.
+    "execution.deadline_exceeded": (Outcome.UNKNOWN_OUTCOME, "maybe",
+                                    "Check the scene: the script was stopped part-way at its "
+                                    "deadline and may have left partial changes."),
     "artist.approval_needed": (Outcome.NEEDS_ARTIST, "no",
                                "Approve it in the SYNAPSE panel, then send it again."),
     "cache.over_budget": (Outcome.NEEDS_ARTIST, "no",

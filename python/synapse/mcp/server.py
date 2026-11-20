@@ -917,6 +917,15 @@ class MCPServer:
             # artist checks the scene first. Anything else ran and failed. (Level 1, M1)
             infra = any(k in error_text.lower()
                         for k in ("timeout", "main thread", "crashed", "unresponsive"))
+            # BRAINSTEM-5: prefer the outcome the HANDLER attached (dispatch_tool
+            # carries response.data as structuredContent) over the text heuristic
+            # above. The heuristic stays as the fallback for results that carry no
+            # outcome object (a bare failure dict, an unknown tool).
+            structured = result.get("structuredContent")
+            attached = (structured.get("outcome")
+                        if isinstance(structured, dict) else None)
+            if isinstance(attached, dict) and attached.get("outcome"):
+                return carry_structured(_tool_result(attached, result), result)
             return carry_structured(
                 _tool_result(_outcome(
                     "transport.timeout" if infra else "tool.failed", error_text), result),
