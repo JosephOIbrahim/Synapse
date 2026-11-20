@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import os
 
+from synapse.core.protocol import normalize_command_type
+
 ENV = "SYNAPSE_MCP_READ_ONLY"
 
 _ON = frozenset({"1", "true", "yes", "on"})
@@ -77,13 +79,19 @@ def refusal_for_tool(tool_name: str) -> str | None:
 
 
 def tool_for_command(command_type: str) -> str | None:
-    """The tool a WebSocket command type belongs to, or None for a protocol command."""
+    """The tool a WebSocket command type belongs to, or None for a protocol command.
+
+    The type is normalized through ``COMMAND_ALIASES`` first: the handlers pre-register
+    every alias (``server/handlers.py``), so looking up only canonical types here would
+    let an alias such as ``engram_add`` reach a mutating handler while ``add_memory`` is
+    refused. The preflight gate and the resend policy share this lookup.
+    """
     global _TOOL_BY_COMMAND
     if _TOOL_BY_COMMAND is None:
         from synapse.mcp._tool_registry import TOOL_DEFS
 
         _TOOL_BY_COMMAND = {entry[1]: entry[0] for entry in TOOL_DEFS}
-    return _TOOL_BY_COMMAND.get(command_type)
+    return _TOOL_BY_COMMAND.get(normalize_command_type(command_type))
 
 
 def refusal_for_command(command_type: str) -> str | None:

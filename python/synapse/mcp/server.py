@@ -570,23 +570,52 @@ class MCPServer:
         if session is not None:
             try:
                 handler = self._get_handler()
-                # L8: dispatch on the CALLING thread. This used to call
-                # hdefereval.executeInMainThreadWithResult, which is
-                # _queueDeferred(block=True) — it enqueues work for the main
-                # thread and then parks in _condition.wait(). That condition is
-                # only notified from the main thread's own event-loop callback,
-                # so a MAIN-THREAD caller (panel-initiated initialize, hython,
-                # a Qt slot) self-deadlocks permanently.
-                # No outer marshal is needed: project_setup's only hou.* surface
-                # is handlers_memory._scene_paths, which marshals itself via
-                # run_on_main (handlers_memory.py:38-50) at the standard 10s
-                # budget. TIMEOUT: none chosen here on purpose — the handler
-                # owns its own bound, so this is strictly tighter than the
-                # previous unbounded blocking wait, and the handshake can no
-                # longer hang forever on a busy main thread. Matches the live WS
-                # path, which calls handler.handle() straight off the worker
-                # thread (hwebserver_adapter.py:208/234).
-                result = dispatch_tool(handler, "synapse_project_setup", {})
+                # R-001: the preload dispatches on Houdini's MAIN thread.
+                # dispatch_tool routes every tool that is not read-only to the
+                # BRIDGE through execute_through_bridge (mcp/tools.py:126), and
+                # synapse_project_setup is not in the bridge's read-only set.
+                # The bridge's _execute_houdini opens hou.undos.group() and
+                # computes the R1 scene hash on the CALLING thread
+                # (shared/bridge.py:1919) — on an hwebserver worker that is an
+                # off-main hou.* call: main_thread_executed records False,
+                # fidelity drops to 0.0, the bridge returns a failure, and
+                # session.project_context never caches. L8's "dispatch on the
+                # calling thread" was correct about the HANDLER (project_setup's
+                # own hou.* surface is handlers_memory._scene_paths, which
+                # marshals itself) but missed the dispatcher's bridge envelope.
+                #
+                # run_on_main is the safe primitive, not the vendor's blocking
+                # marshal L8 removed: a main-thread caller (panel-initiated
+                # initialize, hython, a Qt slot) runs the payload inline — no
+                # self-deadlock — and an off-main caller defers with a bounded
+                # wait. Timeout comes from the canonical C7 table, the same
+                # budget tools/call gives this tool. record_stall/record_wait
+                # keep their defaults: this is a real foreground dispatch, not
+                # a background poll.
+                dispatch_started = False
+
+                def _preload_project_context():
+                    nonlocal dispatch_started
+                    dispatch_started = True
+                    return dispatch_tool(handler, "synapse_project_setup", {})
+
+                try:
+                    from ..server.main_thread import run_on_main
+                    from ..core.timeouts import timeout_for
+                    result = run_on_main(
+                        _preload_project_context,
+                        timeout=timeout_for("synapse_project_setup"),
+                        label="mcp:initialize:project_setup",
+                    )
+                except ImportError:
+                    # No hdefereval: outside Houdini (tests/CI) there is no
+                    # main thread to marshal to and no real hou to be unsafe
+                    # with, so dispatch directly. Never replay a dispatch that
+                    # already started — dispatch_tool re-raises a handler's
+                    # ImportError, and that must not become a second call.
+                    if dispatch_started:
+                        raise
+                    result = _preload_project_context()
                 if not result.get("isError"):
                     session.project_context = result
             except Exception:

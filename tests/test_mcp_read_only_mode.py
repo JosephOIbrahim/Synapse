@@ -74,6 +74,31 @@ def test_protocol_commands_are_never_refused(monkeypatch):
     assert RO.refusal_for_command(_CMD[BOTH_SETS]) is None
 
 
+def test_every_command_alias_inherits_its_canonical_refusal(monkeypatch):
+    """Read-only mode must not be bypassable through a command alias (R-002).
+
+    The handlers pre-register every ``COMMAND_ALIASES`` name (server/handlers.py), so a
+    WebSocket caller can reach a mutating handler under an alias. The fence looked up only
+    canonical command types, so ``engram_add`` ran while ``add_memory`` was refused. Every
+    alias must get the verdict of the command it normalizes to."""
+    from synapse.core.protocol import COMMAND_ALIASES, normalize_command_type
+
+    monkeypatch.setenv(RO.ENV, "1")
+    refused_canonicals = {canonical for canonical in COMMAND_ALIASES.values()
+                          if RO.refusal_for_command(canonical)}
+    assert refused_canonicals, "expected at least one alias whose canonical command is refused"
+    for alias in COMMAND_ALIASES:
+        canonical = normalize_command_type(alias)
+        alias_refusal = RO.refusal_for_command(alias)
+        if canonical in refused_canonicals:
+            assert alias_refusal is not None, (
+                f"{alias} bypasses read-only mode: its canonical command {canonical} is "
+                f"refused but the alias is not")
+            assert RO.tool_for_command(alias) in alias_refusal
+        else:
+            assert alias_refusal is None, alias
+
+
 def test_mcp_tools_call_is_refused_before_dispatch(monkeypatch):
     monkeypatch.setenv(RO.ENV, "1")
     monkeypatch.setattr(S, "dispatch_tool", Mock(side_effect=AssertionError("dispatched")))
