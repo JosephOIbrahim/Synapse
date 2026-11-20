@@ -308,10 +308,26 @@ def test_execute_python_infinite_loop_stops_at_the_deadline(handler, monkeypatch
     monkeypatch.setattr(_main_thread(), "_SLOW_TIMEOUT", 0.05)
     started = time.monotonic()
     with pytest.raises(ExecutionDeadlineExceeded) as caught:
-        handler._handle_execute_python({"content": "while True: pass"})
+        handler._handle_execute_python({"content": "while True:\n    pass"})
     assert time.monotonic() - started < 10.0
     assert "deadline" in str(caught.value).lower()
     assert "partial" in str(caught.value).lower()
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason="CPython 3.11 emits no line events for a single-line loop body, so the "
+           "tracer cannot interrupt it; the shipped runtime is Houdini 22's Python "
+           "3.13, and the 3.12+ legs pin this shape",
+)
+def test_execute_python_one_line_loop_stops_at_the_deadline(handler, monkeypatch):
+    from synapse.core.errors import ExecutionDeadlineExceeded
+
+    monkeypatch.setattr(_main_thread(), "_SLOW_TIMEOUT", 0.05)
+    started = time.monotonic()
+    with pytest.raises(ExecutionDeadlineExceeded):
+        handler._handle_execute_python({"content": "while True: pass"})
+    assert time.monotonic() - started < 10.0
 
 
 def test_execute_python_deadline_is_an_explicit_outcome_on_the_wire(handler, monkeypatch):
@@ -319,7 +335,7 @@ def test_execute_python_deadline_is_an_explicit_outcome_on_the_wire(handler, mon
 
     response = handler.handle(SynapseCommand(
         type="execute_python", id="dl-1",
-        payload={"content": "while True: pass"},
+        payload={"content": "while True:\n    pass"},
     ))
 
     assert response.success is False

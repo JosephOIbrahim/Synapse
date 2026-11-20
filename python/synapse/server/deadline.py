@@ -20,7 +20,7 @@ This module adds the cooperative bound the harness can actually keep:
   Python (a VEX cook): check it before starting an uninterruptible call and
   report the overrun after.
 
-Two residuals are documented rather than papered over:
+Three residuals are documented rather than papered over:
 
 1. **C calls are not interruptible.** A frame blocked inside a C extension
    (``hou.node.cook()``, a render, file I/O) emits no Python line events until
@@ -33,6 +33,12 @@ Two residuals are documented rather than papered over:
    raises then, so a swallowed deadline cannot read as a clean success. A loop
    that keeps running after swallowing is outside any in-process cooperative
    bound; the off-main caller's ``MainThreadTimeout`` still reports it.
+3. **A CPython 3.11 line-event gap.** On 3.11 a loop whose body shares the
+   header line (``while True: pass``) can emit no line events to a trace
+   function, so the tracer cannot fire and that payload is not bounded there.
+   The same payload fires on 3.12 and later, and Houdini 22 ships Python 3.13,
+   so the product runtime is covered; the CI 3.11 leg pins the two-line form
+   and the 3.12+ legs pin the one-line form.
 
 Kill switch: ``SYNAPSE_EXEC_DEADLINE=0`` disarms the trace (read at call
 time), for an artist who would rather pay a slow script than a slowed one.
