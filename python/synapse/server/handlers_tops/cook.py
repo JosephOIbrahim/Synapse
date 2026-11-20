@@ -107,8 +107,15 @@ def _cook_state_name(node) -> Optional[str]:
     get_state = getattr(node, "getCookState", None)
     if not callable(get_state):
         return None
+    # H22 TopNode.getCookState() requires a force argument (live receipt,
+    # 2026-11-20); older hosts and the fake nodes in tests take none. Try
+    # the documented signature first, fall back rather than losing the
+    # readback silently.
     try:
-        return _state_name(get_state())
+        try:
+            return _state_name(get_state(True))
+        except TypeError:
+            return _state_name(get_state())
     except Exception as exc:
         logger.debug("could not read TOP cook state: %r", exc)
         return None

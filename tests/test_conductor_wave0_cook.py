@@ -548,3 +548,24 @@ def test_cancel_needs_node_or_task_id(install):
     h = SynapseHandler()
     with pytest.raises(ValueError, match="needs 'node' or a known 'task_id'"):
         h._handle_tops_cancel_cook({})
+
+
+def test_cook_state_read_prefers_the_forced_signature():
+    """H22 TopNode.getCookState requires force; the readback keeps the state."""
+    from synapse.server.handlers_tops.cook import _cook_state_name
+
+    class ForcedOnly:
+        def getCookState(self, force):
+            return "Cooking"
+
+    assert _cook_state_name(ForcedOnly()) == "Cooking"
+
+
+def test_cook_state_read_falls_back_to_the_legacy_signature():
+    from synapse.server.handlers_tops.cook import _cook_state_name
+
+    class NoArg:
+        def getCookState(self):
+            return "Cooking"
+
+    assert _cook_state_name(NoArg()) == "Cooking"
