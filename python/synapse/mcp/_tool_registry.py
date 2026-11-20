@@ -498,13 +498,20 @@ TOOL_DEFS: list[tuple] = [
      True, False, True),
 
     ("tops_cook_node", "tops_cook_node", _identity,
-     "Cook a TOP node. Supports blocking/non-blocking and generate-only modes.",
+     "Cook a TOP node. Non-blocking by default: returns a task_id immediately "
+     "while the cook runs in PDG, so Houdini stays responsive. Poll this tool "
+     "with {task_id} for the final state (a completion event or a state "
+     "readback resolves it), or use tops_cancel_cook to stop it. blocking=true "
+     "waits off the main thread, bounded; expiry returns a still-cooking "
+     "receipt, never a false failure.",
      {"type": "object", "properties": {
-         "node": {"type": "string", "description": "TOP node path"},
+         "node": {"type": "string", "description": "TOP node path (required unless task_id is given)"},
+         "task_id": {"type": "string", "description": "Poll a cook task returned by an earlier tops_cook_node call"},
          "generate_only": {"type": "boolean", "description": "Generate work items only, don't cook (default: false)"},
-         "blocking": {"type": "boolean", "description": "Wait for cook to complete (default: true)"},
+         "blocking": {"type": "boolean", "description": "Wait for cook completion off the main thread (default: false)"},
+         "blocking_timeout": {"type": "number", "description": "Max seconds to wait when blocking=true (default: 45); expiry is not a failure"},
          "top_down": {"type": "boolean", "description": "Cook upstream nodes first (default: true)"},
-     }, "required": ["node"]},
+     }, "required": []},
      False, True, False),
 
     ("tops_generate_items", "tops_generate_items", _identity,
@@ -527,10 +534,14 @@ TOOL_DEFS: list[tuple] = [
      False, True, True),
 
     ("tops_cancel_cook", "tops_cancel_cook", _identity,
-     "Cancel an active cook on a TOP node or network.",
+     "Cancel an active cook on a TOP node or network. A single TOP node is "
+     "cancelled through the PDG cancel path, and 'cancelled' is reported only "
+     "after work-item state is read back; the node is never dirtied. Pass a "
+     "task_id to cancel a cook started by tops_cook_node.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "TOP node or network path"},
-     }, "required": ["node"]},
+         "task_id": {"type": "string", "description": "Cook task returned by tops_cook_node"},
+     }, "required": []},
      False, True, False),
 
     ("tops_pause_cook", "tops_pause_cook", _identity,

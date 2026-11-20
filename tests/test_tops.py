@@ -481,14 +481,22 @@ class TestGetCookStats:
 
 class TestCookNode:
     def test_blocking_cook(self, handler):
+        """CONDUCTOR-1: blocking=True never parks the main thread. From the
+        main thread it returns the live task id and leaves the cook running."""
         pdg = _make_pdg_node([_make_work_item(id=0)])
         node = _make_top_node(pdg_node=pdg)
 
         with patch.object(_handlers_hou, "node", return_value=node):
-            result = handler._handle_tops_cook_node({"node": "/obj/topnet1/node1"})
+            result = handler._handle_tops_cook_node({
+                "node": "/obj/topnet1/node1",
+                "blocking": True,
+                "blocking_timeout": 0.05,
+            })
 
-        assert result["status"] == "cooked"
-        node.cookWorkItems.assert_called_once_with(block=True)
+        assert result["status"] == "cooking"
+        assert result["task_id"].startswith("cook-")
+        assert result["wait_skipped"] == "main_thread"
+        node.cookWorkItems.assert_called_once_with(block=False)
 
     def test_nonblocking_cook(self, handler):
         pdg = _make_pdg_node([])
@@ -501,6 +509,7 @@ class TestCookNode:
             })
 
         assert result["status"] == "cooking"
+        assert result["task_id"].startswith("cook-")
         node.cookWorkItems.assert_called_once_with(block=False)
 
     def test_generate_only(self, handler):
@@ -539,17 +548,19 @@ class TestCookNode:
         assert "status" in result
         assert "work_items" in result
         assert result["work_items"] == 2
+        assert "task_id" in result
 
     def test_default_params(self, handler):
-        """Default: blocking=True, generate_only=False, top_down=True."""
+        """Default: blocking=False (non-blocking task id), generate_only=False."""
         pdg = _make_pdg_node([])
         node = _make_top_node(pdg_node=pdg)
 
         with patch.object(_handlers_hou, "node", return_value=node):
             result = handler._handle_tops_cook_node({"node": "/obj/topnet1/node1"})
 
-        assert result["status"] == "cooked"
-        node.cookWorkItems.assert_called_once_with(block=True)
+        assert result["status"] == "cooking"
+        assert result["task_id"].startswith("cook-")
+        node.cookWorkItems.assert_called_once_with(block=False)
 
     def test_missing_node_param(self, handler):
         with pytest.raises(ValueError, match="Missing required"):
@@ -704,14 +715,24 @@ class TestCancelCook:
         ctx.cancelCook.assert_called_once()
 
     def test_cancel_single_node(self, handler):
-        pdg_node = _make_pdg_node([])
+        """CONDUCTOR-6: the PDG cancel path is used, 'cancelled' is reported
+        only after readback, and the node is never dirtied."""
+        cooking = _make_work_item(id=0, state="Cooking")
+        pdg_node = _make_pdg_node([cooking])
         node = _make_top_node("/obj/topnet1/gen1", pdg_node, "Top")
+
+        def _cancel():
+            cooking.state = _MockState("CookedCancel")
+        pdg_node.cancel.side_effect = _cancel
 
         with patch.object(_handlers_hou, "node", return_value=node):
             result = handler._handle_tops_cancel_cook({"node": "/obj/topnet1/gen1"})
 
         assert result["status"] == "cancelled"
-        pdg_node.dirty.assert_called_once_with(False)
+        assert result["cancel_api"] == "pdg.Node.cancel"
+        assert result["readback"] == {"CookedCancel": 1}
+        pdg_node.cancel.assert_called_once()
+        pdg_node.dirty.assert_not_called()
 
     def test_node_not_found(self, handler):
         with patch.object(_handlers_hou, "node", return_value=None):

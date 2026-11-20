@@ -309,6 +309,11 @@ _KNOWN_SLOW_TOOLS = frozenset({
     "houdini_render",
     "synapse_render_sequence", "synapse_autonomous_render",
     "synapse_safe_render", "synapse_render_progressively",
+    # CONDUCTOR-1: tops_cook_node is non-blocking by default (returns a task
+    # id), but every call still touches the PDG graph context on the main
+    # thread — a 5-15s cold start on first access — and blocking=True
+    # deliberately waits. Advisory only: it never changes the call's result.
+    "tops_cook_node",
     "tops_batch_cook", "tops_cook_and_validate", "tops_multi_shot",
     "tops_render_sequence", "cops_batch_cook",
     "synapse_batch", "synapse_sleep_pass",
