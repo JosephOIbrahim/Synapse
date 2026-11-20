@@ -105,9 +105,23 @@ TOOL_RETURN = {
             "type": "string",
             "description": "Path where the .usd was exported (if export_path was provided).",
         },
+        "missing_nodes": {
+            "type": ["array", "null"],
+            "items": {"type": "string"},
+            "description": (
+                "Child nodes the existing component is missing (status "
+                "'incomplete'). Null when the child list could not be read."
+            ),
+        },
         "status": {
             "type": "string",
-            "enum": ["created", "already_exists"],
+            "enum": ["created", "already_exists", "incomplete"],
+            "description": (
+                "'created' = the import pipeline was built. 'already_exists' = "
+                "an existing component's child chain is complete. 'incomplete' "
+                "= a component with this name exists but part of its chain is "
+                "missing; nothing was built."
+            ),
         },
     },
 }

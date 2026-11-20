@@ -67,6 +67,21 @@ class SolarisComposeMixin:
                     ),
                 }
             stage = _sc.resolve_stage(stage_path)
+            # R-006: snapshot the undo stack before the group opens. A failure
+            # that precedes the first scene write (the unsaved-scene /
+            # unsanctioned layer_dir refusal in _resolve_layer_base) records
+            # nothing, so an unconditional performUndo would pop the artist's
+            # previous edit. Undo only with evidence the label tuple changed
+            # (build_graph idiom, handlers_solaris_graph.py).
+            undo_enabled, labels_before = False, ()
+            try:
+                undo_enabled = bool(hou.undos.areEnabled())
+                labels_before = tuple(hou.undos.undoLabels())
+            except Exception as snap_exc:
+                _log.debug(
+                    "solaris_shotsetup_karma_xpu: undo snapshot unavailable: %s",
+                    snap_exc,
+                )
             try:
                 with hou.undos.group("SYNAPSE: solaris_shotsetup_karma_xpu"):
                     result = _tools.build_karma_xpu_shot(
@@ -84,9 +99,11 @@ class SolarisComposeMixin:
             except Exception:
                 # Safe undo fallback -- the C++ undo layer for LOP nodes can
                 # throw during __exit__; explicitly undo to prevent undo
-                # stack corruption (build_graph idiom).
+                # stack corruption (build_graph idiom) -- but only when the
+                # group actually recorded something.
                 try:
-                    hou.undos.performUndo()
+                    if undo_enabled and tuple(hou.undos.undoLabels()) != labels_before:
+                        hou.undos.performUndo()
                 except Exception as undo_exc:
                     _log.warning(
                         "solaris_shotsetup_karma_xpu: undo rollback also failed: %s",
@@ -116,6 +133,15 @@ class SolarisComposeMixin:
         def _on_main():
             stage = _sc.resolve_stage(stage_path)
             input_node = hou.node(input_path) if input_path else None
+            # R-006: same evidence rule as shotsetup. bind_material reads the
+            # input node's stage BEFORE creating the assignmaterial LOP; an
+            # uncooked input raises there and the group records nothing.
+            undo_enabled, labels_before = False, ()
+            try:
+                undo_enabled = bool(hou.undos.areEnabled())
+                labels_before = tuple(hou.undos.undoLabels())
+            except Exception as snap_exc:
+                _log.debug("matlib_bind: undo snapshot unavailable: %s", snap_exc)
             try:
                 with hou.undos.group("SYNAPSE: matlib_bind"):
                     return _tools.bind_material(
@@ -124,7 +150,8 @@ class SolarisComposeMixin:
                     )
             except Exception:
                 try:
-                    hou.undos.performUndo()
+                    if undo_enabled and tuple(hou.undos.undoLabels()) != labels_before:
+                        hou.undos.performUndo()
                 except Exception as undo_exc:
                     _log.warning(
                         "matlib_bind: undo rollback also failed: %s", undo_exc,

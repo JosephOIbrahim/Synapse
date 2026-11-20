@@ -204,6 +204,22 @@ class TestCoerceBool:
 # ===========================================================================
 
 class TestReferenceUsdKarmaVisible:
+    _REF_LAYER = types.SimpleNamespace(
+        GetPrimAtPath=lambda p: object() if p == "/World/asset" else None,
+        defaultPrim="World",
+    )
+
+    @classmethod
+    def _install_ref_pxr(cls, monkeypatch):
+        """R-008 readback: the import opens the referenced file and needs the
+        source layer to provide the prim (the fixtures use a non-existent
+        $HIP path), so inject a layer that has /World/asset."""
+        fake_pxr = types.ModuleType("pxr")
+        fake_pxr.Sdf = types.SimpleNamespace(
+            Layer=types.SimpleNamespace(FindOrOpen=lambda path: cls._REF_LAYER)
+        )
+        monkeypatch.setitem(sys.modules, "pxr", fake_pxr)
+
     def _setup_parent(self):
         """Mock hou.node(parent) -> parent_node; createNode returns ref + kv."""
         parent_node = MagicMock()
@@ -221,6 +237,7 @@ class TestReferenceUsdKarmaVisible:
     def test_karma_visible_true_creates_second_lop(self, handler, monkeypatch):
         parent_node, ref_lop, kv_lop = self._setup_parent()
         monkeypatch.setattr(_usd_hou, "node", lambda p: parent_node)
+        self._install_ref_pxr(monkeypatch)
         # Use a $HIP path so the on-disk isfile() check is short-circuited.
 
         result = handler._handle_reference_usd({
@@ -245,6 +262,7 @@ class TestReferenceUsdKarmaVisible:
     def test_karma_visible_string_false_keeps_advisory(self, handler, monkeypatch):
         parent_node, ref_lop, kv_lop = self._setup_parent()
         monkeypatch.setattr(_usd_hou, "node", lambda p: parent_node)
+        self._install_ref_pxr(monkeypatch)
 
         result = handler._handle_reference_usd({
             "file": "$HIP/asset.usd",
@@ -261,6 +279,7 @@ class TestReferenceUsdKarmaVisible:
     def test_payload_mode_default_karma_visible(self, handler, monkeypatch):
         parent_node, ref_lop, kv_lop = self._setup_parent()
         monkeypatch.setattr(_usd_hou, "node", lambda p: parent_node)
+        self._install_ref_pxr(monkeypatch)
 
         # No karma_visible key -> defaults True.
         result = handler._handle_reference_usd({

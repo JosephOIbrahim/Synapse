@@ -5,6 +5,7 @@ Extracted from handlers.py -- contains USD/Solaris stage handlers and the
 _usd_to_json utility for the SynapseHandler class.
 """
 
+import logging
 import time
 from typing import Dict, List
 
@@ -20,6 +21,8 @@ from .handler_helpers import (
     _path_warnings,
 )
 
+
+_log = logging.getLogger(__name__)
 
 _ARRAY_RETURN_LIMIT = 256
 _ARRAY_SAMPLE = 16
@@ -885,6 +888,47 @@ class UsdHandlerMixin:
                     node.moveToGoodPosition()
                 _tip = node
 
+                # R-008 truth contract: an import that composes nothing at the
+                # requested prim path must not report success. Cook the
+                # reference, then read the REFERENCED FILE back -- the LOP
+                # creates its destination prim when absent (createprims
+                # defaults to Create), so a valid prim on the cooked stage is
+                # not evidence. Sublayer mode merges a whole layer and has no
+                # single source prim to verify; prim_path "/" verifies the
+                # file's default prim.
+                reference_verified = False
+                if mode in ("reference", "payload"):
+                    try:
+                        node.cook(force=True)
+                    except hou.OperationFailed as e:
+                        return {
+                            "node": node.path(),
+                            "file": file_path,
+                            "mode": mode,
+                            "prim_path": prim_path,
+                            "cook_error": (
+                                "The reference node was created but hit a snag "
+                                f"when cooking -- {e}. The node is still in the "
+                                "network so you can inspect it. Check that the "
+                                "file exists and the requested prim path is valid."
+                            ),
+                        }
+                    verify_error = self._verify_reference_cooked(
+                        node, prim_path, file_path
+                    )
+                    if verify_error:
+                        return {
+                            "node": node.path(),
+                            "file": file_path,
+                            "mode": mode,
+                            "prim_path": prim_path,
+                            "verify_error": (
+                                "The node cooked but readback failed -- "
+                                f"{verify_error}"
+                            ),
+                        }
+                    reference_verified = True
+
                 result = {
                     "node": node.path(),
                     "file": file_path,
@@ -901,6 +945,8 @@ class UsdHandlerMixin:
                 pw = _path_warnings(file_path, context="reference/sublayer filepath1")
                 if pw:
                     result["path_warnings"] = pw
+                if reference_verified:
+                    result["verified"] = True
 
                 if mode in ("reference", "payload"):
                     if karma_visible:
@@ -1228,29 +1274,72 @@ class UsdHandlerMixin:
                         "For 'select' action, pass 'variant' with the name "
                         "to select (e.g. 'red')"
                     )
-                parent = node.parent()
-                safe_name = _safe_node_name(variant_set_name, fallback="vset")
-                py_lop = parent.createNode("pythonscript", f"vsel_{safe_name}")
-                py_lop.setInput(0, node)
-                py_lop.moveToGoodPosition()
+                # R-008: select was the only mutating branch in this handler
+                # outside an undo group -- wrap it like the create branch so one
+                # artist Ctrl+Z reverses the selection node.
+                with hou.undos.group("SYNAPSE: manage_variant_set"):
+                    parent = node.parent()
+                    safe_name = _safe_node_name(variant_set_name, fallback="vset")
+                    py_lop = parent.createNode("pythonscript", f"vsel_{safe_name}")
+                    py_lop.setInput(0, node)
+                    py_lop.moveToGoodPosition()
 
-                code = "\n".join([
-                    "from pxr import Usd",
-                    "stage = hou.pwd().editableStage()",
-                    f"prim = stage.GetPrimAtPath({repr(prim_path)})",
-                    "if prim:",
-                    f"    vset = prim.GetVariantSets().GetVariantSet({repr(variant_set_name)})",
-                    f"    vset.SetVariantSelection({repr(variant)})",
-                ])
-                py_lop.parm("python").set(code)
+                    # The embedded script skips a missing prim/set/variant
+                    # silently -- an unguarded GetVariantSet on a missing set is
+                    # a cook-time exception, not a verified outcome. The
+                    # readback below supplies the truth (R-008 truth contract).
+                    code = "\n".join([
+                        "from pxr import Usd",
+                        "stage = hou.pwd().editableStage()",
+                        f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                        "if prim:",
+                        "    vsets = prim.GetVariantSets()",
+                        f"    if {repr(variant_set_name)} in vsets.GetNames():",
+                        f"        vset = vsets.GetVariantSet({repr(variant_set_name)})",
+                        f"        if {repr(variant)} in vset.GetVariantNames():",
+                        f"            vset.SetVariantSelection({repr(variant)})",
+                    ])
+                    py_lop.parm("python").set(code)
 
-                return {
-                    "node": py_lop.path(),
-                    "prim_path": prim_path,
-                    "variant_set": variant_set_name,
-                    "variant": variant,
-                    **_wire_display(py_lop, node, set_display),
-                }
+                    try:
+                        py_lop.cook(force=True)
+                    except hou.OperationFailed as e:
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "variant_set": variant_set_name,
+                            "variant": variant,
+                            "cook_error": (
+                                "The node was created but hit a snag when "
+                                f"cooking -- {e}. The pythonscript node is "
+                                "still in the network so you can inspect it. "
+                                "Check that the prim path and variant set exist."
+                            ),
+                        }
+
+                    verify_error = self._verify_variant_selection_cooked(
+                        py_lop, prim_path, variant_set_name, variant
+                    )
+                    if verify_error:
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "variant_set": variant_set_name,
+                            "variant": variant,
+                            "verify_error": (
+                                "The node cooked but readback failed -- "
+                                f"{verify_error}"
+                            ),
+                        }
+
+                    return {
+                        "node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "variant_set": variant_set_name,
+                        "variant": variant,
+                        "verified": True,
+                        **_wire_display(py_lop, node, set_display),
+                    }
 
         return run_on_main(_on_main, label="usd:_handle_manage_variant_set")
 
@@ -1294,6 +1383,177 @@ class UsdHandlerMixin:
         lingering = [p for p in (expect_absent or []) if p in targets]
         if lingering:
             return f"{rel} targets still present after cook: {lingering}"
+        return None
+
+    @staticmethod
+    def _verify_reference_cooked(ref_lop, prim_path, file_path=None):
+        """Read the referenced file back; return an error string, or None.
+
+        R-008 truth contract: reference_usd used to set filepath1/primpath and
+        return success without cooking. Cooking alone is still not evidence --
+        the Reference LOP creates its destination prim when absent
+        (createprims defaults to Create), so a valid empty prim on the cooked
+        stage says nothing about the source. The truth lives in the referenced
+        file: open it read-only and check that the source layer actually
+        provides the requested prim. ``prim_path`` "/" references the file's
+        default prim, so a file without one is an explicit failure, never
+        success.
+
+        Standalone interpreters without pxr cannot supply that evidence: the
+        readback returns an explicit unverified error, never success.
+        """
+        try:
+            from pxr import Sdf
+        except ImportError:
+            return (
+                "pxr isn't available in this environment, so the referenced "
+                "file couldn't be read back -- the import is unverified"
+            )
+
+        # The node's filepath1 is Houdini-evaluated ($HIP, env vars); prefer
+        # it over the raw payload string. Fakes return non-strs -- fall back.
+        source_path = file_path
+        try:
+            filepath_parm = ref_lop.parm("filepath1")
+            evaluated = (
+                filepath_parm.evalAsString()
+                if filepath_parm is not None else None
+            )
+            if isinstance(evaluated, str) and evaluated:
+                source_path = evaluated
+        except Exception as e:  # noqa: BLE001 -- any parm-probe failure falls back, never aborts
+            # The evaluation is a convenience, not the evidence: a fake
+            # without ``parm``, a null node and a Houdini eval error all mean
+            # "use the payload path". Logged so the fallback is visible.
+            _log.debug(
+                "R-008 readback: could not evaluate filepath1; using the "
+                "payload path %r instead: %s", file_path, e,
+            )
+
+        try:
+            layer = Sdf.Layer.FindOrOpen(source_path)
+        except Exception as e:  # noqa: BLE001 -- every open/parse failure is a verify_error
+            # pxr surfaces an unparseable layer as Tf.ErrorException (a
+            # RuntimeError subclass, probed on the H22 build) and a missing
+            # file as None below; IO-level failures arrive as OSError. Any
+            # other throwable is still "not verified" -- never a success.
+            _log.warning(
+                "R-008 readback: cannot open referenced file %r: %s",
+                source_path, e,
+            )
+            return (
+                f"the referenced file '{source_path}' couldn't be opened "
+                f"or parsed -- {e}"
+            )
+        if layer is None:
+            return (
+                f"couldn't open the referenced file '{source_path}' -- "
+                "the reference composes nothing from it"
+            )
+
+        if prim_path == "/":
+            default_prim = getattr(layer, "defaultPrim", "") or ""
+            if not default_prim:
+                return (
+                    "the referenced file has no default prim, and prim_path "
+                    "'/' references the file's default prim -- nothing was "
+                    "composed"
+                )
+            source_prim_path = "/" + str(default_prim).lstrip("/")
+        else:
+            source_prim_path = prim_path
+
+        try:
+            prim = layer.GetPrimAtPath(source_prim_path)
+        except Exception as e:  # noqa: BLE001 -- an unreadable layer is a verify_error
+            # An ill-formed path returns None on the H22 pxr build (probed);
+            # a corrupt or expired layer surfaces as Tf.ErrorException
+            # (RuntimeError). Either way the verdict is "not verified".
+            _log.warning(
+                "R-008 readback: cannot read layer %r at %r: %s",
+                source_path, source_prim_path, e,
+            )
+            return (
+                f"the referenced layer couldn't be read at "
+                f"{source_prim_path} -- {e}"
+            )
+        if prim is None:
+            return (
+                f"the referenced file has no prim at {source_prim_path} -- "
+                "the reference composed nothing there"
+            )
+        return None
+
+    @staticmethod
+    def _verify_variant_selection_cooked(py_lop, prim_path, variant_set_name,
+                                         variant):
+        """Read the cooked stage back; return an error string, or None if verified.
+
+        R-008 truth contract: the select branch used to fire a pythonscript and
+        return success without cooking, and its embedded script was gated
+        ``if prim:`` -- a select on a missing prim or variant set read as
+        success while nothing was authored. The readback decides, and it reads
+        the composed selection (GetVariantSelection) -- a set that exists is
+        not proof the select applied. Standalone mode (no pxr, testing only)
+        cannot supply evidence: return an explicit unverified error, never
+        success.
+        """
+        try:
+            from pxr import Usd  # noqa: F401 -- presence probe; readback needs USD
+        except ImportError:
+            return (
+                "pxr isn't available in this environment, so the variant "
+                "selection couldn't be read back -- it is unverified"
+            )
+
+        stage = py_lop.stage()
+        if stage is None:
+            return "the node cooked but exposes no stage to read back"
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim or not prim.IsValid():
+            return (
+                f"no prim exists at {prim_path} on the cooked stage -- "
+                "the selection was silently skipped"
+            )
+        variant_sets = prim.GetVariantSets()
+        if variant_set_name not in variant_sets.GetNames():
+            return (
+                f"variant set '{variant_set_name}' wasn't found on {prim_path} "
+                "-- the selection was silently skipped"
+            )
+        vset = variant_sets.GetVariantSet(variant_set_name)
+        if variant not in vset.GetVariantNames():
+            return (
+                f"variant '{variant}' wasn't found in set "
+                f"'{variant_set_name}' on {prim_path}"
+            )
+        # The tightened check: existence is not application. Read the composed
+        # selection back; if the API isn't there, say so -- never assume.
+        try:
+            selection = vset.GetVariantSelection()
+        except AttributeError:
+            return (
+                "GetVariantSelection() isn't available on this stage, so "
+                "the variant selection couldn't be read back -- the select "
+                "is unverified"
+            )
+        except Exception as e:  # noqa: BLE001 -- any readback failure is a verify_error
+            # USD stage queries raise Tf.ErrorException (RuntimeError) on an
+            # expired or invalid stage; any other throwable is equally "not
+            # verified" -- record it, then say so explicitly.
+            _log.warning(
+                "R-008 readback: cannot read the variant selection on %r: %s",
+                prim_path, e,
+            )
+            return (
+                f"the variant selection couldn't be read back -- {e}"
+            )
+        if selection != variant:
+            return (
+                f"variant selection on '{variant_set_name}' is "
+                f"{selection or '(none)'}, not '{variant}' -- the select "
+                "didn't apply"
+            )
         return None
 
     def _handle_manage_collection(self, payload: Dict) -> Dict:

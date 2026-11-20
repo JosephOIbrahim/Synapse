@@ -6,7 +6,7 @@ undo/integrity/consent -- a fiction on the live /synapse path (handlers are
 dispatched directly; the bridge only wraps the panel/MCP path). Now each
 mutating handler marshals its closure through run_on_main(timeout=_SLOW_TIMEOUT)
 and owns its undo group with the build_graph rollback idiom (hou.undos.group +
-performUndo on exception); assess_render_ready marshals read-only (no undo
+performUndo only when hou.undos.undoLabels() changed); assess_render_ready marshals read-only (no undo
 group, default timeout); build_karma_xpu_shot reports its non-undoable
 department-layer disk writes; and the panel bridge adapter marks the shotsetup
 tool touches_disk so R4 elevates the gate to APPROVE.
@@ -33,14 +33,32 @@ sys.modules.setdefault("hdefereval", _hde)
 from synapse.server.handlers import SynapseHandler  # noqa: E402
 from synapse.server import handlers_solaris_compose as hsc  # noqa: E402
 from synapse.server import main_thread as mt  # noqa: E402
+from synapse.server.solaris_compose import ComposeError  # noqa: E402
 
 
 class _RecordingUndos:
-    """hou.undos fake: group() is a recording contextmanager, performUndo a stub."""
+    """hou.undos fake: group() records, labels model the undo stack.
 
-    def __init__(self, events):
+    A scene write inside a group appends one label (record_write); a refusal
+    before the first write appends nothing. performUndo() pops the top label
+    like the real undo, so a test can prove an empty group was left alone.
+    """
+
+    def __init__(self, events, labels=("artist previous edit",)):
         self._events = events
         self.undo_count = 0
+        self._labels = list(labels)
+
+    def areEnabled(self):
+        return True
+
+    def undoLabels(self):
+        return tuple(self._labels)
+
+    def record_write(self, label="scene write"):
+        """Simulate the undo system recording one write from the open group."""
+        self._labels.append(label)
+        self._events.append(("record_write", label))
 
     def group(self, label):
         events = self._events
@@ -59,6 +77,8 @@ class _RecordingUndos:
     def performUndo(self):
         self.undo_count += 1
         self._events.append(("performUndo",))
+        if self._labels:
+            self._labels.pop()
 
 
 def _wire(monkeypatch, events, node=None):
@@ -126,22 +146,110 @@ def test_shotsetup_marshals_and_undo_wraps(monkeypatch):
     assert undos.undo_count == 0
 
 
-def test_shotsetup_rolls_back_on_exception(monkeypatch):
+def test_shotsetup_rolls_back_on_exception(monkeypatch, tmp_path):
+    """R-006: a refusal BEFORE the first scene write must not undo.
+
+    An unsaved scene with the default layer_dir is refused by
+    _resolve_layer_base (solaris_compose_tools) before any node is created or
+    any file written -- so the undo group records nothing. The old handler
+    called performUndo() unconditionally and popped the artist's previous
+    edit. The predicate: the refusal raises and undoLabels() is unchanged.
+    """
     events = []
     in_main, calls, undos = _wire(monkeypatch, events)
 
-    def boom(stage, **kwargs):
-        raise RuntimeError("cook failed")
+    from synapse.server import solaris_compose_tools as sct
 
+    fake_pxr = ModuleType("pxr")
+    fake_pxr.Sdf = SimpleNamespace(Layer=MagicMock())
+    monkeypatch.setitem(sys.modules, "pxr", fake_pxr)
+    monkeypatch.setattr(sct, "HOU_AVAILABLE", True)
+    monkeypatch.setattr(
+        sct,
+        "hou",
+        SimpleNamespace(
+            expandString=lambda s: str(tmp_path),
+            hipFile=SimpleNamespace(isNewFile=lambda: True),
+        ),
+    )
+    monkeypatch.setattr(hsc, "_tools", sct)
     monkeypatch.setattr(hsc, "_sc", SimpleNamespace(resolve_stage=lambda p: "STAGE"))
-    monkeypatch.setattr(hsc, "_tools", SimpleNamespace(build_karma_xpu_shot=boom))
+    baseline = undos.undoLabels()
 
     h = SynapseHandler()
-    with pytest.raises(RuntimeError, match="cook failed"):
+    with pytest.raises(ComposeError, match="unsaved"):
+        # No layer_dir -> the default $HIP/<shot>_layers path.
         h._handle_solaris_shotsetup_karma_xpu({})
 
-    assert undos.undo_count == 1  # performUndo rollback recorded
-    assert ("performUndo",) in events
+    assert undos.undo_count == 0  # zero performUndo on the pre-mutation refusal
+    assert undos.undoLabels() == baseline
+    assert not any(e[0] == "performUndo" for e in events)
+
+
+def test_shotsetup_midwrite_failure_undoes_once(monkeypatch):
+    """R-006: a failure after the group recorded a write still rolls back once."""
+    events = []
+    in_main, calls, undos = _wire(monkeypatch, events)
+    baseline = undos.undoLabels()
+
+    def boom_after_write(stage, **kwargs):
+        events.append(("build", stage, in_main["active"]))
+        undos.record_write("SYNAPSE: solaris_shotsetup_karma_xpu")
+        raise RuntimeError("cook failed mid-write")
+
+    monkeypatch.setattr(hsc, "_sc", SimpleNamespace(resolve_stage=lambda p: "STAGE"))
+    monkeypatch.setattr(
+        hsc, "_tools", SimpleNamespace(build_karma_xpu_shot=boom_after_write)
+    )
+
+    h = SynapseHandler()
+    with pytest.raises(RuntimeError, match="cook failed mid-write"):
+        h._handle_solaris_shotsetup_karma_xpu({})
+
+    assert undos.undo_count == 1  # exactly one performUndo
+    assert [e for e in events if e[0] == "performUndo"] == [("performUndo",)]
+    assert undos.undoLabels() == baseline  # the undo took the recorded write out
+
+
+def test_matlib_bind_pre_mutation_failure_does_not_undo(monkeypatch):
+    """R-006: an uncooked input raises in read_stage before the first write.
+
+    bind_material reads the input node's stage BEFORE creating the
+    assignmaterial LOP; the group recorded nothing, so no undo may fire.
+    """
+
+    class _UncookedNode:
+        def path(self):
+            return "/stage/uncooked"
+
+        def stage(self):
+            return None
+
+    events = []
+    in_main, calls, undos = _wire(monkeypatch, events, node=_UncookedNode())
+
+    from synapse.server import solaris_compose_tools as sct
+
+    fake_pxr = ModuleType("pxr")
+    fake_pxr.UsdShade = MagicMock()
+    monkeypatch.setitem(sys.modules, "pxr", fake_pxr)
+    monkeypatch.setattr(sct, "HOU_AVAILABLE", True)
+    monkeypatch.setattr(sct.sc, "HOU_AVAILABLE", True)
+    monkeypatch.setattr(hsc, "_tools", sct)
+    monkeypatch.setattr(hsc, "_sc", SimpleNamespace(resolve_stage=lambda p: "STAGE"))
+    baseline = undos.undoLabels()
+
+    h = SynapseHandler()
+    with pytest.raises(ComposeError, match="hasn't cooked"):
+        h._handle_matlib_bind({
+            "material": "/materials/red",
+            "targets": "//Mesh",
+            "input_node": "/stage/uncooked",
+        })
+
+    assert undos.undo_count == 0
+    assert undos.undoLabels() == baseline
+    assert not any(e[0] == "performUndo" for e in events)
 
 
 def test_matlib_bind_marshals(monkeypatch):

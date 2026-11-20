@@ -101,9 +101,24 @@ TOOL_RETURN = {
             "type": "string",
             "description": "Path to the USD Render ROP node.",
         },
+        "missing_nodes": {
+            "type": ["array", "null"],
+            "items": {"type": "string"},
+            "description": (
+                "Nodes in the parent that the existing template is missing "
+                "(status 'incomplete'). Null when the child list could not "
+                "be read."
+            ),
+        },
         "status": {
             "type": "string",
-            "enum": ["created", "already_exists"],
+            "enum": ["created", "already_exists", "incomplete"],
+            "description": (
+                "'created' = the chain was built. 'already_exists' = the "
+                "existing scene root's full chain is present. 'incomplete' = "
+                "the root exists but part of the chain is missing; nothing "
+                "was built."
+            ),
         },
     },
 }

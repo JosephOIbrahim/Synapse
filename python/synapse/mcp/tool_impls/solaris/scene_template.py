@@ -8,7 +8,10 @@ Creates the full canonical Solaris scene skeleton:
 SOP imports chain sequentially — NEVER merge (Pattern 1 constraint).
 
 Source patterns: SOLARIS_P1_CANONICAL_LOP_CHAIN, SOLARIS_P4_HIERARCHY_DISCIPLINE
-Atomic: undo-wrapped. Idempotent: checks for existing scene root.
+Atomic: undo-grouped. A failure performs ONE guarded performUndo (only when
+the undo stack gained an entry) so the group is rolled back, not just closed.
+Idempotent: an existing scene root is verified against the full expected
+chain before answering already_exists; a half-built one reports "incomplete".
 """
 
 import logging
@@ -37,6 +40,12 @@ except ImportError:
         def __init__(self, path, suggestion=""): super().__init__(f"Node not found: {path}")
     class HoudiniUnavailableError(RuntimeError):
         def __init__(self): super().__init__("Houdini unavailable")
+
+from .builder_guards import (
+    missing_child_names,
+    rollback_if_group_left_entry,
+    undo_labels_snapshot,
+)
 
 
 _SOURCE_PATTERN = "SOLARIS_P1_CANONICAL_LOP_CHAIN"
@@ -141,6 +150,15 @@ def _resolve_parent_path(params: Dict) -> str:
         if val:
             return val
     return "/stage"
+
+
+def _expected_chain_names(scene_name: str, sop_paths) -> List[str]:
+    """Nodes a complete template creates in its parent, in creation order."""
+    names = [f"primitive_{scene_name}"]
+    names.extend(f"geo_{i}" for i in range(len(sop_paths)))
+    names.extend(["camera1", "materials", "physical_sky",
+                  "render_settings", "render"])
+    return names
 
 
 def validate(params: Dict) -> None:
@@ -271,16 +289,31 @@ def execute(params: Dict) -> Dict:
         raise NodeNotFoundError(parent_path, suggestion="Check that /stage exists")
 
     # -- Idempotency guard --
+    # The primitive's name is not proof that the whole skeleton exists: a
+    # failed earlier run (or an undo that could not run) can leave it
+    # half-built. Verify every node this tool would create before answering
+    # already_exists.
     existing = parent.node(f"primitive_{scene_name}")
     if existing is not None:
+        missing = missing_child_names(
+            parent, _expected_chain_names(scene_name, sop_paths))
+        if missing == []:
+            return {
+                "status": "already_exists",
+                "hierarchy_root": f"/{scene_name}",
+            }
         return {
-            "status": "already_exists",
+            "status": "incomplete",
             "hierarchy_root": f"/{scene_name}",
+            "missing_nodes": missing,
         }
 
     display_before = _displayed_child(parent)
 
     # -- Atomic execution --
+    # hou.undos.group() only GROUPS the entries; it does not reverse them when
+    # the body raises. Snapshot the stack and roll the group back explicitly.
+    labels_before = undo_labels_snapshot(hou)
     try:
         with hou.undos.group(f"SYNAPSE: Create scene template '{scene_name}'"):
             chain = []
@@ -437,4 +470,6 @@ def execute(params: Dict) -> Dict:
             }
 
     except Exception:
+        # The group did not roll back on its own -- a group only groups.
+        rollback_if_group_left_entry(hou, labels_before)
         raise

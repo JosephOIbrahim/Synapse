@@ -6,8 +6,10 @@ Dual-path: uses native componentbuilder if available, otherwise
 wires componentgeometry + componentmaterial + componentoutput in a subnet.
 
 Source pattern: SOLARIS_P2_COMPONENT_BUILDER
-Atomic: all nodes created and wired, or none (undo-wrapped).
-Idempotent: returns already_exists if component with same name exists.
+Atomic: undo-grouped. A failure performs ONE guarded performUndo (only when
+the undo stack gained an entry) so the group is rolled back, not just closed.
+Idempotent: an existing component is verified against its expected child
+chain before answering already_exists; a half-built one reports "incomplete".
 """
 
 from typing import Any, Dict, List, Optional
@@ -39,6 +41,12 @@ except ImportError:
         def __init__(self, path, suggestion=""): super().__init__(f"Node not found: {path}")
     class HoudiniUnavailableError(RuntimeError):
         def __init__(self): super().__init__("Houdini unavailable")
+
+from .builder_guards import (
+    missing_child_names,
+    rollback_if_group_left_entry,
+    undo_labels_snapshot,
+)
 
 
 # -- Provenance --
@@ -100,6 +108,11 @@ def _resolve_parent_path(params: Dict) -> str:
         if val:
             return val
     return "/stage"
+
+
+def _expected_child_names(asset_name: str) -> List[str]:
+    """Children a complete subnet component built by this tool presents."""
+    return [f"geo_{asset_name}", f"mat_{asset_name}", f"output_{asset_name}"]
 
 
 def validate(params: Dict) -> None:
@@ -233,8 +246,11 @@ def plan(params: Dict) -> List[Dict[str, Any]]:
 def execute(params: Dict) -> Dict:
     """Execute the component builder creation.
 
-    Atomic: wrapped in hou.undos.group(). On failure, undo rolls back.
-    Idempotent: if a component with the same name exists, returns already_exists.
+    Atomic: wrapped in hou.undos.group(). A group only GROUPS entries, so a
+    failure calls the guarded performUndo explicitly (one call, and only when
+    the stack gained an entry).
+    Idempotent: an existing component is verified against its child chain; a
+    half-built one reports "incomplete" with the missing nodes.
 
     Must be called via run_on_main() from the handler.
     """
@@ -257,15 +273,37 @@ def execute(params: Dict) -> Dict:
         raise NodeNotFoundError(parent_path, suggestion="Check that /stage exists")
 
     # -- Idempotency guard --
+    # A name alone is not proof of a whole component: a failed earlier run
+    # (or an undo that could not run) can leave the container half-built.
+    # Verify the child chain this tool builds before answering already_exists.
     component_name = f"component_{asset_name}"
     existing = parent.node(component_name)
     if existing is not None:
+        if existing.type().name().lower() == "componentbuilder":
+            # Path A's native container owns its internal structure and names
+            # it itself (the shelf-tool layout); there is no subnet chain to
+            # verify. Unreachable on current builds -- _has_native_componentbuilder()
+            # is False on 22.0.400 -- but kept for the build that ships the type.
+            return {
+                "status": "already_exists",
+                "component_path": existing.path(),
+            }
+        missing = missing_child_names(existing, _expected_child_names(asset_name))
+        if missing == []:
+            return {
+                "status": "already_exists",
+                "component_path": existing.path(),
+            }
         return {
-            "status": "already_exists",
+            "status": "incomplete",
             "component_path": existing.path(),
+            "missing_nodes": missing,
         }
 
     # -- Atomic execution --
+    # hou.undos.group() only GROUPS the entries; it does not reverse them when
+    # the body raises. Snapshot the stack and roll the group back explicitly.
+    labels_before = undo_labels_snapshot(hou)
     created_nodes = []
     try:
         with hou.undos.group(f"SYNAPSE: Create component {asset_name}"):
@@ -362,6 +400,7 @@ def execute(params: Dict) -> Dict:
                 "parms_missed": parms_missed,
             }
 
-    except Exception as e:
-        # Undo group handles rollback automatically
+    except Exception:
+        # The group did not roll back on its own -- a group only groups.
+        rollback_if_group_left_entry(hou, labels_before)
         raise

@@ -6,7 +6,10 @@ SOP pipeline: USD Import (unpack) → Transform (0.01) → Match Size → PolyRe
 Material trick: Reference LOP with /materials/* wildcard.
 
 Source pattern: SOLARIS_P6_MEGASCANS_IMPORT
-Atomic: undo-wrapped. Idempotent: checks for existing component by name.
+Atomic: undo-grouped. A failure performs ONE guarded performUndo (only when
+the undo stack gained an entry) so the group is rolled back, not just closed.
+Idempotent: an existing component is verified against its expected child
+chain before answering already_exists; a half-built one reports "incomplete".
 """
 
 from typing import Any, Dict, List, Optional
@@ -32,6 +35,12 @@ except ImportError:
         def __init__(self, path, suggestion=""): super().__init__(f"Node not found: {path}")
     class HoudiniUnavailableError(RuntimeError):
         def __init__(self): super().__init__("Houdini unavailable")
+
+from .builder_guards import (
+    missing_child_names,
+    rollback_if_group_left_entry,
+    undo_labels_snapshot,
+)
 
 
 _SOURCE_PATTERN = "SOLARIS_P6_MEGASCANS_IMPORT"
@@ -65,6 +74,14 @@ def _resolve_parent_path(params: Dict) -> str:
         if val:
             return val
     return "/stage"
+
+
+def _expected_child_names(asset_name: str, import_materials: bool) -> List[str]:
+    """Children a complete Megascans component built by this tool presents."""
+    names = [f"geo_{asset_name}", f"mat_{asset_name}", f"output_{asset_name}"]
+    if import_materials:
+        names.append(f"mtl_ref_{asset_name}")
+    return names
 
 
 def _require_parm(node, names):
@@ -198,12 +215,26 @@ def execute(params: Dict) -> Dict:
         raise NodeNotFoundError(parent_path, suggestion="Check that /stage exists")
 
     # -- Idempotency guard --
+    # A name alone is not proof of a whole component: a failed earlier run
+    # (or an undo that could not run) can leave the container half-built.
+    # Verify the child chain this tool builds before answering already_exists.
     component_name = f"component_{asset_name}"
     existing = parent.node(component_name)
     if existing is not None:
-        return {"status": "already_exists", "component_path": existing.path()}
+        missing = missing_child_names(
+            existing, _expected_child_names(asset_name, import_materials))
+        if missing == []:
+            return {"status": "already_exists", "component_path": existing.path()}
+        return {
+            "status": "incomplete",
+            "component_path": existing.path(),
+            "missing_nodes": missing,
+        }
 
     # -- Atomic execution --
+    # hou.undos.group() only GROUPS the entries; it does not reverse them when
+    # the body raises. Snapshot the stack and roll the group back explicitly.
+    labels_before = undo_labels_snapshot(hou)
     try:
         with hou.undos.group(f"SYNAPSE: Import Megascans {asset_name}"):
             # Create Component Builder subnet
@@ -387,4 +418,6 @@ def execute(params: Dict) -> Dict:
             }
 
     except Exception:
+        # The group did not roll back on its own -- a group only groups.
+        rollback_if_group_left_entry(hou, labels_before)
         raise

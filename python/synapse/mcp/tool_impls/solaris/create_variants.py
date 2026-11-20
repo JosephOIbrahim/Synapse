@@ -6,7 +6,10 @@ Material: duplicate Component Material nodes with different KMBs.
 Geometry: duplicate Component Geometry + Component Geometry Variants node.
 
 Source pattern: SOLARIS_P5_VARIANTS
-Atomic: undo-wrapped. Idempotent: checks for existing variant set.
+Atomic: undo-grouped. A failure performs ONE guarded performUndo (only when
+the undo stack gained an entry) so the group is rolled back, not just closed.
+Idempotent: existing variant names are verified against the full expected
+chain before answering already_exists; a half-built set reports "incomplete".
 """
 
 from typing import Any, Dict, List, Optional
@@ -32,6 +35,11 @@ try:
 except ImportError:  # standalone/test mode
     def note_missing(missed, node, *names):
         missed.append("|".join(names))
+
+from .builder_guards import (
+    rollback_if_group_left_entry,
+    undo_labels_snapshot,
+)
 
 
 _SOURCE_PATTERN = "SOLARIS_P5_VARIANTS"
@@ -62,6 +70,21 @@ def _child_category_name(node) -> str:
 def _is_lop_container(node) -> bool:
     """True when ``node`` can hold LOP children (a LOP subnet / lopnet)."""
     return _child_category_name(node) == "Lop"
+
+
+def _expected_variant_nodes(component, variant_type: str, variant_names, add_explore: bool):
+    """Nodes a complete variant run leaves behind.
+
+    Variant nodes live inside ``component``; the explore node lives in its
+    parent. Both are part of the receipt the tool promises.
+    """
+    if variant_type == "material":
+        expected = [f"mat_{name}" for name in variant_names]
+    else:
+        expected = [f"geo_{name}" for name in variant_names] + ["geo_variants"]
+    if add_explore:
+        expected.append(f"explore_{component.name()}")
+    return expected
 
 
 def validate(params: Dict) -> None:
@@ -163,16 +186,36 @@ def execute(params: Dict) -> Dict:
     parent = comp.parent()
 
     # -- Idempotency guard --
-    # Check if variant nodes already exist with these names
-    existing_names = {c.name() for c in comp.children()}
+    # Existing names are not proof that the variant SET is whole: a failed
+    # earlier run (or an undo that could not run) can leave some variants
+    # built and the rest missing. Verify every node this call would create
+    # before answering already_exists.
     variant_names = [v["name"] for v in variants]
-    if all(f"mat_{vn}" in existing_names or f"geo_{vn}" in existing_names for vn in variant_names):
+    expected = _expected_variant_nodes(comp, variant_type, variant_names, add_explore)
+    explore_name = f"explore_{comp.name()}"
+    existing_names = {c.name() for c in comp.children()}
+    child_expected = [name for name in expected if name != explore_name]
+    missing = [name for name in child_expected if name not in existing_names]
+    explore_present = parent is not None and parent.node(explore_name) is not None
+    if add_explore and not explore_present:
+        missing.append(explore_name)
+    if not missing:
         return {
             "status": "already_exists",
             "variant_set_name": f"{variant_type}_variants",
             "variants_created": variant_names,
         }
+    if set(child_expected) & existing_names or (add_explore and explore_present):
+        return {
+            "status": "incomplete",
+            "variant_set_name": f"{variant_type}_variants",
+            "missing_nodes": missing,
+        }
 
+    # -- Atomic execution --
+    # hou.undos.group() only GROUPS the entries; it does not reverse them when
+    # the body raises. Snapshot the stack and roll the group back explicitly.
+    labels_before = undo_labels_snapshot(hou)
     try:
         with hou.undos.group(f"SYNAPSE: Create {variant_type} variants"):
             created = []
@@ -290,4 +333,6 @@ def execute(params: Dict) -> Dict:
             }
 
     except Exception:
+        # The group did not roll back on its own -- a group only groups.
+        rollback_if_group_left_entry(hou, labels_before)
         raise

@@ -320,7 +320,21 @@ def ref_wired(monkeypatch):
     """reference_usd wiring: hou.node(parent) -> /stage net with an anchor.
 
     Returns (handler, parent_node, anchor). Tests configure createNode.
+
+    R-008 readback: reference/payload imports now open the referenced file
+    and require the source layer to provide the prim (the fixtures use a
+    non-existent $HIP path), so this wiring models a layer with /World/asset.
     """
+    layer = SimpleNamespace(
+        GetPrimAtPath=lambda p: object() if p == "/World/asset" else None,
+        defaultPrim="World",
+    )
+    fake_pxr = ModuleType("pxr")
+    fake_pxr.Sdf = SimpleNamespace(
+        Layer=SimpleNamespace(FindOrOpen=lambda path: layer)
+    )
+    monkeypatch.setitem(sys.modules, "pxr", fake_pxr)
+
     parent_node = MagicMock(name="parent_node")
     anchor = MagicMock(name="anchor")
     anchor.path.return_value = "/stage/existing_tip"

@@ -96,6 +96,14 @@ TOOL_RETURN = {
             "type": "string",
             "description": "Path to the Explore Variants node (if add_explore_node=true).",
         },
+        "missing_nodes": {
+            "type": ["array", "null"],
+            "items": {"type": "string"},
+            "description": (
+                "Variant nodes (and the explore node) the existing set is "
+                "missing (status 'incomplete')."
+            ),
+        },
         "status": {
             "type": "string",
             # R33, 2026-07-26. Was ["created", "extended", "already_exists"].
@@ -104,11 +112,15 @@ TOOL_RETURN = {
             # requested name already present (already_exists, :165). There is
             # no add-to-an-existing-set path. Adding one is a feature, and the
             # enum should follow the feature rather than precede it.
-            "enum": ["created", "already_exists"],
+            # R-007 (2026-11-20) adds `incomplete`: the old guard answered
+            # already_exists from a name match alone, so a half-built set had
+            # no honest status to report.
+            "enum": ["created", "already_exists", "incomplete"],
             "description": (
                 "'created' = the variant nodes were built. 'already_exists' = "
-                "every requested variant name was already present, so nothing "
-                "was built."
+                "every requested variant node was already present, so nothing "
+                "was built. 'incomplete' = some of the set exists but part of "
+                "it is missing; nothing was built."
             ),
         },
     },
