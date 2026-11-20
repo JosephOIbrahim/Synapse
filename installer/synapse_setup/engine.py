@@ -1,4 +1,7 @@
-"""Manifest-based install/upgrade/uninstall. Never imports SYNAPSE or user keys."""
+"""Manifest-based install/upgrade/uninstall. Never imports SYNAPSE.
+
+Mints the local API auth key (~/.synapse/auth.key) only when absent, so a fresh
+seat does not start the hwebserver transport authentication-less (R-011)."""
 from __future__ import annotations
 import copy
 from datetime import datetime, timezone
@@ -11,6 +14,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 from . import discovery, native_policy
+from .auth_key import ensure_auth_key
 from .moneta_grant import validate_payload as validate_moneta_payload, license_policy as moneta_policy
 from .registration import installed_package, UI_CORE
 from .safety import (SetupError, atomic_write, change, check_writable, current, decode,
@@ -440,6 +444,11 @@ def install(app, prefs, home, *, archive, hfs, allow_unverified=False, migrate=F
             raise SetupError("This installation belongs to a different user-home path.")
         state.update(version=manifest["version"], active=str(runtime), houdini=plan["houdini"])
         state["runtimes"][str(runtime)] = manifest
+        # SIDEFXCTO-1 (R-011): a fresh install must not start the transport
+        # authentication-less. Mint the local key before the configuration
+        # transaction; an existing key is user data and is never replaced. A
+        # mint failure aborts before the transaction, so nothing is half-installed.
+        auth_key_report = ensure_auth_key(home)
         changes = []
         backup_paths = {x["path"] for x in state["backups"]}
         for name in plan["conflicts"]:
@@ -502,6 +511,7 @@ def install(app, prefs, home, *, archive, hfs, allow_unverified=False, migrate=F
             transact(app / JOURNAL, inverse)
             raise
         report["recovered_interrupted_transaction"] = recovered
+        report["auth_key"] = auth_key_report
         return report
 
 

@@ -19,6 +19,8 @@ There is **one** server, not two. SYNAPSE registers both surfaces as handlers on
 
 The default port is **9999**. `start_hwebserver(port=...)` binds the port you ask for and does **not** auto-fall-back to another one -- if 9999 is already held, startup fails rather than silently moving. The real bound port is published to a discovery sidecar (below), so clients should read it rather than assume.
 
+**The address is loopback.** In local mode the adapter passes `ADDRESS=127.0.0.1` to Houdini's `hwebserver` (whose default is the any-address `0.0.0.0`) and pins `ALLOWED_HOSTS` to the loopback names, so `http://127.0.0.1:9999/mcp` is the whole surface. A non-loopback listen requires an auth key and an explicit opt-in: `SYNAPSE_DEPLOY_MODE=studio-lan` (or `SYNAPSE_ALLOW_LAN=1` plus `SYNAPSE_BIND_ADDRESS`). Starting on a non-loopback address with no key raises an error naming the fix instead of binding.
+
 ## Prerequisites
 
 1. **Houdini is running.**
@@ -39,8 +41,12 @@ start_hwebserver(port=9999)
 When the server starts it writes the real bound endpoint to `~/.synapse/bridge.json` (override the location with `$SYNAPSE_BRIDGE_FILE`):
 
 ```json
-{"host": "localhost", "port": 9999, "pid": 12345}
+{"host": "127.0.0.1", "port": 9999, "pid": 12345}
 ```
+
+The published host is the address the transport actually bound (`127.0.0.1` in
+local mode); an any-address studio bind publishes `localhost` because `0.0.0.0`
+cannot be dialled.
 
 **Use this file to discover the endpoint, then verify it responds.** A discovery file can be stale after a process exits; file presence alone does not prove a live connection.
 
@@ -161,15 +167,17 @@ that normal panel chat permits every tool.
 | `SYNAPSE_PORT` | `9999` | hwebserver port -- serves **both** `/synapse` (WS) and `/mcp` (HTTP) |
 | `SYNAPSE_PATH` | `/synapse` | WebSocket path (MCP always uses `/mcp`) |
 | `SYNAPSE_BRIDGE_FILE` | `~/.synapse/bridge.json` | Where the real bound endpoint is published for discovery |
-| `SYNAPSE_API_KEY` | (none) | API key for both WebSocket and MCP Bearer token auth |
-| `SYNAPSE_DEPLOY_MODE` | `local` | Origin-validation posture for `/mcp` (DNS-rebinding protection) |
+| `SYNAPSE_API_KEY` | (none) | API key for both WebSocket and MCP Bearer token auth; a fresh Setup install mints `~/.synapse/auth.key` instead |
+| `SYNAPSE_BIND_ADDRESS` | `127.0.0.1` (local) | Listen address passed to hwebserver's `ADDRESS`; a non-loopback value needs an explicit opt-in and an auth key |
+| `SYNAPSE_ALLOW_LAN` | (off) | `1`/`true`/`yes`/`on` opts in to a non-loopback `SYNAPSE_BIND_ADDRESS` in local mode |
+| `SYNAPSE_DEPLOY_MODE` | `local` | Origin-validation posture for `/mcp` (DNS-rebinding protection); a studio mode also selects the non-loopback bind |
 | `SYNAPSE_MCP_READ_ONLY` | (off) | Set to `1` to limit MCP clients, on `/mcp` and through the stdio bridge, to read-only tools ([Read-only mode](#read-only-mode)) |
 
 > There is **no** separate MCP port setting. `/mcp` rides the single hwebserver port above.
 
 ## Authentication
 
-MCP Bearer token authentication is opt-in. When `SYNAPSE_API_KEY` is set (or `~/.synapse/auth.key` exists), the `/mcp` endpoint requires an `Authorization: Bearer <token>` header on all requests. Without a key configured, auth is disabled (backward compatible).
+When `SYNAPSE_API_KEY` is set (or `~/.synapse/auth.key` exists), the `/mcp` endpoint requires an `Authorization: Bearer <token>` header on all requests; the WebSocket handshake asks for the same key. A fresh Setup install mints `~/.synapse/auth.key`, so this is on by default for installed seats. A source checkout with no key file and no env var runs with auth disabled -- reachable only because the listener stays on loopback; a non-loopback bind with no key refuses to start.
 
 SYNAPSE assumes a **single-user, localhost** setup. Bearer authentication identifies
 a client; it does not provide per-operation artist approval or sandbox executed

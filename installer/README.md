@@ -150,6 +150,12 @@ provenance files. Every runtime file has a hash. Missing required dependencies,
 changed wheels, invalid archive paths and inconsistent product versions fail.
 The helper Python is isolated with a `_pth` file and needs no system packages.
 
+A completed install also mints the local API key at `~/.synapse/auth.key` when
+none exists ([synapse_setup/auth_key.py](synapse_setup/auth_key.py)); the
+transport's WebSocket handshake and the `/mcp` Bearer check read it, and it is
+never rotated, collected or removed by uninstall. An existing key is left
+byte-for-byte alone.
+
 Inno owns the wizard, maintenance files, Start menu shortcuts and per-user Windows
 uninstall registration. The engine owns runtime versions and the single
 `packages/synapse.json` in each selected preference folder. Registration uses

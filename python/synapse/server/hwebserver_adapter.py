@@ -55,6 +55,8 @@ from ..core.protocol import (
 )
 from .auth import (get_auth_key, authenticate, validate_origin, header_value,
                    AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE)
+from .bind_posture import (enforce_bind_posture, hwebserver_settings,
+                           resolve_listen_address)
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
@@ -88,6 +90,10 @@ _client_lock = threading.Lock()
 _client_sessions: Dict[int, str] = {}  # counter -> session_id
 _running = False
 _port = 0
+# SIDEFXCTO-1 (R-011): the address this transport asked hwebserver to bind.
+# None until start; kept separate from _port so Doctor can assert the posture
+# in-process rather than inferring it from the discovery sidecar.
+_bound_address: Optional[str] = None
 
 
 def _get_handler() -> SynapseHandler:
@@ -411,7 +417,8 @@ if HWEBSERVER_AVAILABLE:
 # PUBLIC API
 # =============================================================================
 
-def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
+def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True,
+                     bind_address: Optional[str] = None):
     """
     Start the Synapse hwebserver.
 
@@ -419,8 +426,12 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     In graphical mode, runs non-blocking alongside the UI.
 
     Args:
-        port: Port to listen on (default: 9999)
+        port: Port to listen on (default: 9999 — unchanged)
         enable_rate_limiter: Enable request rate limiting
+        bind_address: Explicit listen address. Defaults to the posture
+            resolution: ``127.0.0.1`` in local mode, the any-address in a
+            studio mode. A non-loopback address is refused when no
+            authentication key is configured (SIDEFXCTO-1 / R-011).
     """
     # M3-C: durable log + telemetry flush. Idempotent; never raises.
     from ..core.logfile import ensure_file_logging
@@ -428,15 +439,23 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     ensure_file_logging()
     start_periodic_flush()
 
-    if not HWEBSERVER_AVAILABLE:
-        raise ImportError("hwebserver not available — must run inside Houdini")
-
-    global _rate_limiter, _backpressure, _running, _handler, _port
+    global _rate_limiter, _backpressure, _running, _handler, _port, _bound_address
     global _metrics_aggregator, _circuit_breaker
 
     if _running:
         logger.info("Already running")
         return
+
+    # SIDEFXCTO-1 (R-011): resolve and enforce the listen posture BEFORE
+    # anything is constructed or bound. Local mode is loopback-only; a
+    # non-loopback bind is an explicit opt-in and always requires a key, so a
+    # misconfigured seat exits here with the fix in the message instead of
+    # exposing execute_python to the LAN.
+    listen_address = bind_address or resolve_listen_address()
+    enforce_bind_posture(listen_address, get_auth_key())
+
+    if not HWEBSERVER_AVAILABLE:
+        raise ImportError("hwebserver not available — must run inside Houdini")
 
     # Initialize handler
     _handler = SynapseHandler()
@@ -491,6 +510,11 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
             debug=False,
             in_background=True,
             max_num_threads=4,
+            # SIDEFXCTO-1 (R-011): without ADDRESS, hwebserver binds the
+            # any-address (0.0.0.0) whatever the docs say. H22 reads these
+            # per-port settings through setSettingsForPort ('main' port) and
+            # ADDRESS / ALLOWED_HOSTS are the vendor-documented keys.
+            settings=hwebserver_settings(listen_address, port),
         )
     except Exception:
         if _metrics_aggregator is not None:
@@ -520,25 +544,33 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
 
     _running = True
     _port = port
+    _bound_address = listen_address
 
     # Publish the real bound port to the discoverable sidecar so clients can
     # find us. hwebserver binds the requested port (no failover), so _port is
-    # the real port once run() returns without raising. Best-effort.
+    # the real port once run() returns without raising. A concrete address is
+    # published as-is; an any-address cannot be dialled, so "localhost" is
+    # published instead (the studio client supplies its own reachable host).
+    # Best-effort.
+    publish_host = ("localhost" if not listen_address
+                    or listen_address in ("0.0.0.0", "::") else listen_address)
     try:
         publish_endpoint(
-            "localhost", _port, pid=os.getpid(), protocol=PROTOCOL_VERSION,
+            publish_host, _port, pid=os.getpid(), protocol=PROTOCOL_VERSION,
         )
     except Exception:
         pass
 
-    logger.info("Running on ws://localhost:%s/synapse", port)
+    logger.info("Running on ws://%s:%s/synapse", publish_host, port)
+    logger.info("Listen posture: ADDRESS=%s (auth %s)", listen_address,
+                "on" if get_auth_key() is not None else "off")
     logger.info("Native C++ server -- no watchdog; freeze-chain breaker registered")
 
 
 def stop_hwebserver():
     """Stop the Synapse hwebserver."""
     global _running, _handler, _rate_limiter, _backpressure, _metrics_aggregator
-    global _circuit_breaker
+    global _circuit_breaker, _bound_address
 
     if not _running:
         return
@@ -572,6 +604,7 @@ def stop_hwebserver():
         pass
 
     _running = False
+    _bound_address = None
     _handler = None
     _rate_limiter = None
     _backpressure = None
@@ -584,12 +617,22 @@ def is_running() -> bool:
     return _running
 
 
+def get_listen_address() -> Optional[str]:
+    """The address this transport asked hwebserver to bind (None until start).
+
+    Doctor reads this to assert loopback-only local mode without inferring the
+    bind from a discovery file or a port scan alone (SIDEFXCTO-1 / R-011).
+    """
+    return _bound_address
+
+
 def get_health() -> Dict:
     """Get health status for the hwebserver backend."""
     health = {
         "backend": "hwebserver",
         "running": _running,
         "port": _port,
+        "address": _bound_address,
         "clients": len(_client_sessions),
         "rate_limiter": _rate_limiter is not None,
     }

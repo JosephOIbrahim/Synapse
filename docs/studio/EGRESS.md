@@ -181,11 +181,13 @@ anywhere in the codebase.
   at which point it is egress (see "Remote endpoints").
 - The WS fallback server binds localhost by default (deploy-config
   override for studio modes).
-- The hwebserver endpoint (port 9999) has origin validation and optional
-  shared-key auth — but `hwebserver.run()` is invoked **without a bind
-  argument**, so the listening interface is Houdini's default. **Verify
-  with `netstat` per build**; this document does not claim enforced
-  localhost-only.
+- The hwebserver endpoint (port 9999) has origin validation and shared-key
+  auth, and its listening interface is now chosen, not inherited:
+  `hwebserver.run()` receives `ADDRESS=127.0.0.1` (plus a loopback
+  `ALLOWED_HOSTS`) in local mode, and a non-loopback bind is refused with no
+  auth key (`server/bind_posture.py`). A fresh Setup install mints
+  `~/.synapse/auth.key`. `synapse_doctor`'s `bind_address` check probes the
+  listener and fails if a non-loopback local address accepts in local mode.
 - Subprocess egress is local-only (`iconvert`/`hoiiotool` conversions,
   PowerShell toast notifications).
 

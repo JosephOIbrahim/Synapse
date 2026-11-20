@@ -1426,6 +1426,118 @@ def _check_mcp_coexistence(base: Path) -> Dict[str, Any]:
         return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
 
 
+def _probe_tcp(host: str, port: int, timeout: float = 0.25) -> bool:
+    """True when a TCP connection to host:port is accepted. Never raises."""
+    import socket
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _local_non_loopback_addresses() -> List[str]:
+    """This machine's own IPv4 addresses other than 127.0.0.0/8.
+
+    A listener bound to 0.0.0.0 accepts on these; a loopback-only listener
+    refuses. Resolution failures are not a finding — an empty list only means
+    the port probe cannot distinguish the two binds on this host.
+    """
+    import socket
+    found = set()
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            address = info[4][0]
+            if address and not address.startswith("127."):
+                found.add(address)
+    except OSError:
+        pass
+    return sorted(found)
+
+
+def _check_bind_address(base: Path) -> Dict[str, Any]:
+    """SIDEFXCTO-1 (R-011): assert the transport's listen posture.
+
+    Local mode must listen on loopback only. Evidence, strongest first: the
+    in-process adapter's recorded ADDRESS, then the discovery sidecar's host;
+    either way the actual TCP listener is probed on 127.0.0.1 and on every
+    local non-loopback IPv4 address. A non-loopback address that accepts means
+    the listener is wider than loopback, whatever the configuration said.
+    Studio modes expect a non-loopback bind and require an auth key. Read-only
+    and stdlib-only; a probe that cannot run reports skipped, never ok.
+    """
+    name = "bind_address"
+    try:
+        from .auth import get_auth_key
+        from .bind_posture import is_loopback_address
+
+        mode = (os.environ.get("SYNAPSE_DEPLOY_MODE", "") or "local").strip().lower() or "local"
+        local_mode = mode == "local"
+
+        address = None
+        port = None
+        live_evidence = False
+        adapter = sys.modules.get("synapse.server.hwebserver_adapter")
+        if adapter is not None and getattr(adapter, "_running", False):
+            address = getattr(adapter, "_bound_address", None)
+            port = getattr(adapter, "_port", None)
+            live_evidence = address is not None
+        if not isinstance(port, int) or not (0 < port < 65536):
+            sidecar = base / "bridge.json"
+            if sidecar.exists():
+                data = json.loads(sidecar.read_text(encoding="utf-8"))
+                address = address or data.get("host")
+                port = data.get("port")
+        if not isinstance(port, int) or not (0 < port < 65536):
+            return {"name": name, "status": "skipped",
+                    "detail": "no listen port reported — the bridge server is not running"}
+
+        loopback_up = _probe_tcp("127.0.0.1", port)
+        lan = _local_non_loopback_addresses()
+        reachable = [ip for ip in lan if _probe_tcp(ip, port)]
+
+        result = {"address": address, "port": port,
+                  "loopback_accepts": loopback_up,
+                  "non_loopback_probed": lan,
+                  "non_loopback_accepts": reachable, "mode": mode}
+
+        # A stale sidecar may name an old bind; only a live adapter record or a
+        # listener that actually answers is evidence about the CURRENT posture.
+        if (local_mode and address and not is_loopback_address(str(address))
+                and (live_evidence or loopback_up or reachable)):
+            return {"name": name, "status": "fail", "result": result,
+                    "detail": (f"Local mode but the transport asked hwebserver to bind "
+                               f"{address}:{port} — that address is reachable from other "
+                               f"machines. Restart without SYNAPSE_BIND_ADDRESS (loopback "
+                               f"127.0.0.1 is the local default).")}
+        if reachable and local_mode:
+            return {"name": name, "status": "fail", "result": result,
+                    "detail": (f"The listener on :{port} accepts TCP on non-loopback "
+                               f"{', '.join(reachable)} — the bridge is reachable from the "
+                               f"LAN. Local mode must bind 127.0.0.1 (ADDRESS setting).")}
+        if not loopback_up:
+            return {"name": name, "status": "skipped", "result": result,
+                    "detail": (f"nothing accepts on 127.0.0.1:{port} — the bridge is not "
+                               f"listening (start Connect or the server first)")}
+        if not local_mode:
+            if get_auth_key() is None:
+                return {"name": name, "status": "fail", "result": result,
+                        "detail": (f"Deploy mode {mode} listens beyond loopback but no "
+                                   f"authentication key is configured — mint "
+                                   f"~/.synapse/auth.key or set SYNAPSE_API_KEY.")}
+            return {"name": name, "status": "ok", "result": result,
+                    "detail": (f"Deploy mode {mode}: bound {address or 'as reported'}:"
+                               f"{port} with authentication on (non-loopback expected).")}
+        probed = (f"{len(lan)} non-loopback local address(es) refused"
+                  if lan else "no non-loopback local address available to probe")
+        return {"name": name, "status": "ok", "result": result,
+                "detail": (f"Local mode listens on loopback only: 127.0.0.1:{port} "
+                           f"accepts; {probed}.")}
+    except Exception as e:  # noqa: BLE001 -- the doctor's truth contract: not probed
+        logger.warning("bind_address doctor probe raised: %s", e)
+        return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
+
+
 def _check_main_thread() -> Dict[str, Any]:
     """H3 surfacing: stall-detector state + dispatch-wait histogram. Reports
     state only — the bounded recovery probe belongs to the fast-fail gates."""
@@ -1885,6 +1997,7 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_sidefx_library(),
         _check_bridge_endpoint(base),
         _check_mcp_coexistence(base),
+        _check_bind_address(base),
         _check_main_thread(),
         _check_houdini(handler),
         _check_runtime_provenance(),

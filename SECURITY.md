@@ -8,11 +8,13 @@ Do not open a public issue for a vulnerability. Public issues are for bugs — u
 
 ## Threat model — a localhost, single-seat surface
 
-SYNAPSE runs inside Houdini's own Python interpreter on the artist's machine. The live surface is `ws://localhost:9999/synapse`.
+SYNAPSE runs inside Houdini's own Python interpreter on the artist's machine. The live surface is `ws://127.0.0.1:9999/synapse`.
+
+The loopback bind is enforced, not just documented: the transport passes `ADDRESS=127.0.0.1` to Houdini's `hwebserver` (whose own default is the any-address `0.0.0.0`), and a non-loopback listen is refused when no authentication key exists. Listening beyond loopback is an explicit opt-in — `SYNAPSE_DEPLOY_MODE` set to a studio mode, or `SYNAPSE_ALLOW_LAN=1` with `SYNAPSE_BIND_ADDRESS` — and always requires a key. A fresh Setup install mints `~/.synapse/auth.key`, so the WebSocket handshake and the `/mcp` Bearer check are on out of the box; `SYNAPSE_API_KEY` overrides the file. `synapse_doctor` reports the listen address and fails if the port accepts on a non-loopback local address in local mode.
 
 Stated plainly, in the same words as the README:
 
-RBAC is inactive in local mode by default. The live surface is a localhost WebSocket; origin validation is fail-safe — a connection with an unrecognized `Origin` is rejected, never waved through. No auth key is required or checked unless one is configured. The enable path: set `SYNAPSE_DEPLOY_MODE` to a non-local mode and configure an auth key — that turns RBAC enforcement and key checking on.
+RBAC is inactive in local mode by default. The live surface is a loopback WebSocket; origin validation is fail-safe — a connection with an unrecognized `Origin` is rejected, never waved through. The enable path for RBAC: set `SYNAPSE_DEPLOY_MODE` to a non-local mode and configure an auth key — that turns RBAC enforcement and key checking on. An API key alone (from the installer, `SYNAPSE_API_KEY`, or `~/.synapse/auth.key`) already turns authentication on for both `/synapse` and `/mcp`.
 
 Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.
 
