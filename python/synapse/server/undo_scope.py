@@ -23,8 +23,18 @@ bottom, at most B[label] of each label. Labels repeat (every create is
   applied, so the redo top cannot be one of them.
 
 Both can refuse a legitimate step (for example when a pre-session redo entry of
-the same label was dropped), never allow an old one. A SYNAPSE-labelled entry
-from a previous SYNAPSE run (a panel reload) is refused like any foreign entry.
+the same label was dropped), never allow an old one.
+
+Only labels an agent tool writes count (``AGENT_PREFIXES``): panel actions the
+artist starts ("SYNAPSE insert saved network", "SYNAPSE Identify cleanup") are
+the artist's own work. Redo is further limited to entries this handler itself
+undid, so a group a failed build rolled back, or one the artist undid, is never
+re-applied by an agent.
+
+A session is one handler's lifetime. Every client of the same route shares it
+(the in-Houdini /mcp server, the WebSocket server), so one client can undo
+another client's agent step on that route, and a new chat can undo an earlier
+chat's; a step from before the handler started is refused.
 With no baseline, a history call refuses: the handler captures one first when
 it can, so everything already present counts as pre-session.
 
@@ -40,9 +50,17 @@ import logging
 from collections import Counter
 from typing import Optional, Tuple
 
-from ..panel.turn_revert import is_synapse_label
 
 logger = logging.getLogger(__name__)
+
+#: Labels SYNAPSE's agent tools write: the execution bridge's "SYNAPSE: <summary>"
+#: groups and the live handlers' "synapse_<op>" groups. Panel actions the artist
+#: starts use "SYNAPSE " with a space and are the artist's own work.
+AGENT_PREFIXES = ("SYNAPSE: ", "synapse_")
+
+
+def is_agent_label(label) -> bool:
+    return isinstance(label, str) and label.startswith(AGENT_PREFIXES)
 
 
 def _as_labels(value) -> Optional[Tuple[str, ...]]:
@@ -92,6 +110,8 @@ class UndoScope:
     def __init__(self) -> None:
         self._captured = False
         self._baseline: Optional[Counter] = None
+        self._agent_undone: Counter = Counter()
+        self.capture_failures = 0
 
     @property
     def needs_baseline(self) -> bool:
@@ -105,8 +125,8 @@ class UndoScope:
         """
         if self._captured:
             return True
-        undo = _labels(undos, "undoLabels")
-        redo = _labels(undos, "redoLabels")
+        undo = _ready_labels(undos, "undoLabels")
+        redo = _ready_labels(undos, "redoLabels")
         if undo is None or redo is None:
             return False
         self._baseline = Counter(undo) + Counter(redo)
@@ -134,11 +154,18 @@ class UndoScope:
             return "%s refused: there is nothing to %s. Nothing was changed." % (
                 verb, direction)
         top = labels[0]
-        if not is_synapse_label(top):
+        if not is_agent_label(top):
             return (
-                '%s refused: the next %s step is "%s", which SYNAPSE did not '
-                "record. Taking it back would reverse the artist's own work. "
+                '%s refused: the next %s step is "%s", which a SYNAPSE agent tool '
+                "did not record. Taking it back would reverse the artist's own work. "
                 "Nothing was changed; Ctrl+Z still works." % (verb, direction, top)
+            )
+        if direction == "redo" and self._agent_undone[top] <= 0:
+            return (
+                'Redo refused: the next redo step is "%s", which this SYNAPSE '
+                "session did not undo. It may have been taken back for a reason "
+                "(a failed build, or the artist's own Ctrl+Z). Nothing was changed; "
+                "Ctrl+Y still works." % (top,)
             )
         if self._baseline is None:
             return (
@@ -165,3 +192,10 @@ class UndoScope:
                 "works." % (verb, direction, top)
             )
         return None
+
+    def note_agent_step(self, direction: str, label: str) -> None:
+        """Record a step this handler took, so redo is limited to what it undid."""
+        if direction == "undo":
+            self._agent_undone[label] += 1
+        elif self._agent_undone[label] > 0:
+            self._agent_undone[label] -= 1

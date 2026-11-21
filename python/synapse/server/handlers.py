@@ -871,7 +871,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                                 timeout=2.0, record_stall=False, record_wait=False,
                                 label="history:baseline")
                         except Exception as exc:  # noqa: BLE001 -- retried on the next command
-                            _log.debug("undo baseline capture deferred: %s", exc)
+                            scope.capture_failures += 1
+                            (_log.warning if scope.capture_failures == 1 else _log.debug)(
+                                "undo baseline capture deferred: %s", exc)
             # C5: serialize mutating commands across clients (skip on the main
             # thread — already serialized there, and locking would deadlock
             # run_on_main). Read-only commands never contend.
@@ -1492,10 +1494,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             refusal = scope.refusal(hou.undos, direction)
             if refusal:
                 raise HistoryScopeRefused(refusal)
+            stack = hou.undos.undoLabels() if direction == "undo" else hou.undos.redoLabels()
+            top = tuple(stack)[0]
             if direction == "undo":
                 hou.undos.performUndo()
             else:
                 hou.undos.performRedo()
+            scope.note_agent_step(direction, top)
 
         run_on_main(_judge_and_step, label="history:%s" % direction)
 

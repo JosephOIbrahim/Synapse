@@ -103,7 +103,7 @@ def _get_handler_instance():
     # session started from an empty history.
     from types import SimpleNamespace
     assert handler._undo_scope.note_session_start(
-        SimpleNamespace(undoLabels=lambda: (), redoLabels=lambda: ()))
+        SimpleNamespace(areEnabled=lambda: True, undoLabels=lambda: (), redoLabels=lambda: ()))
     return handler, handlers_mod
 
 
@@ -160,6 +160,7 @@ class TestRedoHandler:
         """_handle_redo should call hou.undos.performRedo()."""
         handler, handlers_mod = _get_handler_instance()
         _handlers_hou = handlers_mod.hou
+        handler._handle_undo({})          # redo is limited to what this handler undid
         with patch.object(_handlers_hou.undos, "performRedo") as mock_redo:
             result = handler._handle_redo({})
             mock_redo.assert_called_once()
@@ -167,6 +168,7 @@ class TestRedoHandler:
     def test_redo_returns_status(self, _hou_stub):
         """_handle_redo should return a dict with status and message."""
         handler, _ = _get_handler_instance()
+        handler._handle_undo({})          # redo is limited to what this handler undid
         result = handler._handle_redo({})
         assert result["status"] == "ok"
         assert "Redid" in result["message"]

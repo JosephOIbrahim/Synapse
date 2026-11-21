@@ -22,7 +22,7 @@ class History:
         self.groups = 0
         # Top-first, as hou.undos.undoLabels() reports it: element 0 is the
         # entry performUndo() would step over next.
-        self.undo = ['SYNAPSE build', 'Artist edit']
+        self.undo = ['SYNAPSE: build', 'Artist edit']
         self.redo = []
         self.calls = []
         self.fail = False
@@ -87,7 +87,7 @@ def env(monkeypatch):
 
 
 def _session_started_before_the_build(handler):
-    """Make 'SYNAPSE build' this session's step: the baseline predates it.
+    """Make 'SYNAPSE: build' this session's step: the baseline predates it.
 
     Under the R-012 session rule a SYNAPSE step that was already on the stack
     before this handler's session is refused; these tests are about the
@@ -108,7 +108,7 @@ def test_real_adapter_handler_undo_redo_keeps_artist_entry(env):
     _session_started_before_the_build(handler)
     undo = dispatch(handler, 'undo')
     assert undo.success, undo.error
-    assert history.undo == ['Artist edit'] and history.redo == ['SYNAPSE build']
+    assert history.undo == ['Artist edit'] and history.redo == ['SYNAPSE: build']
     assert history.groups == 0
     assert undo.data['_integrity']['undo_applicable'] is False
     assert undo.data['_integrity']['undo'] is False
@@ -119,7 +119,7 @@ def test_real_adapter_handler_undo_redo_keeps_artist_entry(env):
     assert undo.data['_integrity']['hash_target'] == '/obj,/stage'
     redo = dispatch(handler, 'redo')
     assert redo.success, redo.error
-    assert history.undo == ['SYNAPSE build', 'Artist edit'] and not history.redo
+    assert history.undo == ['SYNAPSE: build', 'Artist edit'] and not history.redo
     assert [c[0] for c in history.calls] == ['undo', 'redo']
     assert bridge.operation_stats()['operations_verified'] == 2
 
@@ -127,7 +127,7 @@ def test_real_adapter_handler_undo_redo_keeps_artist_entry(env):
 def test_real_adapter_handler_undo_refuses_an_artist_edit_on_top(env):
     """R-012: the agent's undo must refuse the artist's own step and name it."""
     history, bridge, handler = env
-    history.undo = ['Artist edit', 'SYNAPSE build']
+    history.undo = ['Artist edit', 'SYNAPSE: build']
     response = dispatch(handler, 'undo')
     assert not response.success
     assert 'Artist edit' in response.error
