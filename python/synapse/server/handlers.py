@@ -537,7 +537,10 @@ def _close_autonomy_loop(loop) -> None:
         except Exception as exc:  # noqa: BLE001 -- cleanup must not outrank the result
             _log.debug("autonomy loop cleanup failed: %s", exc)
     finally:
-        loop.close()
+        try:
+            loop.close()
+        except Exception as exc:  # noqa: BLE001 -- cleanup must not outrank the result
+            _log.debug("autonomy loop close failed: %s", exc)
 
 
 def _run_autonomy_off_main(driver, intent):
@@ -2794,8 +2797,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         The worker runs the driver on a plain asyncio loop it builds itself
         (Houdini 22's patched asyncio refuses the default loop's first
         ``create_task`` off the main thread). If even the plain loop cannot be
-        constructed, the driver's synchronous step loop runs instead and the
-        poll receipt is labeled ``execution_mode: "sync_steps"``.
+        constructed, the driver's synchronous step loop runs instead, and the
+        report under the poll receipt's ``result`` carries
+        ``execution_mode: "sync_steps"``.
 
         Returns:
             A task receipt. A poll of a finished task carries the serialized

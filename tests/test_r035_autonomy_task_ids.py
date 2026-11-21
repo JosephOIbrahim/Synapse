@@ -390,6 +390,7 @@ def test_driver_stops_at_a_step_boundary_when_the_wall_clock_expires():
 
     assert calls == ["render_settings"], "the render step must never start"
     assert report.stop_reason == "wall_clock_exceeded"
+    assert report.execution_mode == "async", "the async path must say so (review T7)"
     assert report.success is False
     assert report.iterations == 1
     assert [step.status for step in report.executed.steps] == [
@@ -733,3 +734,38 @@ def test_the_sync_fallback_reports_a_failed_step_without_grading():
     assert [step.status for step in report.executed.steps] == [
         StepStatus.FAILED, StepStatus.PENDING]
     assert any(d.context == "validation_skipped" for d in report.decisions)
+
+
+def test_a_runtime_error_without_the_guard_marker_is_reported_not_fallen_back(monkeypatch):
+    """Only Houdini's main-thread refusal selects the synchronous fallback (review T6).
+
+    A plain-loop constructor that fails for any other reason is a real error: the
+    task must end in ERROR with that message, execute_sync must never be entered,
+    and nothing may be dispatched.
+    """
+    entered = []
+
+    class _SpyDriver(AutonomousDriver):
+        def execute_sync(self, intent, reason=""):
+            entered.append(reason)
+            return super().execute_sync(intent, reason)
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(asyncio, "SelectorEventLoop", _boom)
+    registry = _RecordingRegistry()
+    handler = _new_handler()
+    handler._registry = registry
+    with patch.dict(sys.modules, {
+            "synapse.autonomy": _sync_autonomy(_TwoStepPlanner(), _SpyDriver)}), \
+         patch.object(SynapseHandler, "_resolve_agent_usd",
+                      staticmethod(lambda: None)), \
+         _no_memory_store():
+        started = handler._handle_autonomous_render({"intent": "render frames 1-2"})
+        done = _await(handler, started["task_id"])
+
+    assert done["status"] == STATUS_ERROR, done
+    assert "boom" in (done.get("error") or ""), done
+    assert entered == [], "a RuntimeError without the guard marker must not fall back"
+    assert registry.calls == [], "nothing may be dispatched"

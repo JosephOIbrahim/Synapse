@@ -544,7 +544,9 @@ class AutonomousDriver:
         its first task; a future build could refuse the plain loop class too.
         This path plans, applies the gate policy, and dispatches each step
         through ``handler_interface.call_sync`` -- the same handlers the async
-        path calls, which marshal themselves onto Houdini's main thread.
+        path calls, which marshal their ``hou`` work onto Houdini's main thread.
+        Neither path takes the handler's mutation lock, so autonomy steps do not
+        serialise against another client's edits.
 
         What does NOT run here, and is never claimed in the report: the
         pre-flight validator (its eight checks are one ``asyncio.gather``),
