@@ -10,6 +10,7 @@ Tests all 5 TOPS handlers:
 Mock-based -- no Houdini or PDG required.
 """
 
+import json
 import sys
 import types
 from pathlib import Path
@@ -186,6 +187,121 @@ def _make_top_node(path="/obj/topnet1/node1", pdg_node=None, category="Top",
     node.cook = MagicMock()
     node.generateStaticItems = MagicMock()
     return node
+
+
+# ---------------------------------------------------------------------------
+# Catalogue-backed wedge node (R-032 CONDUCTOR-4)
+#
+# The handler must write only parameters that exist on the H22.0.400 Wedge
+# TOP. This fake answers parm() from rag/catalog/h22.0.400/Top.json, so a
+# handler that invents a parameter name fails here instead of reading green
+# against a MagicMock that accepts every name.
+# ---------------------------------------------------------------------------
+
+_WEDGE_CATALOGUE = (
+    Path(__file__).resolve().parent.parent
+    / "rag" / "catalog" / "h22.0.400" / "Top.json"
+)
+
+
+def _scalar_default(value):
+    if isinstance(value, list):
+        return value[0] if len(value) == 1 else tuple(value)
+    return value
+
+
+def _load_wedge_catalogue():
+    """Return (parm names with '#' expanded, defaults for fixed parms)."""
+    data = json.loads(_WEDGE_CATALOGUE.read_text(encoding="utf-8"))
+    entry = data["types"]["wedge"]
+    names = set()
+    defaults = {}
+    for parm in entry["parms"]:
+        name = parm["name"]
+        if "#" not in name:
+            names.add(name)
+            defaults[name] = _scalar_default(parm.get("default"))
+            continue
+        expanded = [name]
+        while any("#" in item for item in expanded):
+            nxt = []
+            for item in expanded:
+                if "#" in item:
+                    nxt.extend(item.replace("#", str(i), 1) for i in range(1, 9))
+                else:
+                    nxt.append(item)
+            expanded = nxt
+        names.update(expanded)
+    return names, defaults
+
+
+class _CatalogueParm:
+    def __init__(self, name, default=None):
+        self._name = name
+        self._value = default
+
+    def name(self):
+        return self._name
+
+    def set(self, value):
+        self._value = value
+
+    def eval(self):
+        return self._value
+
+
+class _CataloguePDGNode:
+    def __init__(self, work_items):
+        self.workItems = work_items
+
+
+class _CatalogueWedgeNode:
+    """Wedge TOP fake backed by the real H22.0.400 catalogue names."""
+
+    def __init__(self, path="/obj/topnet1/wedge1", drop_prefixes=()):
+        names, defaults = _load_wedge_catalogue()
+        for prefix in drop_prefixes:
+            names = {n for n in names if not n.startswith(prefix)}
+        self._path = path
+        self._parms = {n: _CatalogueParm(n, defaults.get(n)) for n in names}
+        self._work_items = []
+        self.cook_calls = 0
+
+    def path(self):
+        return self._path
+
+    def type(self):
+        return _MockNodeType("wedge", "Top")
+
+    def parm(self, name):
+        return self._parms.get(name)
+
+    def parms(self):
+        return list(self._parms.values())
+
+    def moveToGoodPosition(self):
+        pass
+
+    def _wedge_total(self):
+        rows = int(self._parms["wedgeattributes"].eval() or 0)
+        total = 1
+        for idx in range(1, rows + 1):
+            wedgetype = int(self._parms[f"wedgetype{idx}"].eval())
+            if wedgetype == 2:  # Value List
+                total *= int(self._parms[f"values{idx}"].eval() or 0)
+            else:  # Range
+                total *= int(self._parms["wedgecount"].eval() or 1)
+        return total
+
+    def generateStaticItems(self):
+        self._work_items = [object() for _ in range(self._wedge_total())]
+
+    def getPDGNode(self):
+        return _CataloguePDGNode(self._work_items)
+
+    def cookWorkItems(self, block=False):
+        self.cook_calls += 1
+
 
 
 # ---------------------------------------------------------------------------
@@ -776,18 +892,19 @@ class TestDirtyNode:
 
 
 # ===========================================================================
-# TestSetupWedge (Phase 3)
+# TestSetupWedge (Phase 3) -- R-032: real H22.0.400 catalogue parm names
 # ===========================================================================
 
 class TestSetupWedge:
-    def test_basic_wedge_setup(self, handler):
-        wedge_node = MagicMock()
-        wedge_node.path.return_value = "/obj/topnet1/wedge1"
-        wedge_node.parm.return_value = MagicMock()
-        wedge_node.moveToGoodPosition = MagicMock()
-
+    @staticmethod
+    def _topnet(wedge_node):
         topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet")
         topnet.createNode = MagicMock(return_value=wedge_node)
+        return topnet
+
+    def test_basic_wedge_setup_writes_real_catalogue_parms(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+        topnet = self._topnet(wedge_node)
 
         with patch.object(_handlers_hou, "node", return_value=topnet):
             result = handler._handle_tops_setup_wedge({
@@ -798,18 +915,25 @@ class TestSetupWedge:
             })
 
         assert result["wedge_node"] == "/obj/topnet1/wedge1"
+        assert result["wedge_mode"] == "range"
+        assert result["wedgecount"] == 5
         assert result["total_variations"] == 5
+        assert result["work_item_count"] == 5
         assert len(result["attributes"]) == 1
         assert result["attributes"][0]["name"] == "roughness"
 
-    def test_multiple_attributes(self, handler):
-        wedge_node = MagicMock()
-        wedge_node.path.return_value = "/obj/topnet1/wedge1"
-        wedge_node.parm.return_value = MagicMock()
-        wedge_node.moveToGoodPosition = MagicMock()
+        # Only H22.0.400 wedge parms were written.
+        assert wedge_node.parm("wedgeattributes").eval() == 1
+        assert wedge_node.parm("name1").eval() == "roughness"
+        assert wedge_node.parm("type1").eval() == 0
+        assert wedge_node.parm("wedgetype1").eval() == 0  # Range
+        assert wedge_node.parm("wedgecount").eval() == 5
+        assert wedge_node.parm("floatrangestart1").eval() == (0.0, 0.0, 0.0, 0.0)
+        assert wedge_node.parm("floatrangeend1").eval() == (1.0, 1.0, 1.0, 1.0)
 
-        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet")
-        topnet.createNode = MagicMock(return_value=wedge_node)
+    def test_differing_step_counts_fall_back_to_value_lists(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+        topnet = self._topnet(wedge_node)
 
         with patch.object(_handlers_hou, "node", return_value=topnet):
             result = handler._handle_tops_setup_wedge({
@@ -820,10 +944,62 @@ class TestSetupWedge:
                 ],
             })
 
-        assert result["total_variations"] == 12  # 3 * 4
+        assert result["wedge_mode"] == "value_list"
+        assert result["total_variations"] == 12
+        assert result["work_item_count"] == 12
         # He2025: attributes sorted by name
         assert result["attributes"][0]["name"] == "metalness"
         assert result["attributes"][1]["name"] == "roughness"
+
+        # Sorted: metalness is row 1 (4 values), roughness is row 2 (3 values).
+        assert wedge_node.parm("wedgetype1").eval() == 2  # Value List
+        assert wedge_node.parm("values1").eval() == 4
+        assert wedge_node.parm("floatvalue1_1").eval() == 0.0
+        assert wedge_node.parm("floatvalue1_4").eval() == 1.0
+        assert wedge_node.parm("values2").eval() == 3
+        assert wedge_node.parm("floatvalue2_3").eval() == 1.0
+
+    def test_explicit_values_write_the_value_list_family(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+        topnet = self._topnet(wedge_node)
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_setup_wedge({
+                "topnet_path": "/obj/topnet1",
+                "attributes": [
+                    {"name": "seed", "type": "int", "values": [1, 5, 9]},
+                ],
+            })
+
+        assert result["wedge_mode"] == "value_list"
+        assert result["total_variations"] == 3
+        assert result["work_item_count"] == 3
+        assert wedge_node.parm("type1").eval() == 2  # Integer
+        assert wedge_node.parm("values1").eval() == 3
+        assert wedge_node.parm("intvalue1_1").eval() == 1
+        assert wedge_node.parm("intvalue1_2").eval() == 5
+        assert wedge_node.parm("intvalue1_3").eval() == 9
+
+    def test_missing_parm_fails_instead_of_being_skipped(self, handler):
+        """A wedge node without floatrangestart# must raise, not report success."""
+        wedge_node = _CatalogueWedgeNode(drop_prefixes=("floatrangestart",))
+        topnet = self._topnet(wedge_node)
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            with pytest.raises(ValueError, match="floatrangestart1"):
+                handler._handle_tops_setup_wedge({
+                    "topnet_path": "/obj/topnet1",
+                    "attributes": [
+                        {"name": "roughness", "type": "float", "start": 0.0, "end": 1.0, "steps": 5},
+                    ],
+                })
+
+    def test_unknown_attribute_type_refused(self, handler):
+        with pytest.raises(ValueError, match="isn't a Wedge TOP attribute type"):
+            handler._handle_tops_setup_wedge({
+                "topnet_path": "/obj/topnet1",
+                "attributes": [{"name": "roughness", "type": "vector4", "steps": 2}],
+            })
 
     def test_empty_attributes_error(self, handler):
         with pytest.raises(ValueError, match="attributes"):
@@ -831,6 +1007,125 @@ class TestSetupWedge:
                 "topnet_path": "/obj/topnet1",
                 "attributes": [],
             })
+
+
+# ===========================================================================
+# TestWedge (houdini_wedge) -- R-032: apply parm/values or refuse them
+# ===========================================================================
+
+class TestWedge:
+    def test_parm_and_values_are_applied(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+
+        with patch.object(_handlers_hou, "node", return_value=wedge_node):
+            result = handler._handle_wedge({
+                "node": "/obj/topnet1/wedge1",
+                "parm": "roughness",
+                "values": [0.1, 0.5, 0.9],
+            })
+
+        assert result["status"] == "cooked"
+        assert result["parm"] == "roughness"
+        assert result["attribute"] == "roughness"
+        assert result["requested_items"] == 3
+        assert result["work_item_count"] == 3
+        assert wedge_node.cook_calls == 1
+
+        assert wedge_node.parm("wedgeattributes").eval() == 1
+        assert wedge_node.parm("wedgetype1").eval() == 2  # Value List
+        assert wedge_node.parm("valuetype1").eval() == 1  # Parameter Value
+        assert wedge_node.parm("channel1").eval() == "roughness"
+        assert wedge_node.parm("exportchannel1").eval() == 1
+        assert wedge_node.parm("values1").eval() == 3
+        assert wedge_node.parm("floatvalue1_1").eval() == 0.1
+        assert wedge_node.parm("floatvalue1_3").eval() == 0.9
+
+    def test_int_values_use_intvalue_parms(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+
+        with patch.object(_handlers_hou, "node", return_value=wedge_node):
+            result = handler._handle_wedge({
+                "node": "/obj/topnet1/wedge1",
+                "parm": "seed",
+                "values": [1, 2, 3],
+            })
+
+        assert result["attribute_type"] == "int"
+        assert wedge_node.parm("type1").eval() == 2
+        assert wedge_node.parm("intvalue1_2").eval() == 2
+
+    def test_parm_without_values_refused(self, handler):
+        with pytest.raises(ValueError, match="go together"):
+            handler._handle_wedge({"node": "/obj/topnet1/wedge1", "parm": "roughness"})
+
+    def test_values_without_parm_refused(self, handler):
+        with pytest.raises(ValueError, match="go together"):
+            handler._handle_wedge({"node": "/obj/topnet1/wedge1", "values": [0.1, 0.2]})
+
+    def test_values_must_be_list(self, handler):
+        with pytest.raises(ValueError, match="should be a list"):
+            handler._handle_wedge({
+                "node": "/obj/topnet1/wedge1",
+                "parm": "roughness",
+                "values": "not a list",
+            })
+
+    def test_non_wedge_top_refused(self, handler):
+        node = _make_top_node("/obj/topnet1/box1", None, "Top", "box")
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            with pytest.raises(ValueError, match="not a Wedge TOP"):
+                handler._handle_wedge({
+                    "node": "/obj/topnet1/box1",
+                    "parm": "size",
+                    "values": [1.0, 2.0],
+                })
+
+    def test_missing_parm_on_apply_refused(self, handler):
+        wedge_node = _CatalogueWedgeNode(drop_prefixes=("floatvalue",))
+
+        with patch.object(_handlers_hou, "node", return_value=wedge_node):
+            with pytest.raises(ValueError, match="floatvalue1_1"):
+                handler._handle_wedge({
+                    "node": "/obj/topnet1/wedge1",
+                    "parm": "roughness",
+                    "values": [0.1, 0.2],
+                })
+
+    def test_topnet_creates_wedge_when_applying(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet")
+        topnet.children.return_value = []
+        topnet.createNode = MagicMock(return_value=wedge_node)
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_wedge({
+                "node": "/obj/topnet1",
+                "parm": "seed",
+                "values": [1, 2],
+            })
+
+        topnet.createNode.assert_called_once_with("wedge", "wedge1")
+        assert result["status"] == "cooked"
+
+    def test_cook_only_path_still_cooks(self, handler):
+        wedge_node = _CatalogueWedgeNode()
+
+        with patch.object(_handlers_hou, "node", return_value=wedge_node):
+            result = handler._handle_wedge({"node": "/obj/topnet1/wedge1"})
+
+        assert result == {"node": "/obj/topnet1/wedge1", "status": "cooked"}
+        assert wedge_node.cook_calls == 1
+
+    def test_node_not_found(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_wedge({
+                    "node": "/nonexistent",
+                    "parm": "roughness",
+                    "values": [0.1],
+                })
+
 
 
 # ===========================================================================
