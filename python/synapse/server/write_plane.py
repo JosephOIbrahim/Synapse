@@ -454,13 +454,19 @@ def read_store_write_health(store: Any) -> Dict[str, Any]:
     RESOLUTION ORDER, and it is deliberate:
 
     1. ANY candidate reporting sick -> ``degraded``. A dead safety net is a dead
-       safety net even when the primary in front of it is fine -- that is the
+       safety net even when the primary in front of it is fine, and a sick
+       primary is sick no matter how healthy its mirror is -- that is the
        incident, exactly.
-    2. else NO candidate answered -> ``unknown``. "We could not determine
-       health" and "healthy" are different answers; collapsing them is what let
-       a store refuse writes for two days behind a green light.
-    3. else -> ``ok``, and it is a real ok: at least one contract-bearing store
-       affirmatively said it is accepting writes.
+    2. else the PRIMARY never answered -> ``unknown`` (R-030). A safety net's
+       health is not the primary's health: the JSONL mirror behind
+       ``MonetaBackedStore`` can be perfectly fine while the Moneta primary
+       refuses every checked write, and letting the net vouch for a silent
+       primary is how a degraded store read green. "The primary" is the serving
+       object itself, or a member literally named ``primary`` (a shadow-mode
+       wrapper answers on its primary's behalf). A ``_jsonl_net``/``shadow``
+       answer alone can only REPORT sickness; it cannot make the row ok.
+    3. else -> ``ok``, and it is a real ok: the primary affirmatively said it is
+       accepting writes (and nothing in the row dissented).
 
     ``overwrote_prior`` DOES set the verdict. It counts only writes that replaced
     data already in the store -- the add() collision downgrade, where the incoming
@@ -482,6 +488,7 @@ def read_store_write_health(store: Any) -> Dict[str, Any]:
     sick: list = []
     silent: list = []
     healthy: list = []
+    primary_answered = False
     rejected_total: Optional[int] = None
 
     if store is None:
@@ -498,12 +505,18 @@ def read_store_write_health(store: Any) -> Dict[str, Any]:
                           "write state is unknown" % (type(exc).__name__, exc),
                 "rejected_writes": None, "sources": sources}
 
-    for label, obj in candidates:
+    for index, (label, obj) in enumerate(candidates):
         row = _ask_one_store_health(label, obj)
         sources[label] = row
         if not row.get("answered"):
             silent.append(row.get("detail") or ("%s did not answer" % label))
             continue
+        # The serving object itself (index 0), or a member literally named
+        # "primary", speaks FOR the primary. `_jsonl_net` / `shadow` are safety
+        # nets: their sickness counts, but their health cannot vouch for a
+        # silent primary (R-030).
+        if index == 0 or label.rsplit(".", 1)[-1] == "primary":
+            primary_answered = True
         count = row.get("rejected_writes")
         # NEGATIVE IS A SENTINEL, NOT A COUNT. ``MemoryStore.health()``
         # fail-closes with ``rejected_writes: -1`` when its own probe could not
@@ -529,10 +542,16 @@ def read_store_write_health(store: Any) -> Dict[str, Any]:
                 "reason": reason, "rejected_writes": rejected_total,
                 "sources": sources}
 
-    if not healthy:
+    if not primary_answered:
+        reason = ("could not determine whether memory is accepting writes -- "
+                  "the primary store did not answer")
+        if healthy:
+            reason += (" (a safety net answered for itself, not for the "
+                       "primary: %s)" % ", ".join(healthy))
+        if silent:
+            reason += ": " + "; ".join(silent)
         return {"status": "unknown", "accepting_writes": None,
-                "reason": "could not determine whether memory is accepting "
-                          "writes -- " + "; ".join(silent),
+                "reason": reason,
                 "rejected_writes": rejected_total, "sources": sources}
 
     return {"status": "ok", "accepting_writes": True, "reason": "",

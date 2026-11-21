@@ -6,9 +6,9 @@ Pins the four acceptance predicates:
   #3 >=5 spot-checked memories match field-for-field across stores
   #4 post-flip, a new write lands in Moneta AND in JSONL (write-through armed)
 
-plus the collision policy (#5 keep-both-never-overwrite), idempotency (guards the
-append-only double-count), and dim-safety (a 256-dim store is not crashed by the
-384-dim default).
+plus the collision policy (#5 refuse-on-collision, never overwrite, never
+duplicate an id), idempotency (guards the append-only double-count), and
+dim-safety (a 256-dim store is not crashed by the 384-dim default).
 
 Pure-logic tests (backup gate, census parsing, disk helpers, dedup planning via
 dry-run) run everywhere. Tests that deposit into a live Moneta target skip
@@ -217,7 +217,7 @@ def test_verify_export_count_parity_and_spot_check(tmp_path):
 
 
 # ===========================================================================
-# idempotency + keep-both collision  (target #5, guards the double-count)
+# idempotency + refusal on an id collision  (target #5, guards the double-count)
 # ===========================================================================
 
 @moneta
@@ -236,22 +236,33 @@ def test_export_is_idempotent(tmp_path):
 
 
 @moneta
-def test_keep_both_on_id_collision_never_overwrites(tmp_path):
+def test_id_collision_is_refused_never_overwrites_and_never_poisons(tmp_path):
+    """R-033: a same-id/different-payload pair cannot live in the primary.
+
+    The exporter's job on a collision is now to REFUSE the colliding record
+    and report it: the target keeps its original row, and no second row under
+    one id is planted (two rows under one id is what
+    ``memory_lifecycle._records`` and ``add_durable_if_absent`` reject the
+    whole store for). The "never overwrites" half is unchanged -- the
+    original survives intact.
+    """
     tgt = tmp_path / "tgt" / ".synapse"
     # target seeded from source A: id mem_x, content "A"
     srcA = tmp_path / "a" / ".synapse"
     _make_source_store(srcA, [_mem("A", id="mem_x")])
     migrate.export_jsonl_to_moneta(srcA, tgt, dry_run=False)
-    # source B: SAME id mem_x, DIFFERENT content -> collision
+    # source B: SAME id mem_x, DIFFERENT content -> refused collision
     srcB = tmp_path / "b" / ".synapse"
     _make_source_store(srcB, [_mem("B-different", id="mem_x")])
     rep = migrate.export_jsonl_to_moneta(srcB, tgt, dry_run=False)
 
-    assert rep.kept_both == ["mem_x"]
+    assert rep.error is None
+    assert rep.conflicts == ["mem_x"]
+    assert rep.kept_both == [], "no second row under one id may be kept"
     rows = migrate.read_snapshot_rows(tgt)
-    assert len(rows) == 2                      # BOTH kept, never overwritten
+    assert len(rows) == 1                      # never overwritten, never doubled
     payloads = {json.loads(r["payload"])["content"] for r in rows}
-    assert payloads == {"A", "B-different"}    # the original survives intact
+    assert payloads == {"A"}                   # the original survives intact
 
 
 # ===========================================================================

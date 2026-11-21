@@ -108,6 +108,93 @@ def current_binding(hou_module=None):
     return MemoryBinding(hip_path, scene, scene, False, source)
 
 
+def _project_of(owner):
+    """The project a memory owner serves, for failure reports.
+
+    ``SynapseMemory`` knows its ``project_path``; anything else falls back to the
+    directory the ``.synapse`` store lives in. Called only while recording a
+    failure, so a missing attribute must read as unknown and never raise.
+    """
+    project = getattr(owner, "project_path", None)
+    if project:
+        return str(project)
+    storage = getattr(owner, "storage_dir", None)
+    if storage:
+        path = Path(storage)
+        return str(path.parent if path.name == ".synapse" else path)
+    return None
+
+
+def _record_pending_failure(owner, error, *, cause, hip_path, old_project, new_project):
+    """Record a failed Save As / load transition on the owner that still serves.
+
+    R-031: before this reader existed the failure was written to
+    ``_memory_binding_error`` and nothing read it — the artist saved, believed
+    memory followed, and it did not.
+    """
+    if owner is None:
+        return
+    try:
+        owner._memory_binding_error = str(error)
+        owner._memory_pending_cause = cause
+        owner._memory_pending_hip = hip_path
+        owner._memory_pending_old_project = old_project
+        owner._memory_pending_new_project = new_project
+    except Exception:  # noqa: BLE001 -- recording must never mask the real failure
+        _LOG.debug("Could not record the failed memory binding", exc_info=True)
+
+
+def _clear_pending_failure(owner):
+    if owner is None:
+        return
+    owner._memory_binding_error = None
+    owner._memory_pending_cause = None
+    owner._memory_pending_hip = None
+    owner._memory_pending_old_project = None
+    owner._memory_pending_new_project = None
+
+
+def pending_binding_report(owner=None):
+    """The last failed memory rebind recorded on ``owner``, or ``None``.
+
+    A PURE attribute read — no ``hou``, no store, no lock — so
+    ``synapse_memory_status`` and ``synapse_health`` can call it from any thread
+    and a broken store can never make the failure report itself fail. ``owner``
+    defaults to the live process owner.
+
+    Shape::
+
+        {"status": "failed", "error": ..., "cause": "save"|"load"|"clear",
+         "hip_path": ..., "old_project": ..., "new_project": ...,
+         "recovery": ...}
+
+    ``None`` means no failed carry is pending; a failed carry stays visible
+    until the next ``ensure_current_memory`` retries it to success.
+    """
+    if owner is None:
+        from synapse.memory import store as module
+        owner = getattr(module, "_global_synapse", None)
+    if owner is None:
+        return None
+    try:
+        error = getattr(owner, "_memory_binding_error", None)
+        if not error:
+            return None
+        return {
+            "status": "failed",
+            "error": str(error),
+            "cause": getattr(owner, "_memory_pending_cause", None),
+            "hip_path": getattr(owner, "_memory_pending_hip", None),
+            "old_project": getattr(owner, "_memory_pending_old_project", None),
+            "new_project": getattr(owner, "_memory_pending_new_project", None),
+            "recovery": ("the next memory call retries this carry; a failure "
+                         "reports the same reason"),
+        }
+    except Exception:  # noqa: BLE001 -- a status reader must never raise
+        _LOG.debug("memory binding status could not be read", exc_info=True)
+        return None
+
+
 def _on_main(fn):
     from synapse.memory import store as module
     return module._read_on_main(fn, label="memory:lifecycle")
@@ -161,10 +248,17 @@ def _handle_event(event):
             ensure_current_memory(cause=cause)
         except Exception as exc:
             owner = module._global_synapse
-            if owner is not None:
-                owner._memory_binding_error = str(exc)
-                owner._memory_pending_cause = cause
-                owner._memory_pending_hip = str(module.hou.hipFile.path())
+            # ensure_current_memory records the transition with BOTH projects;
+            # only a raise before binding resolution (e.g. current_binding on an
+            # unwritable JOB) arrives here unrecorded. Same message => already
+            # recorded, so do not overwrite the better record with a worse one.
+            if str(getattr(owner, "_memory_binding_error", None) or "") != str(exc):
+                _record_pending_failure(
+                    owner, exc, cause=cause,
+                    hip_path=str(module.hou.hipFile.path()),
+                    old_project=_project_of(owner),
+                    new_project=None,
+                )
             _LOG.error("Memory %s binding failed; memory requests must retry or report unavailable: %s", cause, exc)
 
 
@@ -212,6 +306,41 @@ def _require_carry_budget(records):
         raise RuntimeError("Memory migration exceeds the bounded record/byte budget")
 
 
+def _repair_duplicate_identities(backend):
+    """Converge duplicate identities through the live store, in-product (R-033).
+
+    ``python -m synapse.memory.primary_repair`` is the offline tool: it must
+    refuse while a host owns the snapshot, because a live ``save()`` rewrites
+    the file whole. The store that owns the handle can run the same repair rule
+    from inside the process, under the lock every write takes, so the
+    save-a-scene transition heals instead of staying broken until a
+    maintenance window. Returns the repair report when rows were converged,
+    else ``None`` (the caller keeps its existing refusal).
+    """
+    repair = getattr(backend, "repair_duplicate_identities", None)
+    if not callable(repair):
+        return None
+    try:
+        report = repair(apply=True)
+    except Exception as exc:  # noqa: BLE001 -- no repair is a refusal, never a crash here
+        _LOG.error("In-product duplicate-identity repair failed: %s", exc)
+        return None
+    if not report.get("applied"):
+        _LOG.error(
+            "In-product duplicate-identity repair did not apply (%s)",
+            report.get("refusals") or "no rows removed",
+        )
+        return None
+    _LOG.warning(
+        "In-product duplicate-identity repair converged ids=%s dropped=%d "
+        "remaining=%s persistence=%s",
+        report.get("duplicate_ids"), len(report.get("dropped") or []),
+        report.get("remaining_duplicate_ids") or "none",
+        report.get("persistence"),
+    )
+    return report
+
+
 def _records(owner):
     backend = owner.store
     strict = getattr(backend, "_iter_memories", None)
@@ -229,6 +358,14 @@ def _records(owner):
     # into ever again -- and the refusal came after the read, so it bounded
     # nothing. The budget belongs to what is CARRIED: see _require_carry_budget.
     ids = [m.id for m in records]
+    if len(ids) != len(set(ids)):
+        # R-033: heal through the store that owns these rows before refusing.
+        # The offline repair tool cannot run here (a live host owns the
+        # snapshot); the store's own repair can, under the lock every write
+        # takes, and the re-read below proves it actually converged.
+        if _repair_duplicate_identities(backend) is not None and callable(strict):
+            records = strict(strict=True)
+            ids = [m.id for m in records]
     if len(ids) != len(set(ids)):
         raise RuntimeError("Source memory has duplicate identities")
     return records
@@ -432,26 +569,40 @@ def ensure_current_memory(*, cause=None):
             effective_cause = getattr(owner, "_memory_pending_cause", None)
         inherited = set()
         records = []
-        if effective_cause == "save" and previous is not None:
-            inherited = scene_hip_paths(owner, previous.hip_path)
-            if previous.unsaved:
-                records = _records(owner)
-            elif _key(previous.project_dir) != _key(binding.project_dir):
-                from synapse.memory.models import MemoryTier
-                records = [m for m in _records(owner)
-                           if m.tier != MemoryTier.SHOW and m.hip_file and _key(m.hip_file) in inherited]
-        if _key(owner.storage_dir) != _key(binding.project_dir / ".synapse"):
-            rebind_owner(binding.project_dir, records=records, binding=binding, inherited_hips=inherited)
-            owner = module._global_synapse
-        elif effective_cause == "save":
-            _persist(owner)
-            if inherited:
-                _save_lineage(owner, binding.hip_path, inherited)
-        owner._memory_binding = binding
-        _adopt_scene_store(owner, binding)
-        owner._memory_binding_error = None
-        owner._memory_pending_cause = None
-        owner._memory_pending_hip = None
+        source_project = _project_of(owner)
+        try:
+            if effective_cause == "save" and previous is not None:
+                inherited = scene_hip_paths(owner, previous.hip_path)
+                if previous.unsaved:
+                    records = _records(owner)
+                elif _key(previous.project_dir) != _key(binding.project_dir):
+                    from synapse.memory.models import MemoryTier
+                    records = [m for m in _records(owner)
+                               if m.tier != MemoryTier.SHOW and m.hip_file and _key(m.hip_file) in inherited]
+            if _key(owner.storage_dir) != _key(binding.project_dir / ".synapse"):
+                rebind_owner(binding.project_dir, records=records, binding=binding, inherited_hips=inherited)
+                owner = module._global_synapse
+            elif effective_cause == "save":
+                _persist(owner)
+                if inherited:
+                    _save_lineage(owner, binding.hip_path, inherited)
+            owner._memory_binding = binding
+            _adopt_scene_store(owner, binding)
+        except Exception as exc:
+            # R-031: a failed rebind must outlive this frame. The rebind did not
+            # publish, so the owner still serving is the OLD one; record the
+            # failure there, naming both sides of the move, and let status and
+            # health report it. The next memory call retries via the pending
+            # cause/hip (above) and either succeeds or fails with this reason.
+            _record_pending_failure(
+                module._global_synapse or owner, exc,
+                cause=effective_cause,
+                hip_path=binding.hip_path,
+                old_project=source_project,
+                new_project=str(binding.project_dir),
+            )
+            raise
+        _clear_pending_failure(owner)
         register_owner(owner)
         if previous != binding:
             _refresh_bridge(owner)

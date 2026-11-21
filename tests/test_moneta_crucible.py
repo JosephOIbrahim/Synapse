@@ -205,16 +205,23 @@ def test_empty_content_is_enumerable_not_lost():
     assert any(r.memory.id == m.id for r in s.search(MemoryQuery()))
 
 
-def test_id_collision_does_not_silently_lose_memories():
-    """INVERTED: two memories with the same ID (identical content+created_at+type)
-    are both stored as separate Moneta entities. The store does not deduplicate
-    by Memory.id — it is append-only at the engine level.
+def test_identity_collision_converges_or_refuses_never_silently_loses():
+    """R-033: an identity collision must never silently lose or duplicate data.
 
-    The original test (``test_duplicate_content_gets_distinct_ids``) verified
-    that same-content memories at different timestamps get distinct IDs, which
-    is the normal case. This inverted test verifies the collision case: when
-    two memories genuinely share an ID, neither is silently dropped.
+    Two memories with the same ID (identical content+created_at+type) are the
+    SAME record, so ``add()`` CONVERGES on the byte-equal retry: one row
+    remains and it is the caller's record. A same-id, DIFFERENT-payload write
+    is refused with the typed ``DuplicateMemoryIdentityError`` and leaves the
+    stored record untouched. Neither outcome drops a record without saying so,
+    and neither leaves a second row under one id -- the shape
+    ``memory_lifecycle._records`` and ``add_durable_if_absent`` reject.
+
+    (This replaces the pre-R-033 assertion that BOTH entities were stored:
+    accumulating duplicate identities on the primary is the defect R-033
+    repairs, so the old pin was the bug's receipt, not its contract.)
     """
+    from synapse.memory.moneta_store import DuplicateMemoryIdentityError
+
     s = _eph()
     ts = "2026-01-01T00:00:00Z"
     a = Memory(content="collision test", memory_type=MemoryType.DECISION,
@@ -226,18 +233,61 @@ def test_id_collision_does_not_silently_lose_memories():
     s.add(a)
     s.add(b)
 
-    # Both entities exist in the engine (append-only deposit).
-    assert s.count() == 2, "both memories must be stored despite same id"
+    assert s.count() == 1, "an identical retry must converge to one record"
+    assert s.get(a.id) is not None
+    assert s.get(a.id).to_json() == a.to_json(), (
+        "the surviving record must be the caller's record"
+    )
 
-    # get() returns the first match — deterministic but not authoritative.
-    first = s.get(a.id)
-    assert first is not None
+    conflicting = Memory(id=a.id, content="collision test, different payload",
+                         memory_type=MemoryType.DECISION, created_at=ts)
+    with pytest.raises(DuplicateMemoryIdentityError):
+        s.add(conflicting)
+    assert s.count() == 1, "a conflicting write must not add a row"
+    assert s.get(a.id).to_json() == a.to_json(), (
+        "a refusal must leave the stored record unchanged"
+    )
 
-    # all() enumerates both.
-    all_mems = s.all()
-    matches = [m for m in all_mems if m.id == a.id]
-    assert len(matches) == 2, (
-        "expected 2 memories with id %s, got %d" % (a.id, len(matches))
+
+def test_in_product_duplicate_repair_converges_the_live_engine():
+    """R-033: detection + remediation run on the LIVE engine, in-product.
+
+    Seeds the duplicate the pre-R-033 ``add()`` would have created (a raw
+    ``deposit`` per copy, so no guard interferes) and converges it through the
+    store's own API -- no CLI, no exclusive open, no liveness refusal. This is
+    the real-Moneta twin of the fake-handle tests in
+    ``test_memory_identity_convergence.py``; CI runs it, and it proves
+    ``ecs.remove`` / ``vector_index.delete`` accept the ids the plan carries.
+    """
+    s = _eph()
+    ts = "2026-01-01T00:00:00Z"
+    rich = Memory(id="mem_dup_live", content="Decision: keep the warm rim",
+                  memory_type=MemoryType.DECISION, created_at=ts,
+                  tags=["decision", "lighting"], source="user")
+    stripped = Memory(id="mem_dup_live", content="Decision: keep the warm rim",
+                      memory_type=MemoryType.DECISION, created_at=ts,
+                      tags=[], source="auto")
+    for memory in (rich, stripped):
+        s._handle.deposit(memory.to_json(), s._embedder.embed(memory.content),
+                          protected_floor=0.0)
+    assert s.count() == 2, "test precondition: two rows under one id"
+
+    found = s.duplicate_identities()
+    assert [d["memory_id"] for d in found] == ["mem_dup_live"]
+    assert found[0]["rows"] == 2
+    assert found[0]["distinct_payloads"] == 2
+
+    report = s.repair_duplicate_identities(apply=True)
+
+    assert report["applied"] is True, report["refusals"]
+    assert list(report["kept"]) == ["mem_dup_live"]
+    assert report["remaining_duplicate_ids"] == []
+    assert report["persistence"] in ("snapshot", "not_durable")
+    assert s.count() == 1
+    survivors = [m for m in s.all() if m.id == "mem_dup_live"]
+    assert len(survivors) == 1
+    assert survivors[0].tags == ["decision", "lighting"], (
+        "the richer copy must be the survivor, matching primary_repair's rule"
     )
 
 

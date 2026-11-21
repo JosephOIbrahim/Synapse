@@ -94,6 +94,17 @@ CLI::
 ``<storage_dir>`` is the ``.synapse`` directory -- the snapshot is resolved as
 ``<storage_dir>/.moneta/snapshot.json``. Pass ``--snapshot`` to point at one
 directly.
+
+In-product twin (R-033)
+-----------------------
+This CLI is for a store **no process owns** -- that is why it refuses while
+Houdini runs. A live store is repaired from inside the process that owns the
+handle instead: ``MonetaBackedStore.duplicate_identities()`` detects and
+``MonetaBackedStore.repair_duplicate_identities(apply=True)`` converges, both
+under the store's own lock and on the same selection rule (:func:`richness`,
+:func:`canonical`) so the two paths keep the same copy of an id.
+``memory_lifecycle._records`` calls that path when a save transition meets
+duplicates.
 """
 
 from __future__ import annotations

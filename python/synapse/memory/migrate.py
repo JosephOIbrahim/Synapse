@@ -20,16 +20,17 @@ stores and touches no store internals:
     dropped, and spot-checks ≥5 memories field-by-field (acceptance #2/#3).
 
 Two hazards this layer handles that the STORE deliberately does not
-(moneta_store.py is append-only, no id-dedup, dim-strict on reopen):
+(moneta_store.py is append/consolidate, refuses duplicate identities on add,
+dim-strict on reopen):
 
   1. **Re-export double-counts.** Moneta ``deposit()`` always appends a new row
      and ``count()`` counts rows, not distinct ids — a naive second run doubles
-     the store. The exporter is **idempotent + keep-both**: an id already
-     present with the *identical* payload is skipped (idempotent); an id present
-     with a *different* payload is a collision → **KEEP BOTH**, a second
-     receipted row, never an overwrite (target #5). This is the W1
-     ``merge_moneta`` policy (scripts/w1_consolidate_stores.py:246-267) applied
-     on the JSONL→Moneta axis.
+     the store. The exporter is **idempotent**: an id already present with the
+     *identical* payload is skipped. A same-id / *different*-payload collision
+     is **REFUSED and reported** (R-033): the Moneta primary cannot hold two
+     rows under one id (``add()`` refuses, and the strict consumers reject the
+     store), so the target keeps its existing row and ``report.conflicts``
+     names the id.
 
   2. **Embedder-dim mismatch crashes reopen.** ``from_storage_dir`` defaults to
      the 384-dim ``SemanticEmbedder``; reopening a 256-dim on-disk snapshot
@@ -284,7 +285,7 @@ def verify_sources_untouched(manifest: BackupManifest) -> Tuple[bool, List[str]]
 
 
 # ---------------------------------------------------------------------------
-# 2) ONE-SHOT EXPORTER — JSONL → Moneta, ids preserved, keep-both, dim-gated
+# 2) ONE-SHOT EXPORTER — JSONL → Moneta, ids preserved, collision-refusing
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -297,7 +298,12 @@ class ExportReport:
     source_count: int = 0            # memories the (decrypting) loader returned
     source_jsonl_lines: int = 0      # raw disk line count (independent)
     added: int = 0                   # new ids deposited
-    kept_both: List[str] = field(default_factory=list)   # collision ids (2nd row)
+    # R-033: a same-id/different-payload pair cannot live in the Moneta primary
+    # (two rows under one id is what memory_lifecycle._records and
+    # add_durable_if_absent reject). Such ids are REPORTED here and refused;
+    # ``kept_both`` is kept for API compatibility and is always empty.
+    conflicts: List[str] = field(default_factory=list)
+    kept_both: List[str] = field(default_factory=list)
     skipped_identical: int = 0       # idempotent: exact payload already present
     target_count_before: int = 0     # rows on disk before
     target_count_after: int = 0      # rows on disk after
@@ -310,7 +316,8 @@ class ExportReport:
             "embedding_dim": self.embedding_dim,
             "source_count": self.source_count,
             "source_jsonl_lines": self.source_jsonl_lines,
-            "added": self.added, "kept_both": self.kept_both,
+            "added": self.added, "conflicts": self.conflicts,
+            "kept_both": self.kept_both,
             "skipped_identical": self.skipped_identical,
             "target_count_before": self.target_count_before,
             "target_count_after": self.target_count_after,
@@ -357,8 +364,16 @@ def export_jsonl_to_moneta(
     """Export the JSONL memories at ``source_dir`` into a Moneta target.
 
     ``target_dir`` is a SEPARATE artifact (its ``.moneta/`` sublayer). The source
-    JSONL is never modified. Idempotent + keep-both: an exact-payload dup is
-    skipped; a same-id/different-payload collision keeps both. Preserves ids.
+    JSONL is never modified. Idempotent: an exact-payload dup is skipped.
+    Preserves ids.
+
+    A same-id/different-payload collision is REFUSED and reported in
+    ``report.conflicts`` -- the target keeps its existing row untouched. R-033:
+    Moneta's primary cannot hold two rows under one id (``add()`` refuses,
+    ``memory_lifecycle._records`` and ``add_durable_if_absent`` reject it), so
+    "keep both" would silently build the exact state that breaks the store.
+    ``keep_both`` is accepted for API compatibility and no longer changes the
+    outcome; both values refuse and report.
 
     Pass ``target_dir == source_dir`` for an in-place go-live (the JSONL stays as
     the write-through net); pass a fresh dir for copy-and-verify.
@@ -388,15 +403,14 @@ def export_jsonl_to_moneta(
             if prior and payload in prior:
                 report.skipped_identical += 1
                 continue
-            if prior:  # same id, different payload -> collision
-                if keep_both:
-                    report.kept_both.append(mem.id)
-                    plan.append(("add", mem))
-                else:
-                    report.skipped_identical += 1  # would-overwrite: refuse, skip
-                    continue
-            else:
-                plan.append(("add", mem))
+            if prior:
+                # Same id, different payload. Moneta cannot hold both rows
+                # under one id (R-033), so REFUSE the record and report it:
+                # the target keeps its existing row, and the operator sees the
+                # collision instead of a store that refuses every write later.
+                report.conflicts.append(mem.id)
+                continue
+            plan.append(("add", mem))
             have.setdefault(mem.id, set()).add(payload)
 
         if dry_run:
@@ -460,7 +474,7 @@ class VerifyReport:
     @property
     def count_parity(self) -> bool:
         """Every source memory id is present as a target row (no prim dropped).
-        Uses DISTINCT ids so keep-both duplicate rows do not mask a drop."""
+        Uses DISTINCT ids, so duplicate rows could not mask a drop either way."""
         return not self.ids_missing_from_target and self.source_count > 0 \
             and self.target_distinct_ids >= self.source_count
 
@@ -503,8 +517,9 @@ def verify_export(source_dir, target_dir, *, spot_check: int = 5) -> VerifyRepor
 
         rows = read_snapshot_rows(target_dir)
         report.target_rows = len(rows)
-        # id -> Memory rebuilt from the target payload (last write wins for the map;
-        # keep-both rows share an id but the spot-check compares whole payloads).
+        # id -> Memory rebuilt from the target payload (last write wins for the
+        # map; a duplicated id would keep the last payload, and the spot-check
+        # compares whole payloads).
         target_by_id: Dict[str, Memory] = {}
         for r in rows:
             try:

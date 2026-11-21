@@ -23,6 +23,7 @@ a durable handle; tests inject an ephemeral one.
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import os
 import threading
@@ -252,6 +253,130 @@ def score_memories(
 
 class MonetaUpdateNotSupported(NotImplementedError):
     """Moneta is append/consolidate; in-place update/delete/clear is not clean."""
+
+
+class DuplicateMemoryIdentityError(ValueError):
+    """``add()`` refused a payload under an identity the store already holds.
+
+    R-033 / incident B2. ``Memory`` ids are content-addressed
+    (``models.Memory._generate_id``: content + created_at + type), so the same
+    content stored in the same second collides by construction, and a caller
+    that re-uses an id with a *different* payload is how one identity ended up
+    on two rows in the primary (and, in the mirror, on two JSONL lines -- the
+    2026-09-15 DEGRADED-store incident). ``add()`` now CONVERGES on a
+    byte-equal retry and raises this type on a conflicting one, instead of
+    accepting a second row that the primary's own strict consumers
+    (``memory_lifecycle._records``, ``add_durable_if_absent``) then reject.
+
+    Subclasses :class:`ValueError` because the pre-existing conflict paths in
+    this module raised that; callers that catch ``ValueError`` keep working.
+
+    Attributes
+    ----------
+    memory_id:
+        The identity the caller tried to store.
+    existing_payloads:
+        Every payload already stored under that identity, in engine order.
+        An identical retry never reaches this exception -- it converges.
+    """
+
+    def __init__(self, memory_id: str, existing_payloads: List[str]):
+        self.memory_id = memory_id
+        self.existing_payloads = list(existing_payloads)
+        super().__init__(
+            f"Memory identity {memory_id!r} is already stored with different "
+            f"or duplicate data ({len(self.existing_payloads)} row(s)); add() "
+            "refused to deposit a second identity"
+        )
+
+
+def _identity_payloads(rows, memory_id: str) -> List[str]:
+    """Every payload ``rows`` holds under ``memory_id`` (raw stored strings).
+
+    The ``memory_id in payload`` pre-filter keeps the add() guard cheap: a row
+    that cannot contain the identity is skipped without a JSON parse, so the
+    cost is one substring scan over the engine per add rather than a full
+    deserialize. Only rows that pass the filter are parsed, and only their
+    ``id`` field is compared. Unreadable rows are skipped -- every read path in
+    this adapter treats one corrupt row as a skip, never as a fatal.
+    """
+    matches: List[str] = []
+    for row in rows:
+        payload = getattr(row, "payload", None)
+        if not isinstance(payload, str) or memory_id not in payload:
+            continue
+        try:
+            payload_obj = json.loads(payload)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(payload_obj, dict) and payload_obj.get("id") == memory_id:
+            matches.append(payload)
+    return matches
+
+
+def _same_identity_payload(stored: str, payload: str) -> bool:
+    """Is ``stored`` the same record as ``payload``, byte for byte or by value?
+
+    ``Memory.to_json()`` is ``json.dumps(..., sort_keys=True)``, so equal
+    records serialize identically; the round-trip comparison is the same rule
+    ``add_durable_if_absent`` applies (``matches[0].to_json() ==
+    memory.to_json()``) and it only runs for the rare identity that actually
+    collided.
+    """
+    if stored == payload:
+        return True
+    try:
+        return Memory.from_json(stored).to_json() == payload
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return False
+
+
+def _live_duplicate_plan(rows) -> List[Dict[str, Any]]:
+    """Plan one survivor per duplicated identity across live engine rows.
+
+    The selection rule is ``primary_repair``'s, reused rather than
+    re-implemented: the richest payload, the earlier row on a tie. If the two
+    drifted apart, an in-product repair and the offline CLI would keep
+    different copies of the same id, and ``_dual_write_jsonl`` re-appends on
+    exactly that disagreement -- the re-poisoning mechanism
+    ``primary_repair``'s docstring names.
+    """
+    from .primary_repair import canonical, richness
+
+    by_id: Dict[str, List[tuple]] = {}
+    for index, row in enumerate(rows):
+        payload = getattr(row, "payload", None)
+        if not isinstance(payload, str):
+            continue
+        try:
+            payload_obj = json.loads(payload)
+        except (TypeError, ValueError):
+            continue
+        memory_id = payload_obj.get("id") if isinstance(payload_obj, dict) else None
+        if not isinstance(memory_id, str) or not memory_id:
+            continue
+        by_id.setdefault(memory_id, []).append(
+            (index, getattr(row, "entity_id", None), payload_obj, payload)
+        )
+
+    plan: List[Dict[str, Any]] = []
+    for memory_id, group in by_id.items():
+        if len(group) <= 1:
+            continue
+        best = max(group, key=lambda item: (richness(item[2]), -item[0]))
+        plan.append({
+            "memory_id": memory_id,
+            "count": len(group),
+            "distinct_payloads": len({canonical(item[2]) for item in group}),
+            "keep_index": best[0],
+            "keep_entity": best[1],
+            "drop": [
+                (item[0], item[1], item[3])
+                for item in group if item[0] != best[0]
+            ],
+        })
+    plan.sort(key=lambda entry: entry["keep_index"])
+    return plan
 
 
 class MonetaBackedStore:
@@ -781,7 +906,8 @@ class MonetaBackedStore:
             matches = [m for m in self._iter_memories(strict=True) if m.id == memory.id]
             if matches:
                 if len(matches) != 1 or matches[0].to_json() != memory.to_json():
-                    raise ValueError("Memory identity already contains different or duplicate data")
+                    raise DuplicateMemoryIdentityError(
+                        memory.id, [m.to_json() for m in matches])
                 self.save(require_durable=True)
                 self._write_cortex(memory, memory.to_json())
                 self._dual_write_jsonl(memory, only_if_missing=True)
@@ -809,13 +935,13 @@ class MonetaBackedStore:
         already present with identical data is not deposited again, but its
         mirrors are re-checked, as add_durable_if_absent does on a retry.
         """
-        conflict = "Memory identity already contains different or duplicate data"
         with self._lock:
             self._require_durable()
             present: Dict[str, str] = {}
             for existing in self._iter_memories(strict=True):
                 if existing.id in present:
-                    raise ValueError(conflict)
+                    raise DuplicateMemoryIdentityError(
+                        existing.id, [present[existing.id]])
                 present[existing.id] = existing.to_json()
             batch: Dict[str, tuple] = {}
             for memory in memories:
@@ -823,10 +949,11 @@ class MonetaBackedStore:
                 earlier = batch.get(memory.id)
                 if earlier is not None:
                     if earlier[1] != payload:
-                        raise ValueError(conflict)
+                        raise DuplicateMemoryIdentityError(memory.id, [earlier[1]])
                     continue
                 if memory.id in present and present[memory.id] != payload:
-                    raise ValueError(conflict)
+                    raise DuplicateMemoryIdentityError(
+                        memory.id, [present[memory.id]])
                 batch[memory.id] = (memory, payload)
             fresh = [item for key, item in batch.items() if key not in present]
             for memory, payload in fresh:
@@ -873,6 +1000,40 @@ class MonetaBackedStore:
                 raise RuntimeError("Memory store is closed")
             if require_durable:
                 self._require_durable()
+            # R-033 -- the id-collision guard, the Moneta twin of the JSONL
+            # store's B3 guard. ``Memory`` ids are content-addressed, so an
+            # identical retry (same content logged in the same second, an
+            # unacknowledged write replayed) arrives with the SAME id; without
+            # this check it became a SECOND row, and two rows under one id is
+            # exactly what ``memory_lifecycle._records`` and
+            # ``add_durable_if_absent`` then refuse the whole store for.
+            #
+            # new id            -> deposit (the untouched fast path below)
+            # same id, same data-> CONVERGE: no second deposit; checkpoint and
+            #                      re-assert the mirrors, return the id
+            # same id, different-> REFUSE with a typed exception: Moneta is
+            #                      append/consolidate and cannot express an
+            #                      update, so silently keeping either copy
+            #                      would lose the other
+            existing_payloads = _identity_payloads(
+                self._handle.ecs.iter_rows(), memory.id)
+            if existing_payloads:
+                if len(existing_payloads) == 1 and _same_identity_payload(
+                        existing_payloads[0], payload):
+                    # Retry checkpoint, mirroring add_durable_if_absent's retry
+                    # arm: a failed snapshot may have left the FIRST deposit
+                    # only in memory, so converge on a save rather than a
+                    # second deposit. Mirrors re-assert with only_if_missing.
+                    self.save(require_durable=require_durable)
+                    self._write_cortex(memory, payload)
+                    self._dual_write_jsonl(memory, only_if_missing=True)
+                    return memory.id
+                logger.warning(
+                    "Duplicate memory identity refused: id=%s already stored "
+                    "with different or duplicate data (%d row(s))",
+                    memory.id, len(existing_payloads),
+                )
+                raise DuplicateMemoryIdentityError(memory.id, existing_payloads)
             try:
                 self._handle.deposit(payload, embedding, protected_floor=floor)
             except Exception as exc:  # ProtectedQuotaExceededError, etc.
@@ -948,6 +1109,171 @@ class MonetaBackedStore:
             self._write_cortex(memory, payload)
             self._dual_write_jsonl(memory)
         return memory.id
+
+    # -- identity integrity (R-033, incident B2) ---------------------------
+
+    def duplicate_identities(self) -> List[Dict[str, Any]]:
+        """Every memory id the LIVE engine holds more than one row for.
+
+        In-product detection (R-033): it reads the same ECS this store writes,
+        under the same lock every write takes, so it runs while the host is
+        live. The offline CLI (``python -m synapse.memory.primary_repair``) is
+        the tool for a store no process owns -- it must refuse on a live host
+        because a live ``save()`` rewrites the snapshot whole; that refusal is
+        a property of editing the file behind a running owner, not of the
+        repair rule, and this method is that rule executed by the owner.
+
+        Each entry is JSON-safe: ``memory_id``, ``rows``,
+        ``distinct_payloads``, ``keep_entity_id``, ``drop_entity_ids``. The
+        survivor is chosen with ``primary_repair``'s richness rule (see
+        :func:`_live_duplicate_plan`). Unreadable rows are skipped -- they
+        carry no identity this repair can reason about.
+        """
+        with self._lock:
+            rows = list(self._handle.ecs.iter_rows())
+        return [
+            {
+                "memory_id": entry["memory_id"],
+                "rows": entry["count"],
+                "distinct_payloads": entry["distinct_payloads"],
+                "keep_entity_id": str(entry["keep_entity"]),
+                "drop_entity_ids": [str(item[1]) for item in entry["drop"]],
+            }
+            for entry in _live_duplicate_plan(rows)
+        ]
+
+    def repair_duplicate_identities(self, *, apply: bool = False) -> Dict[str, Any]:
+        """Converge each duplicated identity to ONE live row -- in-product.
+
+        Dry run unless ``apply=True``. Runs on the live engine under the store
+        lock, so there is no second process, no snapshot takeover and no
+        liveness refusal: the constraint that makes the CLI a maintenance-
+        window tool does not exist for the process that owns the handle.
+
+        Selection matches ``primary_repair`` (richest payload, earlier row on a
+        tie). Losslessness: each dropped row's payload is returned in the
+        report BEFORE it leaves the engine, the entity is removed from the
+        handle's vector index first when one is reachable (a stale vector entry
+        would let recall surface a row that no longer exists -- a failure here
+        REFUSES that id and leaves its rows in place), and the store is
+        snapshotted after the removals. ``persistence`` reports honestly
+        whether that snapshot happened or the handle is not durable.
+
+        Returns a JSON-safe report: ``duplicate_ids``, ``rows_to_drop``,
+        ``applied``, ``kept`` (id -> surviving entity), ``dropped``
+        (``memory_id``/``entity_id``/``payload`` per removed row),
+        ``refusals``, ``persistence`` and a post-repair
+        ``remaining_duplicate_ids`` verification.
+        """
+        report: Dict[str, Any] = {
+            "duplicate_ids": [], "rows_to_drop": 0, "applied": False,
+            "kept": {}, "dropped": [], "refusals": [],
+            "persistence": "not_attempted", "remaining_duplicate_ids": [],
+        }
+        with self._lock:
+            if getattr(self, "_closed", False):
+                raise RuntimeError("Memory store is closed")
+            plan = _live_duplicate_plan(list(self._handle.ecs.iter_rows()))
+            report["duplicate_ids"] = [entry["memory_id"] for entry in plan]
+            report["rows_to_drop"] = sum(len(entry["drop"]) for entry in plan)
+            if not plan:
+                return report
+            if not apply:
+                # A dry run promises to change nothing; everything it found is
+                # still there.
+                report["remaining_duplicate_ids"] = list(report["duplicate_ids"])
+                return report
+
+            ecs = self._handle.ecs
+            vector_index = getattr(self._handle, "vector_index", None)
+            vector_delete = getattr(vector_index, "delete", None)
+            removed = 0
+            for entry in plan:
+                memory_id = entry["memory_id"]
+                refused = None
+                vectors_removed = 0
+                if callable(vector_delete):
+                    # Vector first: if the index cannot drop the entity, the
+                    # ECS row must stay, or recall would point at nothing.
+                    for _index, entity_id, _payload in entry["drop"]:
+                        try:
+                            vector_delete(entity_id)
+                        except Exception as exc:  # noqa: BLE001 -- any failure refuses the id
+                            refused = (
+                                f"{memory_id}: vector index delete failed for "
+                                f"{entity_id} ({type(exc).__name__}: {exc}); "
+                                "rows left in place"
+                            )
+                            if vectors_removed:
+                                refused += (
+                                    f" (vector entries for {vectors_removed} "
+                                    "earlier row(s) were already removed)"
+                                )
+                            logger.warning(
+                                "Duplicate-identity repair refused %s", refused)
+                            break
+                        vectors_removed += 1
+                if refused:
+                    report["refusals"].append(refused)
+                    continue
+                removed_here = []
+                remove_error = None
+                for _index, entity_id, payload in entry["drop"]:
+                    try:
+                        ecs.remove(entity_id)
+                    except Exception as exc:  # noqa: BLE001 -- partial state must be reported
+                        remove_error = (
+                            f"{memory_id}: engine remove failed for {entity_id} "
+                            f"({type(exc).__name__}: {exc})"
+                        )
+                        logger.warning(
+                            "Duplicate-identity repair could not remove %s: %s",
+                            memory_id, exc,
+                        )
+                        break
+                    removed_here.append((entity_id, payload))
+                if removed_here:
+                    report["kept"][memory_id] = str(entry["keep_entity"])
+                    for entity_id, payload in removed_here:
+                        report["dropped"].append({
+                            "memory_id": memory_id,
+                            "entity_id": str(entity_id),
+                            "payload": payload,
+                        })
+                        removed += 1
+                if remove_error:
+                    report["refusals"].append(remove_error)
+
+            report["applied"] = removed > 0
+            if getattr(self._handle, "durability", None) is not None and removed:
+                try:
+                    self.save(require_durable=True)
+                    report["persistence"] = "snapshot"
+                except Exception as exc:  # noqa: BLE001 -- an unsaved repair reads as repaired
+                    report["persistence"] = (
+                        f"snapshot_failed: {type(exc).__name__}: {exc}")
+                    logger.warning(
+                        "Duplicate-identity repair snapshot failed: %s", exc)
+            elif not removed:
+                report["persistence"] = "not_attempted"
+            else:
+                # Ephemeral handle: the repair is real in memory and cannot be
+                # persisted. Say so instead of implying a snapshot.
+                report["persistence"] = "not_durable"
+            # Verification is independent of how many removals succeeded: a
+            # refused id is still a duplicate in the live engine.
+            report["remaining_duplicate_ids"] = [
+                entry["memory_id"]
+                for entry in _live_duplicate_plan(list(ecs.iter_rows()))
+            ]
+            logger.warning(
+                "moneta.identity-repair converged=%d dropped=%d "
+                "remaining=%s persistence=%s refusals=%d",
+                len(report["kept"]), removed,
+                report["remaining_duplicate_ids"] or "none",
+                report["persistence"], len(report["refusals"]),
+            )
+            return report
 
     # -- B1: the automatic-prune switch + its mirror-safety precondition ----
 
@@ -1229,6 +1555,150 @@ class MonetaBackedStore:
     def count(self) -> int:
         with self._lock:
             return self._handle.ecs.n
+
+    # -- the B6 write-health contract (R-030) --------------------------------
+    #
+    # ``MemoryStore`` answers ``is_degraded`` / ``degraded_reason`` / ``health()``
+    # since Lane B3, and the two health surfaces
+    # (``server/write_plane.py::read_store_write_health`` and
+    # ``panel/health_strip.py::_read_write_health``) were written against that
+    # contract. ``MonetaBackedStore`` — the PRIMARY substrate whenever
+    # ``SYNAPSE_MEMORY_BACKEND=moneta`` — did not implement it, so both readers
+    # fell through to the JSONL dual-write net and a healthy mirror vouched for
+    # a primary that refused checked writes. R-030 closes that gap with the SAME
+    # contract, so neither reader needs a Moneta special case: one contract,
+    # every store that serves.
+    #
+    # What counts as "not accepting writes" here: the exact conditions
+    # ``_require_durable`` refuses on (closed, ``_load_issue``,
+    # ``_strict_deposit_failed``), plus duplicate identities, which the
+    # primary's strict consumers refuse the whole store for
+    # (``memory_lifecycle._records``, ``add_durable_if_absent``). A bare
+    # ``add()`` may still deposit through ``_strict_deposit_failed`` — but
+    # "checked memory accepts this write" is the question the surfaces ask, and
+    # the answer must not read green while the strict path refuses.
+
+    def _duplicate_identity_ids(self) -> List[str]:
+        """Ids the LIVE engine holds more than one row for (sorted).
+
+        Parse-only: it needs the ``id`` of each row, never a full ``Memory``
+        round-trip (``_live_duplicate_plan`` is the repair's planner and
+        computes richness). The lock is held only while the rows are
+        snapshotted, matching ``_iter_memories``: the JSON work runs lock-free,
+        so a health read cannot widen a writer's critical section.
+        """
+        with self._lock:
+            rows = list(self._handle.ecs.iter_rows())
+        seen: set = set()
+        duplicates: set = set()
+        for row in rows:
+            payload = getattr(row, "payload", None)
+            if not isinstance(payload, str):
+                continue
+            try:
+                payload_obj = json.loads(payload)
+            except (TypeError, ValueError):
+                continue
+            memory_id = payload_obj.get("id") if isinstance(payload_obj, dict) else None
+            if not isinstance(memory_id, str) or not memory_id:
+                continue
+            if memory_id in seen:
+                duplicates.add(memory_id)
+            else:
+                seen.add(memory_id)
+        return sorted(duplicates)
+
+    def _write_health_verdict(self) -> tuple:
+        """``(degraded, reason)`` — the ONE probe every health member shares.
+
+        Fail-closed: a step that raises is a store that cannot tell us how it is
+        doing, and "cannot tell" is degraded with the failure in the reason,
+        never an empty ok. ``health()``, ``is_degraded`` and ``degraded_reason``
+        all read this, so the three members cannot disagree.
+        """
+        try:
+            reasons: List[str] = []
+            if getattr(self, "_closed", False):
+                reasons.append("Memory store is closed")
+            if self._load_issue:
+                reasons.append(self._load_issue)
+            if self._strict_deposit_failed:
+                reasons.append(
+                    "A partial backend deposit requires restart before checked "
+                    "memory can continue")
+            duplicates = self._duplicate_identity_ids()
+            if duplicates:
+                shown = ", ".join(duplicates[:3])
+                if len(duplicates) > 3:
+                    shown += ", ..."
+                reasons.append(
+                    "%d memory identity/identities are stored more than once "
+                    "(%s); checked reads and strict writes refuse this store "
+                    "until repair_duplicate_identities(apply=True) converges "
+                    "them" % (len(duplicates), shown))
+        except Exception as exc:  # noqa: BLE001 -- a health probe must never raise
+            logger.warning("memory write-health probe failed: %s: %s",
+                           type(exc).__name__, exc)
+            return True, "health probe failed: %s: %s" % (type(exc).__name__, exc)
+        return (True, "; ".join(reasons)) if reasons else (False, "")
+
+    @property
+    def is_degraded(self) -> bool:
+        """True when the store is refusing checked writes (or cannot say)."""
+        return self._write_health_verdict()[0]
+
+    @property
+    def degraded_reason(self) -> str:
+        """Why the store is degraded. ``""`` when healthy -- never None."""
+        return self._write_health_verdict()[1]
+
+    def health(self) -> Dict[str, Any]:
+        """Operator-readable verdict. ALWAYS the six keys, NEVER raises.
+
+        Same contract as ``MemoryStore.health()`` (store.py), so
+        ``read_store_write_health`` and the panel strip read both stores through
+        ONE branch: ``degraded`` / ``reason`` / ``writable`` / ``records`` /
+        ``rejected_writes`` / ``overwrote_prior``.
+
+        - ``writable`` is the negation of the same probe ``_require_durable``
+          enforces (plus duplicate identities), so "health says writable" and
+          "a checked write is accepted" cannot drift apart.
+        - ``records`` is the engine's live entity count, read WITHOUT the lock
+          (a count one deposit stale is still an honest count; a health probe
+          that queues behind a snapshot writer is a panel freeze). ``-1`` is
+          the fail-closed sentinel, as on ``MemoryStore``.
+        - ``rejected_writes`` / ``overwrote_prior`` are 0: this adapter REFUSES
+          a conflicting identity by raising ``DuplicateMemoryIdentityError``
+          and never silently overwrites prior data, so there is no swallowed
+          loss to count -- the JSONL net keeps its own counters.
+        - Any failure returns the fail-closed defaults, never a green blank.
+
+        Durability is deliberately NOT part of this verdict: an ephemeral
+        handle accepts writes into RAM, so ``writable`` is true. The missing
+        persistence layer is a separate fact that ``write_plane.store_health``
+        check (3) reports and degrades on.
+        """
+        report: Dict[str, Any] = {
+            "degraded": True,
+            "reason": "health probe did not complete",
+            "writable": False,
+            "records": -1,
+            "rejected_writes": 0,
+            "overwrote_prior": 0,
+        }
+        try:
+            degraded, reason = self._write_health_verdict()
+            report.update(
+                degraded=degraded,
+                reason=reason,
+                writable=not degraded,
+                records=int(self._handle.ecs.n),
+            )
+        except Exception as exc:  # noqa: BLE001 -- a health check that throws is not a health check
+            report["reason"] = "health probe failed: %s: %s" % (
+                type(exc).__name__, exc)
+            logger.warning("MonetaBackedStore.health() probe failed: %s", exc)
+        return report
 
     def all(self) -> List[Memory]:
         return list(self._iter_memories())

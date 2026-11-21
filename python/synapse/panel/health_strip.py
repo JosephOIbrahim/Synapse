@@ -279,11 +279,11 @@ def cell_memory(memory: Any) -> StripCell:
     # alongside the honest admission that we cannot vouch for it.
     #
     # This is a reachable, clearable state, not a permanent amber: a MemoryStore
-    # carrying Lane B3's contract answers, and a Moneta store answers through
-    # its `_jsonl_net` safety net whenever dual-write is on (the default when
-    # SYNAPSE_MEMORY_BACKEND == "moneta"). It fires for a store object that
-    # predates the contract, a stub, or a backend that never grew one — exactly
-    # the cases where reporting OK would be a lie.
+    # carrying Lane B3's contract answers, and MonetaBackedStore carries the same
+    # contract (R-030) — its `_jsonl_net` safety net no longer has to vouch for
+    # a primary that cannot speak. It fires for a store object that predates the
+    # contract, a stub, or a backend that never grew one — exactly the cases
+    # where reporting OK would be a lie.
     #
     # The test is "not a dict", not "is None": a write_health of some other
     # shape is a reading we cannot interpret, and an uninterpretable reading is
@@ -393,23 +393,32 @@ def _read_write_health(live_store: Any) -> Any:
     distinction is the whole fix: "we could not determine health" and "healthy"
     are different answers, and collapsing them is what produced the outage.
 
-    Returns ``{"sick": bool, "reason": str}`` when something did answer. Never
-    raises and never blocks: property reads first, ``health()`` only as the
-    fallback for an object that lacks them.
+    R-030: an answer from a SAFETY NET is not an answer from the PRIMARY. The
+    serving object itself (or a member literally named ``primary``, which is how
+    a shadow-mode wrapper answers on its primary's behalf) must speak before the
+    cell may go green. ``_jsonl_net`` / ``shadow`` sickness still counts, but a
+    healthy mirror behind a silent primary is exactly the shape that read green
+    in the incident — the Moneta primary could not report, the net could, and
+    the cell believed the net.
+
+    Returns ``{"sick": bool, "reason": str}`` when the primary answered. Never
+    raises and never blocks: ``health()`` is asked first, the property pair only
+    as the fallback for an object that lacks it.
     """
-    candidates = [live_store]
+    candidates = [("", live_store)]
     for member in _WRITE_HEALTH_MEMBERS:
         try:
             inner = getattr(live_store, member, None)
         except Exception:
             continue
-        if inner is not None and not any(inner is c for c in candidates):
-            candidates.append(inner)
+        if inner is not None and not any(inner is obj for _name, obj in candidates):
+            candidates.append((member, inner))
 
     answered = False
+    primary_answered = False
     sick = False
     sick_reason = ""
-    for obj in candidates:
+    for index, (member, obj) in enumerate(candidates):
         try:
             # health() IS THE CONTRACT, so it is asked FIRST -- not as a fallback.
             # An earlier version read the is_degraded property first and `continue`d
@@ -432,6 +441,8 @@ def _read_write_health(live_store: Any) -> Any:
                 if not isinstance(degraded, bool) or not isinstance(writable, bool):
                     continue  # a reading we cannot interpret is not an answer
                 answered = True
+                if index == 0 or member == "primary":
+                    primary_answered = True
                 overwrote_n = overwrote if isinstance(overwrote, int) and overwrote > 0 else 0
                 if degraded or not writable or overwrote_n:
                     # SICKNESS IS THE BOOLEAN, NEVER THE TEXT. An earlier version
@@ -455,6 +466,8 @@ def _read_write_health(live_store: Any) -> Any:
             degraded = getattr(obj, "is_degraded", None)
             if isinstance(degraded, bool):
                 answered = True
+                if index == 0 or member == "primary":
+                    primary_answered = True
                 if degraded:
                     sick = True
                     if not sick_reason:
@@ -462,7 +475,9 @@ def _read_write_health(live_store: Any) -> Any:
         except Exception:
             continue  # one unreadable object never decides the cell
 
-    if not answered:
+    if not answered or not primary_answered:
+        # A net answered, or nobody did: either way the PRIMARY is silent, and
+        # a silent primary is UNKNOWN, never green (R-030).
         return None
     return {"sick": sick, "reason": sick_reason}
 

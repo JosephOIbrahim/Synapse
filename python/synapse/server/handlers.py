@@ -1315,7 +1315,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         degraded (reads only) or blocked, with each check and its fix
         (``server/preflight_gate.py``). The stdio bridge sends its SYNAPSE
         version as ``client_version`` so the version check can run.
+
+        ``memory_binding`` is ADDITIVE (R-031): the last failed Save As / load
+        memory carry, or ``None`` when none is pending. It is a pure attribute
+        read on the process memory owner — no ``hou``, no store — so health can
+        answer it on every path, including when the store itself is unreachable.
         """
+        from ..host.memory_lifecycle import pending_binding_report
         from .preflight_gate import readiness
         from .write_plane import write_plane_state
 
@@ -1325,6 +1331,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             "houdini_available": HOU_AVAILABLE,
             "protocol_version": PROTOCOL_VERSION,
             "write_plane": write_plane_state(),
+            "memory_binding": pending_binding_report(),
             "readiness": readiness(
                 client_version=client_version if isinstance(client_version, str) else None),
         }

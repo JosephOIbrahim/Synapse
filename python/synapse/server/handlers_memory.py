@@ -440,7 +440,15 @@ class MemoryHandlerMixin:
         that predates the health contract downgrades the answer to "unknown"
         rather than omitting the key -- and an omitted key reads as "fine",
         which is how two days of discarded memories stayed invisible.
+
+        The ``binding`` block (R-031) reports a FAILED Save As / load memory
+        carry. ``memory_lifecycle`` recorded the failure on the owner but before
+        this block nothing read it: the artist saved, believed memory followed,
+        and it did not. It is seeded ok (no failed carry pending) and replaced
+        by the recorded failure, naming the old and new project, on the failure
+        path -- including when the retry inside the hop raises.
         """
+        from ..host.memory_lifecycle import pending_binding_report
         from ..memory.native_status import native_status
         from ..memory.scene_memory import get_memory_status
         from .write_plane import read_store_write_health
@@ -455,6 +463,18 @@ class MemoryHandlerMixin:
             "reason": "memory write health was not read on this call",
             "rejected_writes": None,
             "sources": {},
+        }
+
+        # Seeded ok, never absent: "no failed carry is pending" is a real
+        # answer, and an omitted key would read as the same thing by accident.
+        status["binding"] = {
+            "status": "ok",
+            "error": None,
+            "cause": None,
+            "hip_path": None,
+            "old_project": None,
+            "new_project": None,
+            "recovery": None,
         }
 
         # NATIVE-STATUS: which Moneta native path this process is on. Seeded the
@@ -482,17 +502,23 @@ class MemoryHandlerMixin:
                     # than leaving the seeded "was not read" reason standing —
                     # "no store is loaded" is a different (and answerable) fact
                     # from "we never checked".
-                    return None, read_store_write_health(None), None
+                    return (None, read_store_write_health(None), None,
+                            pending_binding_report(None))
                 store = getattr(memory, "store", None)
                 count = store.count() if store is not None else None
-                return count, read_store_write_health(store), native_status(store)
-            entries, health, native = self._memory_on_main(read)
+                # The pending carry is recorded on the owner (and is a pure
+                # attribute read), so it survives a store that cannot answer.
+                return (count, read_store_write_health(store), native_status(store),
+                        pending_binding_report(memory))
+            entries, health, native, binding = self._memory_on_main(read)
             if entries is not None:
                 status["entries_total"] = entries
             if health is not None:
                 status["health"] = health
             if native is not None:
                 status["native"] = native
+            if binding is not None:
+                status["binding"] = binding
         except Exception as exc:  # noqa: BLE001 -- status must not raise
             # Do NOT swallow this into silence the way the old bare `pass` did.
             # A status call that could not reach the store must SAY so, because
@@ -507,6 +533,12 @@ class MemoryHandlerMixin:
                 "rejected_writes": None,
                 "sources": {},
             }
+            # The hop itself may have been the retry: if it raised, the carry
+            # failed again and the failure is recorded on the serving owner.
+            # Read it AFTER the attempt so a successful retry reads as ok.
+            pending = pending_binding_report()
+            if pending is not None:
+                status["binding"] = pending
 
         return status
 
