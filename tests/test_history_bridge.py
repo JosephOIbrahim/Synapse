@@ -253,3 +253,22 @@ def test_tool_executor_off_main_keeps_native_history_on_main(env, monkeypatch):
     assert history.undo == ['Artist edit'] and history.groups == 0
     executor.deleteLater()
     app.processEvents()
+
+
+def test_the_bridge_captures_the_baseline_outside_its_own_group(env, monkeypatch):
+    """Live check 2026-11-21: Houdini 22.0.400 lists an open group in undoLabels(),
+    so a capture inside the bridge's own group made the session's first step look
+    pre-session. The adapter now captures before the bridge opens its group."""
+    history, bridge, handler = env
+    depths = []
+    real = handler._undo_scope.note_session_start
+
+    def spy(undos):
+        depths.append(history.depth)
+        return real(undos)
+
+    monkeypatch.setattr(handler._undo_scope, 'note_session_start', spy)
+    adapter.execute_through_bridge('houdini_set_parm', handler, SynapseCommand(
+        id='p1', type='set_parm', payload={'node': '/obj/x', 'parm': 'tx', 'value': 1}))
+    assert depths and depths[0] == 0, depths
+    assert handler._undo_scope.needs_baseline is False

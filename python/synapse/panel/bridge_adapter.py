@@ -404,6 +404,24 @@ def _bridge_routed_cm():
         return contextlib.nullcontext()
 
 
+
+def _capture_history_baseline(handler) -> None:
+    """Capture the handler's undo baseline on the main thread, outside any group."""
+    scope = getattr(handler, "_undo_scope", None)
+    if scope is None or not scope.needs_baseline:
+        return
+    try:
+        from synapse.server import handlers as _handlers
+        hou_mod = getattr(_handlers, "hou", None)
+        if hou_mod is None or not getattr(_handlers, "HOU_AVAILABLE", False):
+            return
+        from synapse.server.main_thread import run_on_main
+        run_on_main(lambda: scope.note_session_start(hou_mod.undos), timeout=2.0,
+                    record_stall=False, record_wait=False, label="history:baseline")
+    except Exception as exc:  # noqa: BLE001 -- handle() retries on the next command
+        logger.debug("bridge undo baseline capture deferred: %s", exc)
+
+
 def execute_through_bridge(
     tool_name: str,
     handler,
@@ -429,6 +447,13 @@ def execute_through_bridge(
     if bridge is None:
         # Bridge unavailable -- direct dispatch
         return handler.handle(command)
+
+    # R-012: record the history this handler started from BEFORE the bridge
+    # opens its "SYNAPSE: ..." group. A capture made inside that open group
+    # lists the group itself (Houdini 22.0.400, live check 2026-11-21), which
+    # made the session's first step look pre-session and refused its undo.
+    if tool_name not in ("houdini_undo", "houdini_redo"):
+        _capture_history_baseline(handler)
 
     # Determine operation type and agent
     op_type = _TOOL_TO_OPERATION.get(tool_name, "set_parameter")
