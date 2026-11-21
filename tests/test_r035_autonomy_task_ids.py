@@ -769,3 +769,31 @@ def test_a_runtime_error_without_the_guard_marker_is_reported_not_fallen_back(mo
     assert "boom" in (done.get("error") or ""), done
     assert entered == [], "a RuntimeError without the guard marker must not fall back"
     assert registry.calls == [], "nothing may be dispatched"
+
+
+def test_a_failing_loop_close_does_not_replace_the_outcome(monkeypatch):
+    """close() raising after a good run keeps the run's receipt (review A4, round 1 RISK-8)."""
+
+    class _BadCloseLoop(asyncio.SelectorEventLoop):
+        def close(self):
+            super().close()
+            raise RuntimeError("close failed")
+
+    class _OkDriver:
+        def __init__(self, **kwargs):
+            pass
+
+        async def execute(self, intent):
+            await asyncio.sleep(0)
+            return _FakeReport(success=True, stop_reason="")
+
+    monkeypatch.setattr(asyncio, "SelectorEventLoop", _BadCloseLoop)
+    handler = _new_handler()
+    with patch.dict(sys.modules, {"synapse.autonomy": _fake_autonomy(_OkDriver)}), \
+         patch.object(SynapseHandler, "_resolve_agent_usd", staticmethod(lambda: None)), \
+         _no_memory_store():
+        started = handler._handle_autonomous_render({"intent": "render frames 1-2"})
+        done = _await(handler, started["task_id"])
+
+    assert done["status"] == STATUS_DONE, done
+    assert done["success"] is True

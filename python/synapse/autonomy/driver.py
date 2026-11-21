@@ -166,6 +166,9 @@ class AutonomousDriver:
         """
         # M3-E: self-register so the render_farm_cancel kill switch can reach
         # this run; deregister on every exit (only_if guards a newer run).
+        # The cancel flag is reset BEFORE registering, so a kill switch that
+        # lands right after registration is never erased.
+        self._cancelled = False
         _register_live_driver(self)
         try:
             return await self._execute_inner(intent)
@@ -180,7 +183,6 @@ class AutonomousDriver:
         self._deadline = deadline
         self._wall_clock_stopped = False
         stop_reason = ""
-        self._cancelled = False
         self._decisions = []
         iteration = 0
         evaluation: Optional[SequenceEvaluation] = None
@@ -562,7 +564,8 @@ class AutonomousDriver:
         failure to report through the async path, never a reason to replay the
         plan here.
         """
-        # M3-E parity: the kill switch reaches this run too.
+        # M3-E parity: the kill switch reaches this run too (flag reset first).
+        self._cancelled = False
         _register_live_driver(self)
         try:
             return self._execute_sync_inner(intent, reason)
@@ -574,7 +577,6 @@ class AutonomousDriver:
         deadline = start_time + self._max_wall_clock
         self._deadline = deadline
         self._wall_clock_stopped = False
-        self._cancelled = False
         self._decisions = []
 
         original_plan = self._planner.plan(intent)

@@ -8,13 +8,15 @@ since the 10/1 take (``panel/turn_revert.py``): read ``undoLabels()`` and refuse
 unless the step is SYNAPSE's own. This module applies that rule to the history
 tools.
 
-The extra qualifier is the session. ``UndoScope`` records the undo/redo stacks
-as the handler first found them, and the top entry must be a SYNAPSE label that
-appeared after that baseline -- i.e. one this SYNAPSE session created. A
+The extra qualifier is the session. ``UndoScope`` records the undo and redo
+stacks as the handler first found them, counted together per label, and the
+top entry must be a SYNAPSE label that appeared after that baseline -- i.e. one
+this SYNAPSE session created. Counting both stacks together means an entry the
+artist moves between them (Ctrl+Z, then Ctrl+Y) is still the entry it was. A
 SYNAPSE-labelled entry from a previous SYNAPSE run (a panel reload) is refused
-like any foreign entry. When no baseline could be read (headless, or undo was
-disabled when the first command ran), the rule degrades to the prefix check,
-which still refuses the artist's work -- the dangerous case.
+like any foreign entry. With no baseline, a history call refuses: the handler
+captures one first when it can, so everything already present counts as
+pre-session.
 
 Everything takes the ``hou.undos`` module as a parameter (``areEnabled()``,
 ``undoLabels()``, ``redoLabels()`` -- verified on 22.0.400; element zero is the
@@ -71,15 +73,15 @@ def _ready_labels(undos, attr: str) -> Optional[Tuple[str, ...]]:
 class UndoScope:
     """The session rule for the agent's history tools.
 
-    Call ``note_session_start()`` once, before this handler's first command
-    runs, to record the baseline. ``refusal()`` then answers why a given
-    direction must be refused, or None to allow it.
+    ``note_session_start()`` records the baseline: both stacks, counted together
+    per label. ``refusal()`` then answers why a given direction must be refused,
+    or None to allow it. The handler runs the refusal and the step in one
+    main-thread call, so nothing can land on the history between them.
     """
 
     def __init__(self) -> None:
         self._captured = False
-        self._undo: Optional[Counter] = None
-        self._redo: Optional[Counter] = None
+        self._baseline: Optional[Counter] = None
 
     @property
     def needs_baseline(self) -> bool:
@@ -88,18 +90,16 @@ class UndoScope:
     def note_session_start(self, undos) -> bool:
         """Capture the history this session started from. First success wins.
 
-        Returns False when even one direction could not be read, so the caller
-        can try again on a later command; a readable empty stack is a valid
-        baseline and captures True.
+        Both directions must be readable; otherwise nothing is captured and the
+        caller tries again later. A readable empty history is a valid baseline.
         """
         if self._captured:
             return True
         undo = _labels(undos, "undoLabels")
         redo = _labels(undos, "redoLabels")
-        if undo is None and redo is None:
+        if undo is None or redo is None:
             return False
-        self._undo = Counter(undo) if undo is not None else None
-        self._redo = Counter(redo) if redo is not None else None
+        self._baseline = Counter(undo) + Counter(redo)
         self._captured = True
         return True
 
@@ -111,7 +111,10 @@ class UndoScope:
         """
         if direction not in ("undo", "redo"):
             raise ValueError("direction must be 'undo' or 'redo'")
-        attr = "undoLabels" if direction == "undo" else "redoLabels"
+        if direction == "undo":
+            attr, other_attr, other_name = "undoLabels", "redoLabels", "redo"
+        else:
+            attr, other_attr, other_name = "redoLabels", "undoLabels", "undo"
         verb = direction.capitalize()
         labels = _ready_labels(undos, attr)
         if labels is None:
@@ -127,8 +130,21 @@ class UndoScope:
                 "record. Taking it back would reverse the artist's own work. "
                 "Nothing was changed; Ctrl+Z still works." % (verb, direction, top)
             )
-        baseline = self._undo if direction == "undo" else self._redo
-        if baseline is not None and Counter(labels)[top] <= baseline.get(top, 0):
+        if self._baseline is None:
+            return (
+                '%s refused: SYNAPSE has no record of where this session started, '
+                'so it cannot tell whether "%s" is its own step. Nothing was '
+                "changed; Ctrl+Z still works." % (verb, top)
+            )
+        others = _labels(undos, other_attr)
+        if others is None:
+            return (
+                "%s refused: Houdini's %s history is unreadable, so SYNAPSE cannot "
+                'tell whether "%s" is from this session. Nothing was changed; '
+                "Ctrl+Z still works." % (verb, other_name, top)
+            )
+        now = Counter(labels) + Counter(others)
+        if now[top] <= self._baseline.get(top, 0):
             return (
                 '%s refused: the next %s step is "%s", recorded before this '
                 "SYNAPSE session started. Nothing was changed; Ctrl+Z still "

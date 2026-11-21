@@ -86,6 +86,18 @@ def env(monkeypatch):
     return history, bridge, handler
 
 
+def _session_started_before_the_build(handler):
+    """Make 'SYNAPSE build' this session's step: the baseline predates it.
+
+    Under the R-012 session rule a SYNAPSE step that was already on the stack
+    before this handler's session is refused; these tests are about the
+    bridge's history path, so they record the session start explicitly.
+    """
+    start = History()
+    start.undo, start.redo = ['Artist edit'], []
+    assert handler._undo_scope.note_session_start(start)
+
+
 def dispatch(handler, direction):
     return adapter.execute_through_bridge('houdini_' + direction, handler,
         SynapseCommand(id='history-test', type=direction, payload={}))
@@ -93,6 +105,7 @@ def dispatch(handler, direction):
 
 def test_real_adapter_handler_undo_redo_keeps_artist_entry(env):
     history, bridge, handler = env
+    _session_started_before_the_build(handler)
     undo = dispatch(handler, 'undo')
     assert undo.success, undo.error
     assert history.undo == ['Artist edit'] and history.redo == ['SYNAPSE build']
@@ -133,6 +146,7 @@ def test_history_failure_never_undoes_an_extra_artist_entry(env, failure):
         op = b.Operation(AgentID.BRAINSTEM, 'history_undo', 'undo', history.performUndo)
         response = bridge.execute(op)
     else:
+        _session_started_before_the_build(handler)
         response = dispatch(handler, 'undo')
     assert not response.success
     expected = 'History unavailable' if history.fail else 'nothing to undo'
