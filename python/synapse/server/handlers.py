@@ -847,16 +847,25 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             _t0 = time.perf_counter()
             # R-012: record the history this handler started from BEFORE this
             # command can add to it, so a SYNAPSE group this session creates
-            # counts as this session's. Main thread only: hou.undos is not
-            # thread-safe, and a handler that never sees a main-thread command
-            # degrades to the prefix-only check rather than guessing. History
-            # commands are excluded -- capturing at an undo would baseline the
-            # very step being judged.
-            if (cmd_type not in ("undo", "redo")
-                    and threading.current_thread() is threading.main_thread()):
+            # counts as this session's. hou.undos is read on Houdini's main
+            # thread only: inline when already there, otherwise through
+            # run_on_main (the WebSocket route runs handle() on its own
+            # thread). History commands capture inside their own main-thread
+            # call instead (_history_step), before they judge.
+            if cmd_type not in ("undo", "redo"):
                 scope = getattr(self, "_undo_scope", None)
                 if scope is not None and scope.needs_baseline and HOU_AVAILABLE:
-                    scope.note_session_start(hou.undos)
+                    if threading.current_thread() is threading.main_thread():
+                        scope.note_session_start(hou.undos)
+                    else:
+                        try:
+                            from .main_thread import run_on_main
+                            run_on_main(
+                                lambda: scope.note_session_start(hou.undos),
+                                timeout=2.0, record_stall=False, record_wait=False,
+                                label="history:baseline")
+                        except Exception as exc:  # noqa: BLE001 -- retried on the next command
+                            _log.debug("undo baseline capture deferred: %s", exc)
             # C5: serialize mutating commands across clients (skip on the main
             # thread — already serialized there, and locking would deadlock
             # run_on_main). Read-only commands never contend.
@@ -1444,12 +1453,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         hold the artist's own edit, and an agent must never take that back.
         The refusal names the top label. No parameters required.
         """
-        if not HOU_AVAILABLE:
-            raise HoudiniUnavailableError(_HOUDINI_UNAVAILABLE)
-        refusal = self._undo_scope.refusal(hou.undos, "undo")
-        if refusal:
-            raise HistoryScopeRefused(refusal)
-        hou.undos.performUndo()
+        self._history_step("undo")
         return {"status": "ok", "message": "Undid last operation"}
 
     def _handle_redo(self, payload: Dict) -> Dict:
@@ -1459,13 +1463,35 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         SYNAPSE group recorded in this session (R-012). The refusal names the
         top label. No parameters required.
         """
+        self._history_step("redo")
+        return {"status": "ok", "message": "Redid last undone operation"}
+
+    def _history_step(self, direction: str) -> None:
+        """Judge and take one history step in ONE main-thread call.
+
+        The refusal and performUndo/performRedo run together on Houdini's
+        main thread, so an artist edit cannot land between the check and the
+        step, and hou.undos is never read off the main thread. A call that
+        arrives before any baseline captures one first, so every step
+        already present counts as pre-session and is refused.
+        """
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError(_HOUDINI_UNAVAILABLE)
-        refusal = self._undo_scope.refusal(hou.undos, "redo")
-        if refusal:
-            raise HistoryScopeRefused(refusal)
-        hou.undos.performRedo()
-        return {"status": "ok", "message": "Redid last undone operation"}
+        from .main_thread import run_on_main
+        scope = self._undo_scope
+
+        def _judge_and_step():
+            if scope.needs_baseline:
+                scope.note_session_start(hou.undos)
+            refusal = scope.refusal(hou.undos, direction)
+            if refusal:
+                raise HistoryScopeRefused(refusal)
+            if direction == "undo":
+                hou.undos.performUndo()
+            else:
+                hou.undos.performRedo()
+
+        run_on_main(_judge_and_step, label="history:%s" % direction)
 
     # =========================================================================
     # BATCH HANDLER
@@ -1514,6 +1540,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         if any(isinstance(item, dict) and normalize_command_type(item.get("type", ""))
                in ((FARM_CONTROL_COMMANDS | FARM_READ_COMMANDS) - {"farm_inspect"}) for item in commands):
             raise ValueError("Use render preparation, submission and status tools as separate requests, outside a scene-edit batch.")
+        if any(isinstance(item, dict) and normalize_command_type(item.get("type", ""))
+               in ("undo", "redo") for item in commands):
+            raise ValueError("Undo and Redo step through Houdini's existing history, which a batch's own undo group would change. Send them as separate requests, outside a batch.")
 
         stop_on_error = payload.get("stop_on_error", False)
 

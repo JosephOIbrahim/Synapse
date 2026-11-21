@@ -215,3 +215,108 @@ def test_history_tools_stay_registered_but_are_review_gated(monkeypatch):
     for name in ("houdini_undo", "houdini_redo"):
         allowed, reason = worker_policy.is_tool_allowed_for_worker(name)
         assert not allowed and "review" in reason
+
+
+# ---------------------------------------------------------------------------
+# Refinement round 1 (2026-11-21): one main-thread call, combined counts,
+# a first call with no baseline, half-readable history, batches
+# ---------------------------------------------------------------------------
+
+def test_a_history_call_before_any_baseline_refuses_what_is_already_there(env):
+    handler, undos, mod = env
+    undos.undo = ["SYNAPSE: old session build"]
+    assert handler._undo_scope.needs_baseline is True
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_undo({})
+
+    assert "before this SYNAPSE session started" in str(caught.value)
+    assert undos.calls == []
+
+
+def test_an_entry_moved_between_the_stacks_is_still_pre_session(env):
+    handler, undos, mod = env
+    undos.undo = ["SYNAPSE: old session build"]
+    _capture_baseline(handler, undos)
+    undos.undo, undos.redo = [], ["SYNAPSE: old session build"]  # the artist pressed Ctrl+Z
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_redo({})
+
+    assert "before this SYNAPSE session started" in str(caught.value)
+    assert undos.calls == []
+
+
+def test_a_session_step_still_redoes_after_its_undo(env):
+    handler, undos, _mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["SYNAPSE: create_node"]
+
+    assert handler._handle_undo({})["status"] == "ok"
+    assert handler._handle_redo({})["status"] == "ok"
+    assert undos.calls == ["undo", "redo"]
+
+
+def test_an_unreadable_direction_captures_no_baseline():
+    from synapse.server.undo_scope import UndoScope
+
+    class _Half:
+        def undoLabels(self):
+            return ()
+
+        def redoLabels(self):
+            raise RuntimeError("unreadable")
+
+    scope = UndoScope()
+    assert scope.note_session_start(_Half()) is False
+    assert scope.needs_baseline is True
+
+
+def test_off_main_handle_captures_the_baseline_through_run_on_main(env, monkeypatch):
+    import threading
+    import synapse.server.main_thread as main_thread
+
+    handler, undos, _mod = env
+    undos.undo = ["SYNAPSE: old session build"]
+    hops = []
+
+    def _fake_run_on_main(fn, *args, **kwargs):
+        hops.append(kwargs.get("label"))
+        return fn()
+
+    monkeypatch.setattr(main_thread, "run_on_main", _fake_run_on_main)
+    worker = threading.Thread(target=lambda: handler.handle(
+        SynapseCommand(id="b-101", type="ping", payload={})))
+    worker.start()
+    worker.join(10)
+
+    assert "history:baseline" in hops, hops
+    assert handler._undo_scope.needs_baseline is False
+
+
+def test_the_judge_and_the_step_run_in_one_main_thread_call(env, monkeypatch):
+    import synapse.server.main_thread as main_thread
+
+    handler, undos, _mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["SYNAPSE: create_node"]
+    hops = []
+
+    def _fake_run_on_main(fn, *args, **kwargs):
+        hops.append((kwargs.get("label"), list(undos.calls)))
+        out = fn()
+        hops.append(("after", list(undos.calls)))
+        return out
+
+    monkeypatch.setattr(main_thread, "run_on_main", _fake_run_on_main)
+    handler._handle_undo({})
+
+    assert hops == [("history:undo", []), ("after", ["undo"])], \
+        "the refusal check and the step must run inside one main-thread call"
+
+
+def test_a_batch_refuses_history_commands(env):
+    handler, undos, _mod = env
+    with pytest.raises(ValueError, match="outside a batch"):
+        handler._handle_batch_commands({"commands": [{"type": "undo", "payload": {}}]})
+    assert undos.calls == []

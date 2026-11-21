@@ -1872,9 +1872,10 @@ class RenderHandlerMixin:
             try:
                 from .main_thread import run_on_main
                 karma_lop_path = run_on_main(
-                    _discover_karma_lop, label="render:karma_lop_discovery")
+                    _discover_karma_lop, record_stall=False,
+                    label="render:karma_lop_discovery")
             except Exception as exc:
-                logger.debug("Karma LOP discovery failed, using ROP path: %s", exc)
+                logger.warning("Karma LOP discovery failed, using ROP path: %s", exc)
 
         # Wrap get/set_render_settings to target the Karma LOP if discovered.
         # The orchestrator always passes the ROP path, but the quality parms
