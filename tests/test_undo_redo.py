@@ -98,7 +98,13 @@ def _get_handler_instance():
     _load_handlers — the fresh module is NOT resident there.
     """
     handlers_mod = _load_handlers()
-    return handlers_mod.SynapseHandler(), handlers_mod
+    handler = handlers_mod.SynapseHandler()
+    # R-012: these tests drive steps SYNAPSE recorded in this session, so the
+    # session started from an empty history.
+    from types import SimpleNamespace
+    assert handler._undo_scope.note_session_start(
+        SimpleNamespace(undoLabels=lambda: (), redoLabels=lambda: ()))
+    return handler, handlers_mod
 
 
 # ---------------------------------------------------------------------------

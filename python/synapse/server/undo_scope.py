@@ -8,15 +8,25 @@ since the 10/1 take (``panel/turn_revert.py``): read ``undoLabels()`` and refuse
 unless the step is SYNAPSE's own. This module applies that rule to the history
 tools.
 
-The extra qualifier is the session. ``UndoScope`` records the undo and redo
-stacks as the handler first found them, counted together per label, and the
-top entry must be a SYNAPSE label that appeared after that baseline -- i.e. one
-this SYNAPSE session created. Counting both stacks together means an entry the
-artist moves between them (Ctrl+Z, then Ctrl+Y) is still the entry it was. A
-SYNAPSE-labelled entry from a previous SYNAPSE run (a panel reload) is refused
-like any foreign entry. With no baseline, a history call refuses: the handler
-captures one first when it can, so everything already present counts as
-pre-session.
+The extra qualifier is the session. ``UndoScope`` records how many entries of
+each label the undo and redo stacks held when the handler first found them (B).
+Houdini's history is one linear list and every new action drops the redo
+entries, so the entries that survive from before the session always sit at the
+bottom, at most B[label] of each label. Labels repeat (every create is
+``synapse_node_create``), so the rule counts the UNDO stack only:
+
+- undo is allowed when the undo stack holds more entries of the top's label than
+  B -- then at least one is this session's, and this session's entries are the
+  newest, so the top is one of them;
+- redo is allowed when the undo stack already holds at least B entries of the
+  redo top's label -- then every surviving pre-session entry of that label is
+  applied, so the redo top cannot be one of them.
+
+Both can refuse a legitimate step (for example when a pre-session redo entry of
+the same label was dropped), never allow an old one. A SYNAPSE-labelled entry
+from a previous SYNAPSE run (a panel reload) is refused like any foreign entry.
+With no baseline, a history call refuses: the handler captures one first when
+it can, so everything already present counts as pre-session.
 
 Everything takes the ``hou.undos`` module as a parameter (``areEnabled()``,
 ``undoLabels()``, ``redoLabels()`` -- verified on 22.0.400; element zero is the
@@ -74,8 +84,8 @@ class UndoScope:
     """The session rule for the agent's history tools.
 
     ``note_session_start()`` records the baseline: both stacks, counted together
-    per label. ``refusal()`` then answers why a given direction must be refused,
-    or None to allow it. The handler runs the refusal and the step in one
+    per label (B). ``refusal()`` then answers why a given direction must be
+    refused, or None to allow it, by the undo-stack rule in the module docstring. The handler runs the refusal and the step in one
     main-thread call, so nothing can land on the history between them.
     """
 
@@ -136,15 +146,19 @@ class UndoScope:
                 'so it cannot tell whether "%s" is its own step. Nothing was '
                 "changed; Ctrl+Z still works." % (verb, top)
             )
-        others = _labels(undos, other_attr)
-        if others is None:
-            return (
-                "%s refused: Houdini's %s history is unreadable, so SYNAPSE cannot "
-                'tell whether "%s" is from this session. Nothing was changed; '
-                "Ctrl+Z still works." % (verb, other_name, top)
-            )
-        now = Counter(labels) + Counter(others)
-        if now[top] <= self._baseline.get(top, 0):
+        if direction == "undo":
+            applied = labels
+        else:
+            applied = _labels(undos, other_attr)
+            if applied is None:
+                return (
+                    "%s refused: Houdini's %s history is unreadable, so SYNAPSE cannot "
+                    'tell whether "%s" is from this session. Nothing was changed; '
+                    "Ctrl+Z still works." % (verb, other_name, top)
+                )
+        held = Counter(applied)[top]
+        before = self._baseline.get(top, 0)
+        if (held <= before) if direction == "undo" else (held < before):
             return (
                 '%s refused: the next %s step is "%s", recorded before this '
                 "SYNAPSE session started. Nothing was changed; Ctrl+Z still "

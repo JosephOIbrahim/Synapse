@@ -750,8 +750,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 "TieredRouter construction failed; router_stats will report "
                 "unavailable", exc_info=True)
         # R-012: the agent's history tools may only step over SYNAPSE's own
-        # entries. The baseline is recorded in handle() before the first
-        # command runs (main thread only -- hou.undos is not thread-safe).
+        # entries. handle() records the baseline before the first mutating
+        # command runs, reading hou.undos on the main thread (inline there,
+        # through run_on_main from any other thread); a history call with no
+        # baseline captures one inside its own main-thread call.
         self._undo_scope = UndoScope()
         # R-034 (CONDUCTOR-7): per-batch step receipts. The id a caller
         # supplies (or gets back) is the resume key: a retry skips steps this
@@ -852,7 +854,11 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             # run_on_main (the WebSocket route runs handle() on its own
             # thread). History commands capture inside their own main-thread
             # call instead (_history_step), before they judge.
-            if cmd_type not in ("undo", "redo"):
+            # Read-only commands (the kill switches among them) and farm
+            # controls author no scene step, so they never wait on a capture.
+            if (cmd_type not in ("undo", "redo")
+                    and cmd_type not in _READ_ONLY_COMMANDS
+                    and cmd_type not in FARM_CONTROL_COMMANDS):
                 scope = getattr(self, "_undo_scope", None)
                 if scope is not None and scope.needs_baseline and HOU_AVAILABLE:
                     if threading.current_thread() is threading.main_thread():
