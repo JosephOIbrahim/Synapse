@@ -175,3 +175,41 @@ def test_end_to_end_against_the_mock(fed, monkeypatch):
     # The mock's hou.node snippet grounds True against the committed table.
     by_id = {h["id"]: h for h in out["hits"]}
     assert by_id["apex:snippet:python_drive"]["exists_in_runtime"] is True
+
+
+# ── R-029: the shipped default names its mock endpoint ──────────────────────
+
+def test_shipped_default_names_the_mock_endpoint_on_envelope_and_hits(fed, monkeypatch):
+    # No fake planted and no endpoint configured: the shipped default is the
+    # in-repo Mode-A mock, and the response must say so — envelope and per hit.
+    monkeypatch.delenv("SYNAPSE_APEX_MCP_ENDPOINT", raising=False)
+    monkeypatch.setattr(providers, "_INSTANCES", {})
+    out = scout.synapse_scout("blend the rig pose", domain="apex", k=5)
+    assert out["endpoint"] == "mock"
+    assert out["mock"] is True
+    assert out["hits"], "mock should serve at least one snippet"
+    assert all(h["mock"] is True for h in out["hits"])
+    assert any("Mode-A mock" in w for w in out["warnings"])
+
+
+def test_non_mock_endpoint_is_not_labelled_mock(fed):
+    # A provider reporting a real transport must not be smeared with the mock
+    # marker — the field is evidence, not a constant.
+    fake = fed(snippets=[{"id": "a", "type": "apex_snippet", "text": "pose"}])
+    fake.endpoint = "stdio"
+    fake.is_mock = False
+    out = scout.synapse_scout("blend the rig pose", domain="apex")
+    assert out["endpoint"] == "stdio"
+    assert out["mock"] is False
+    assert all(h["mock"] is False for h in out["hits"])
+    assert not any("Mode-A mock" in w for w in out["warnings"])
+
+
+def test_unknown_transport_stays_honestly_null(fed):
+    # A provider that says nothing about its transport is unknown, never
+    # silently stamped mock=True or mock=False.
+    fed(snippets=[{"id": "a", "type": "apex_snippet", "text": "pose"}])
+    out = scout.synapse_scout("blend the rig pose", domain="apex")
+    assert out["endpoint"] is None
+    assert out["mock"] is None
+    assert all(h["mock"] is None for h in out["hits"])

@@ -127,6 +127,31 @@ def test_unsupported_endpoint_fails_loud_no_silent_mock_fallback(monkeypatch):
         ApexMCPProvider()
 
 
+# ── R-029: the envelope names the endpoint and marks the mock ────────────────
+
+def test_envelope_carries_endpoint_and_mock_marker(registry):
+    prov = registry.get("apex_mcp")
+    env = prov.call_tool("ping", {})
+    assert env["endpoint"] == "mock"          # the shipped default names itself
+    assert env["mock"] is True                # and says it is the Mode-A stand-in
+    assert prov.endpoint == "mock" and prov.is_mock is True
+
+
+def test_require_live_refuses_the_mock_endpoint(monkeypatch):
+    monkeypatch.delenv("SYNAPSE_APEX_MCP_ENDPOINT", raising=False)
+    with pytest.raises(ProviderError) as exc:
+        ApexMCPProvider(require_live=True)
+    msg = str(exc.value)
+    assert "mock" in msg and "live transport was required" in msg
+
+
+def test_require_live_accepts_an_injected_transport():
+    # An injected transport is the caller's own seam — no endpoint gate.
+    from synapse.science.mcp_mock import MockApexMCP
+    prov = ApexMCPProvider(transport=MockApexMCP(), require_live=True)
+    assert prov.call_tool("ping", {})["observed"]["pong"] is True
+
+
 # ── mock surface (shared source of truth with the probe) ────────────────────
 
 def test_mock_serves_the_recorded_surface(registry):

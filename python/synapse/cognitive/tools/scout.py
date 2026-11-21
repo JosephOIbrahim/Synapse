@@ -870,6 +870,11 @@ def _scout_apex(query: str, k: int, max_chars: int) -> dict:
     with the introspected symbol table. Provider failure raises
     :class:`ScoutError` (fail-loud, mirrors DRIFT_POLICY="refuse") — no
     silent fallback to local retrieval.
+
+    R-029: the response carries ``endpoint`` and ``mock`` (and every hit
+    repeats ``mock``) so the caller can always tell the shipped default —
+    the in-repo Mode-A mock — from live first-party MCP output. The mock is
+    also announced in ``warnings``.
     """
     try:
         sources = json.loads(SCOUT_SOURCES_PATH.read_text(encoding="utf-8"))
@@ -892,6 +897,21 @@ def _scout_apex(query: str, k: int, max_chars: int) -> dict:
             f"[scout] apex federation failed via provider "
             f"'{src.get('provider')}': {e}")
 
+    # R-029: the endpoint that answered is part of the answer. Never present
+    # the in-repo Mode-A mock as live first-party output — the envelope and
+    # every hit carry the marker, and the mock also lands in warnings.
+    endpoint = env.get("endpoint") if isinstance(env, dict) else None
+    mock = env.get("mock") if isinstance(env, dict) else None
+    if endpoint is None:
+        endpoint = getattr(provider, "endpoint", None)     # injected transport: honest None
+    if mock is None:
+        mock = getattr(provider, "is_mock", None)
+    if mock is True:
+        _WARN.append(
+            f"[scout] apex endpoint '{endpoint}' is the in-repo Mode-A mock — "
+            "NOT live first-party MCP output; set SYNAPSE_APEX_MCP_ENDPOINT to "
+            "configure the shipped transport (docs/studio/DEPLOYMENT.md).")
+
     table_syms, table_status = _load_symbol_table()
     if table_status["stale"]:
         _WARN.append(f"[scout] symbol table unavailable: {table_status['reason']} "
@@ -909,6 +929,7 @@ def _scout_apex(query: str, k: int, max_chars: int) -> dict:
             "source": src["provider"],
             "score": round(1.0 / (rank + 1), 4),
             "snippet": snippet,
+            "mock": mock,                  # R-029: per-hit transport marker
         }
         # Ratified D-H22-2 wording: every federated hit carries exists_in_runtime.
         # True/False from the introspected table when the hit/query references
@@ -927,6 +948,8 @@ def _scout_apex(query: str, k: int, max_chars: int) -> dict:
         "query": query,
         "mode": "federated",
         "domain": "apex",
+        "endpoint": endpoint,            # R-029: which transport answered ("mock" pre-drop)
+        "mock": mock,                    # True = in-repo Mode-A stand-in, not live output
         "stale": None,                   # local-corpus axis N/A on the federated path
         "gate_armed": table_syms is not None,
         "table": table_status,
@@ -962,9 +985,11 @@ def synapse_scout(
         {
           "query", "mode" ("hybrid" | "semantic_only" | "lexical_only"),
           "domain", "stale" (corpus drifted from its rag/ source — Spike 1),
+          "endpoint", "mock":  # domain="apex" only: which transport answered
+                   # and whether it is the in-repo Mode-A mock (R-029)
           "table": {loaded, houdini_version, stale, reason},  # membership authority
                    # + verified_against_running_build:False outside Houdini (R-M5b-1)
-          "hits": [{id, domain, type, source, score, snippet}],
+          "hits": [{id, domain, type, source, score, snippet}],  # + mock on the apex path
           "symbols": [{symbol, exists_in_runtime, documented}],   # membership + doc hint
           "warnings": [...],
           "source_status": {"sidefx_library": {...}}  # only when configured

@@ -12,6 +12,12 @@ Endpoint seam (the ONLY ADAPT point for task 2.7):
     H22 transport (stdio vs HTTP unknown until task 1.7) lands HERE, nowhere
     else. Unknown endpoints fail loud — never a silent mock fallback.
 
+    R-029: the transport is part of every envelope — ``endpoint`` names it and
+    ``mock`` says whether the in-repo Mode-A stand-in answered — so no consumer
+    can mistake canned mock snippets for live first-party MCP output. A caller
+    that must never run on the stand-in constructs with ``require_live=True``,
+    which fails loud when the resolved endpoint is the mock.
+
 ``validator_verdict`` → ``agent.usd`` placement is deliberately NOT wired —
 blocked on the open Gold RFC (boundary §10.2). The envelope carries it;
 landing it is a small post-RFC change.
@@ -30,6 +36,11 @@ from synapse.providers import ProviderError
 ENDPOINT_ENV = "SYNAPSE_APEX_MCP_ENDPOINT"
 DEFAULT_ENDPOINT = "mock"
 SOURCE_ID = "apex_mcp"
+
+
+def resolve_endpoint() -> str:
+    """The configured endpoint, defaulting to the in-repo mock (pre-drop)."""
+    return (os.environ.get(ENDPOINT_ENV) or DEFAULT_ENDPOINT).strip() or DEFAULT_ENDPOINT
 
 
 def args_digest(args: Optional[dict]) -> str:
@@ -55,12 +66,28 @@ class ApexMCPProvider:
 
     id = SOURCE_ID
 
-    def __init__(self, transport: Any = None):
-        self._transport = transport if transport is not None else self._resolve_transport()
+    def __init__(self, transport: Any = None, *, require_live: bool = False):
+        # ``endpoint`` / ``is_mock`` describe WHICH transport answered. An
+        # injected transport is the caller's own seam — unknown here, never
+        # guessed (None), so the envelope cannot overclaim.
+        self.endpoint: Optional[str] = None
+        self.is_mock: Optional[bool] = None
+        if transport is not None:
+            self._transport = transport
+            return
+        self.endpoint = resolve_endpoint()
+        self.is_mock = self.endpoint == DEFAULT_ENDPOINT
+        if self.is_mock and require_live:
+            raise ProviderError(
+                f"APEX MCP endpoint is '{self.endpoint}' (the in-repo Mode-A "
+                "mock) and a live transport was required — configure "
+                f"{ENDPOINT_ENV} with the shipped H22 transport "
+                "(task-2.7 ADAPT point).")
+        self._transport = self._resolve_transport(self.endpoint)
 
     @staticmethod
-    def _resolve_transport() -> Any:
-        endpoint = (os.environ.get(ENDPOINT_ENV) or DEFAULT_ENDPOINT).strip() or DEFAULT_ENDPOINT
+    def _resolve_transport(endpoint: Optional[str] = None) -> Any:
+        endpoint = resolve_endpoint() if endpoint is None else endpoint
         if endpoint == "mock":
             from synapse.science.mcp_mock import MockApexMCP   # in-process Mode-A stand-in
             return MockApexMCP()
@@ -92,6 +119,10 @@ class ApexMCPProvider:
             "tool": name,
             "args_digest": args_digest(args),
             "ts": time.time(),
+            # R-029: which transport answered, and whether it is the in-repo
+            # Mode-A stand-in — an envelope cannot pass mock output as live.
+            "endpoint": self.endpoint,
+            "mock": self.is_mock,
         }
         # Present iff the tool result itself carried one. A provenance INPUT,
         # never restated as a SYNAPSE judgment (boundary §4 two-question rule).
