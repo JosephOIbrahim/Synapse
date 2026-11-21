@@ -5,75 +5,78 @@
   </picture>
 </p>
 
-<p align="center"><strong>SYNAPSE is an AI assistant that runs inside Houdini 22.</strong></p>
+<h3 align="center">An AI assistant that runs inside Houdini 22.</h3>
 
-<p align="center">Connect a local or cloud model, describe the task in plain words, and SYNAPSE builds real nodes you can inspect and edit. It acts without asking first, and the default worker refuses more than it allows — start in a scratch scene.</p>
+<p align="center">Connect a local or cloud model, describe the task in plain words, and SYNAPSE builds real nodes you can inspect and edit.</p>
 
 <p align="center"><sub>v5.103.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.103.0 is Latest</sub></p>
 
-[![Latest release](https://img.shields.io/github/v/release/JosephOIbrahim/Synapse)](https://github.com/JosephOIbrahim/Synapse/releases/latest)
-[![CI](https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg)](https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml)
-[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+<p align="center">
+  <a href="https://github.com/JosephOIbrahim/Synapse/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/JosephOIbrahim/Synapse?style=flat-square&amp;labelColor=0A0A0A&amp;color=2F5878"></a>
+  <a href="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/JosephOIbrahim/Synapse/ci.yml/badge.svg?style=flat-square&amp;labelColor=0A0A0A"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2F5878?style=flat-square&amp;labelColor=0A0A0A"></a>
+</p>
 
-**[Install](#install)** · **[What it does](#what-it-does)** · **[What's ready](#whats-ready)** · **[Controls](#find-the-right-control)** · **[Troubleshooting](#when-you-get-stuck)** · [Versions and tags](TAGS.md) · [What's new](docs/releases/v5.103.0.md)
+<div align="center">
 
-How to read this page: Install gets you running. What it does shows the five workflows, each with a diagram. Everything after that is reference you can come back to when you need it.
+**[01 Install](#01-install)** · **[02 What it does](#02-what-it-does)** · **[03 Controls](#03-controls)** · **[04 When you get stuck](#04-when-you-get-stuck)** · **[05 Reference](#05-reference)**
 
-## What's new in 5.103.0
+[What's new](docs/releases/v5.103.0.md) · [Versions and tags](TAGS.md) · [Current limits](docs/status.md)
 
-**No product behaviour changes.** 5.103.0 adds a self-improvement memory plane under `harness/sim` — a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured — which nothing on the runtime path imports. The panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
+</div>
 
-anthropic 2.x is still unsupported.
+[![Play the SYNAPSE tool demonstration](assets/demo_v2_video_thumb.jpg)](https://vimeo.com/1225720538)
 
-## Install
+[Watch the recorded demonstration on Vimeo](https://vimeo.com/1225720538)
 
-### Get 5.103.0
+SYNAPSE does the work inside your Houdini scene through tools you can inspect, and what it builds stays yours to edit.
 
-**5.103.0 is a source release.** It publishes no Setup, no source ZIP and no checksum file, because it changes no product behaviour — the `harness/sim` plane it adds is not imported by anything the product runs.
+> **Before you start**
+>
+> SYNAPSE acts without asking first. Start in a scratch scene.
+>
+> The default worker refuses more than it allows. It reads, creates nodes, sets parameters, connects wires and creates materials. It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning, batch PDG cooks and any tool it does not recognise.
+>
+> Undo covers a recorded operation. It does not reverse a whole conversation, or files written to disk.
 
-- **If you want an installer:** the newest one is
-  [Windows Setup v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe),
-  and a 5.102.0 seat behaves exactly as a 5.103.0 seat does.
+## 01 Install
 
-- **If you want the source:** it is the tag —
-  `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.103.0`.
+1. Save your scene and close Houdini. Run the v5.102.0 [Windows Setup](docs/getting-started/installation.md#windows-installer), or follow [source installation](docs/getting-started/installation.md#source-installation) for v5.103.0.
+2. Restart Houdini. Open New Pane Tab, then Synapse.
+3. Open Connect models. Choose a provider and model, and add its key if it needs one.
+4. For node creation, select Build and edit networks. Choose Check connection, then Use this model.
 
-- **Check the tag:** `git rev-parse 'v5.103.0^{commit}'` resolves the annotated tag
-  to its source commit. Setup remains unsigned; the v5.102.0 Setup's
-  [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt)
-  still applies to that file and to nothing in this release.
+Using Ollama? Start its service first. Connect starts the separate Houdini bridge, and Doctor checks the setup without a model.
 
-- **What was checked:** the [5.103.0 note](docs/releases/v5.103.0.md) carries the
-  stock-suite line, what it does not cover, and every limit. The v5.102.0
-  [tests and limits](docs/releases/v5.102.0.md#tests) still describe that Setup.
+### Which build to get
 
-Setup includes the panel as of v5.102.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.
-
-### Install in four steps
-
-01\. Save your scene and close Houdini. Follow [source installation](docs/getting-started/installation.md#source-installation) for v5.103.0, or run the v5.102.0 [Windows Setup](docs/getting-started/installation.md#windows-installer).
-
-02\. Restart Houdini. Open New Pane Tab, then Synapse.
-
-03\. Open Connect models. Choose a provider and model, and add its key if it needs one.
-
-04\. For node creation, select Build and edit networks. Choose Check connection, then Use this model.
-
-Using Ollama? Start its service first.
-
-Connect starts the separate Houdini bridge, and Doctor checks the setup without a model.
+| You want | Get | Know this |
+|---|---|---|
+| An installer | [Windows Setup v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe) | The newest Setup. A 5.102.0 seat behaves exactly as a 5.103.0 seat does. Setup remains unsigned; its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt) applies to that file and to nothing in 5.103.0. |
+| The source | `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.103.0` | 5.103.0 is a source release. It publishes no Setup, no source ZIP and no checksum file, because it changes no product behaviour: the `harness/sim` plane it adds is not imported by anything the product runs. |
+| To check the tag | `git rev-parse 'v5.103.0^{commit}'` | Resolves the annotated tag to its source commit. |
 
 **Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update.
 
-The 5.101.1 tag and its assets remain unchanged.
+<sub>What was checked: the [5.103.0 note](docs/releases/v5.103.0.md) carries the stock-suite line, what it does not cover, and every limit, and the v5.102.0 [tests and limits](docs/releases/v5.102.0.md#tests) still describe that Setup. Setup includes the panel as of v5.102.0, including Spatial, the Render footer row and the scene-reading Scatter recipe. The 5.101.1 tag and its assets remain unchanged.</sub>
 
-## What it does
+## 02 What it does
 
-Five workflows, each short enough to read in a minute. The diagram is the whole mechanism; the prose under each one is what it does not do.
+Five workflows on one pattern. The bold line says what it does, Try shows how to start, the diagram is the whole mechanism, and Limits says what it does not do.
 
-### Build in plain words
+| | Workflow | You do | SYNAPSE does |
+|---|---|---|---|
+| 02.1 | [Build in plain words](#021-build-in-plain-words) | Describe a task | Builds through permitted tools; the result stays editable |
+| 02.2 | [Safer Solaris wiring](#022-safer-solaris-wiring) | Request a Solaris graph | Checks the request, builds, verifies the final wires |
+| 02.3 | [Build from a verified recipe](#023-build-from-a-verified-recipe) | Ask in plain words | Reads the scene first; builds with fixed values, or answers UNKNOWN |
+| 02.4 | [See what nodes do](#024-see-what-nodes-do) | Select nodes, click Identify | A local bubble beside each node, with no model |
+| 02.5 | [Hands-off render](#025-hands-off-render) | Give an intent | Plans, renders, scores and retries within three bounds |
 
-In a scratch scene, send:
+### 02.1 Build in plain words
+
+**SYNAPSE builds real nodes through the tools the worker permits, and the result stays editable in Houdini.**
+
+**Try** in a scratch scene:
 
 ```text
 make a box
@@ -99,15 +102,16 @@ flowchart LR
     linkStyle default stroke:#6A9BC3
 ```
 
-**Undo covers a recorded operation.** It does not reverse a whole conversation, and it does not reverse files written to disk. A failed build can leave partial nodes until you deliberately undo them.
+**Limits**
 
-The default worker refuses more than it allows. It permits read-only tools and the inform-level edits (create a node, set a parameter, connect a wire, create a material), plus the artist's own Undo and Redo, which are inform-gated too.
+- Undo covers a recorded operation. It does not reverse a whole conversation, and it does not reverse files written to disk.
+- A failed build can leave partial nodes until you deliberately undo them.
+- The default worker permits read-only tools and the inform-level edits (create a node, set a parameter, connect a wire, create a material), plus the artist's own Undo and Redo, which are inform-gated too. It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise.
+- Three composite Solaris builders, listed in `_WORKER_BUILDER_ALLOWLIST` in `python/synapse/panel/worker_policy.py`, are the exception; each is one undo-wrapped call made only of inform-level primitives.
 
-It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise.
+<sub>[Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries)</sub>
 
-Three composite Solaris builders, listed in `_WORKER_BUILDER_ALLOWLIST` in `python/synapse/panel/worker_policy.py`, are the exception; each is one undo-wrapped call made only of inform-level primitives. [Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries).
-
-### Safer Solaris wiring
+### 02.2 Safer Solaris wiring
 
 **An insertion keeps the exact upstream output.** Every connection into a node that already exists reserves its slot before other wires are appended. Merge-style targets also get an order warning, never a silent reorder.
 
@@ -116,10 +120,6 @@ Invalid requests stop before scene changes:
 - Preview must be a boolean.
 - Managed parameters must be an object.
 - A supplied display selector must be the id of a node in the request.
-
-Verified connections come from the final wires. If a later cook changes a wire, the builder reports an error instead of returning a stale success receipt.
-
-A failed build tries to take back the one undo group it opened, and only when the undo stack still shows it. If that take-back fails, the partial build is left for you to undo.
 
 ```mermaid
 flowchart LR
@@ -139,29 +139,26 @@ flowchart LR
     linkStyle default stroke:#6A9BC3
 ```
 
-Checked in Houdini 22.0.400: the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change.
+Verified connections come from the final wires. If a later cook changes a wire, the builder reports an error instead of returning a stale success receipt.
 
-These checks do not measure a complex scene's time savings, and they do not qualify every panel interaction. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured).
+**Limits**
 
-The inherited merge-warning fix has standalone tests; its original limits remain in the [5.97.3 notes](docs/releases/v5.97.3.md#solaris-merge-warning-side-fix).
+- A failed build tries to take back the one undo group it opened, and only when the undo stack still shows it. If that take-back fails, the partial build is left for you to undo.
+- These checks do not measure a complex scene's time savings, and they do not qualify every panel interaction.
 
-### Build from a verified recipe
+<sub>Checked in Houdini 22.0.400: the seven-fix controls passed in fresh headless sessions. A separate graphical session then passed the real production bridge checks, including repeat builds and artist Undo after a refused wire change. See [release notes and evidence](docs/releases/v5.97.2.md#what-was-measured). The inherited merge-warning fix has standalone tests; its original limits remain in the [5.97.3 notes](docs/releases/v5.97.3.md#solaris-merge-warning-side-fix).</sub>
 
-Some requests have a recipe that was built and checked on Houdini 22.0.400. Scatter Instances on an imported Gaussian-splat world is one that reads the scene for you before it builds.
+### 02.3 Build from a verified recipe
 
-Ask in plain words:
+**SYNAPSE reads the scene before it builds. If anything is missing or ambiguous, the answer is UNKNOWN and nothing is built.**
+
+Some requests have a recipe that was built and checked on Houdini 22.0.400. Scatter Instances on an imported Gaussian-splat world is one. It finds the camera, the world, the world's collider and the place in the chain where the new nodes go, and it tells you where it read each one.
+
+**Try** in plain words:
 
 ```text
 Scatter rocks along the cobblestone lane.
 ```
-
-SYNAPSE reads the scene before it builds. It finds the camera, the world, the world's collider and the place in the chain where the new nodes go, and it tells you where it read each one.
-
-**If anything is missing or ambiguous, the answer is UNKNOWN and nothing is built.**
-
-If everything is known, it builds the recipe with the recipe's own values. An older note in memory cannot change them, and any value it had to correct is listed in the reply.
-
-The reply carries a receipt, and the receipt carries Revert. One click takes back that turn's own SYNAPSE-labelled undo group, and only while nothing else sits above it in Houdini's undo stack.
 
 ```mermaid
 flowchart LR
@@ -186,28 +183,26 @@ flowchart LR
     linkStyle default stroke:#6A9BC3
 ```
 
-The reader knows one scene shape today:
+If everything is known, it builds the recipe with the recipe's own values. An older note in memory cannot change them, and any value it had to correct is listed in the reply. The reply carries a receipt, and the receipt carries Revert.
 
-- the `/stage` network
-- exactly one camera
-- a Camera node feeding the render settings directly
-- one imported world that still carries its import record, with its source `.ply` and a sibling collider `.glb` beside it
+**Limits**
 
-Anything else is UNKNOWN. The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.
+- The reader knows one scene shape today: the `/stage` network; exactly one camera; a Camera node feeding the render settings directly; one imported world that still carries its import record, with its source `.ply` and a sibling collider `.glb` beside it. Anything else is UNKNOWN.
+- Revert takes back that turn's own SYNAPSE-labelled undo group, and only while nothing else sits above it in Houdini's undo stack.
 
-### See what nodes do
+<sub>The [release notes](docs/releases/v5.94.1.md) list what was seen in Houdini and what was not.</sub>
 
-Select one or more nodes in a network editor. Then click Identify at the bottom of the panel, or send `/identify`.
+### 02.4 See what nodes do
 
-A short bubble appears beside each node, drawn over the network editor. It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass.
+**A short bubble appears beside each selected node.** It says what the node does, which parameters you changed, and whether the node has an error, a warning or a bypass. **No model runs, and nothing leaves your machine.**
 
-The bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it.
+**Try** selecting one or more nodes in a network editor, then click Identify at the bottom of the panel, or send:
 
-**No model runs, and nothing leaves your machine.**
+```text
+/identify
+```
 
-Click Identify again, or send `/identify off`, to clear the bubbles. The overlay is not saved into your scene.
-
-Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
+Click Identify again, or send `/identify off`, to clear the bubbles. Each bubble comes from the node itself and its page in your local SideFX help library, found the way Houdini's own help finds it, or from an HDA's own help when the library has no page for it.
 
 ```mermaid
 flowchart LR
@@ -228,13 +223,17 @@ flowchart LR
     linkStyle default stroke:#6A9BC3
 ```
 
-Each click reads and draws the first 60 selected nodes. The cap is `CAP = 60` in `python/synapse/identify/bubble.py`, applied before the fact read, and the chip still reports your full selection. The [release notes](docs/releases/v5.85.0.md) explain the details and the current limits.
+**Limits**
 
-### Hands-off render
+- Each click reads and draws the first 60 selected nodes. The cap is `CAP = 60` in `python/synapse/identify/bubble.py`, applied before the fact read, and the chip still reports your full selection.
+- The overlay is not saved into your scene.
+- Identify can also remove its own old-format comment blocks in one undo group while preserving artist text. [Cleanup details](docs/architecture/overview.md#identify).
 
-`synapse_autonomous_render` takes an intent in plain words and runs the whole render loop: plan, validate, render through TOPS, score the result, and re-plan when the score falls short.
+<sub>The [release notes](docs/releases/v5.85.0.md) explain the details and the current limits.</sub>
 
-Three bounds apply: `max_iterations` (3 by default, clamped to 10 on the server), `quality_threshold` (0.85 by default), and a per-run wall-clock bound of 600 seconds by default that stops at the next iteration boundary and reports `stop_reason='wall_clock_exceeded'`.
+### 02.5 Hands-off render
+
+**`synapse_autonomous_render` takes an intent in plain words and runs the whole render loop:** plan, validate, render through TOPS, score the result, and re-plan when the score falls short.
 
 ```mermaid
 flowchart LR
@@ -257,29 +256,24 @@ flowchart LR
     linkStyle default stroke:#6A9BC3
 ```
 
-Producer: the loop is `python/synapse/autonomy/driver.py`; the tool contract, defaults and server clamp are `python/synapse/mcp/_tool_registry.py`.
+**Limits.** Three bounds apply:
 
-## What's ready
+- `max_iterations`: 3 by default, clamped to 10 on the server.
+- `quality_threshold`: 0.85 by default.
+- A per-run wall-clock bound of 600 seconds by default. It stops at the next iteration boundary and reports `stop_reason='wall_clock_exceeded'`.
 
-- **Network work:** build and inspect through permitted tools, and keep the result editable in Houdini.
+<sub>Producer: the loop is `python/synapse/autonomy/driver.py`; the tool contract, defaults and server clamp are `python/synapse/mcp/_tool_registry.py`.</sub>
 
-- **Verified recipes:** Scatter Instances reads its scene bindings in one call and builds with fixed values, or answers UNKNOWN and builds nothing.
-
-- **Identify:** a short bubble beside each selected node, built from the node and local SideFX help with no model call.
-
-- **Hands-off render:** an intent becomes a validated, scored render loop with the bounds above; the reply carries the full report.
+### Models and clients
 
 - **Model choice:** Claude, Gemini, NVIDIA Nemotron, Ollama and custom OpenAI-compatible endpoints. Tool support varies.
-
 - **Claude Code:** use SYNAPSE's tools from Claude Code through [MCP](docs/mcp/SETUP.md#claude-code). It asks before each tool call unless you allow that tool.
-
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
-
 - **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
 [Current limits](docs/status.md) (reviewed for v5.99.0) · [Latest release notes](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
 
-## Find the right control
+## 03 Controls
 
 | I want to… | Open or use… |
 |---|---|
@@ -310,7 +304,7 @@ Saving a JEV key keeps it in memory until Houdini closes.
 
 The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TURN_BUDGET_TOKENS` in `python/synapse/panel/claude_worker.py`.
 
-## When you get stuck
+## 04 When you get stuck
 
 | What you see | Try this first |
 |---|---|
@@ -324,13 +318,18 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 
 [Report a bug](https://github.com/JosephOIbrahim/Synapse/issues/new/choose) · [First-session walkthrough](docs/getting-started/quickstart.md)
 
-## Watch it work
+## 05 Reference
 
-[![Play the SYNAPSE tool demonstration](assets/demo_v2_video_thumb.jpg)](https://vimeo.com/1225720538)
+Detail you can come back to. Each block opens in place.
 
-[Watch the recorded demonstration on Vimeo](https://vimeo.com/1225720538)
+<details>
+<summary><strong>What's new in 5.103.0</strong></summary>
 
-SYNAPSE does the work inside your Houdini scene through tools you can inspect, and what it builds stays yours to edit.
+**No product behaviour changes.** 5.103.0 adds a self-improvement memory plane under `harness/sim` — a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured — which nothing on the runtime path imports. The panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
+
+anthropic 2.x is still unsupported.
+
+</details>
 
 <details>
 <summary><strong>Release history: what changed in 5.102.0</strong></summary>
