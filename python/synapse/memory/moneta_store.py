@@ -984,7 +984,8 @@ class MonetaBackedStore:
         if getattr(self._handle, "durability", None) is None:
             raise RuntimeError("Checked experience requires persistent Moneta storage")
 
-    def add(self, memory: Memory, *, require_durable: bool = False) -> str:
+    def add(self, memory: Memory, *, require_durable: bool = False,
+            allow_duplicate_identity: bool = False) -> str:
         with self._lock:
             if getattr(self, "_closed", False):
                 raise RuntimeError("Memory store is closed")
@@ -1015,8 +1016,13 @@ class MonetaBackedStore:
             #                      append/consolidate and cannot express an
             #                      update, so silently keeping either copy
             #                      would lose the other
-            existing_payloads = _identity_payloads(
-                self._handle.ecs.iter_rows(), memory.id)
+            # The custody ledger deposits by identity on purpose: its
+            # append-only contract keeps a second row for a re-deposited
+            # finding (test_ledger_moneta_seam pins it), so it asks for the
+            # guard to stand down. User memory keeps the default.
+            existing_payloads = ([] if allow_duplicate_identity else
+                                 _identity_payloads(
+                                     self._handle.ecs.iter_rows(), memory.id))
             if existing_payloads:
                 if len(existing_payloads) == 1 and _same_identity_payload(
                         existing_payloads[0], payload):

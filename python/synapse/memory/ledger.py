@@ -483,7 +483,7 @@ def _deposit_to_moneta(rec: "LedgerRecord", stem: str) -> Dict:
             status["reason"] = "no-store"
             return status
         memory = _ledger_memory(rec, stem, provenance.get("revision"))
-        status["memory_id"] = store.add(memory)
+        status["memory_id"] = store.add(memory, allow_duplicate_identity=True)
         status["deposited"] = True
         status["reason"] = "deposited"
     except Exception as exc:  # noqa: BLE001 -- enrichment never fails the deposit

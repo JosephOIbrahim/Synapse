@@ -245,7 +245,7 @@ class TestSeamIsLive:
         """A failed substrate write must never read as a success. MUTATION
         CAUGHT: `except Exception: pass` around the deposit (Law 3)."""
         class Exploding:
-            def add(self, memory):
+            def add(self, memory, **kwargs):
                 raise IOError("disk full")
 
         monkeypatch.setattr(mr, "moneta_available", lambda: True)
