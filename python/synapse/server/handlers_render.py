@@ -1849,25 +1849,30 @@ class RenderHandlerMixin:
         _KARMA_SETTINGS_TYPES = ("karmarendersettings", "karmarenderproperties")
         karma_lop_path = None
         if HOU_AVAILABLE and rop:
-            try:
+            def _discover_karma_lop():
+                # hou reads stay on Houdini's main thread: the autonomous-render
+                # worker reaches this handler off it (R-035 review A10).
                 rop_node = hou.node(rop)
-                if rop_node is not None:
-                    lp = rop_node.parm("loppath")
-                    if lp:
-                        lop_target = lp.eval()  # noqa: S307
-                        if lop_target:
-                            lop_node = hou.node(lop_target)
-                            if lop_node is not None:
-                                # Walk up to the parent LOP network
-                                lop_net = lop_node.parent() if lop_node.parent() else lop_node
-                                for child in lop_net.children():
-                                    # base name -- karmarendersettings has no
-                                    # versioned sibling on 22.0.368, but strip
-                                    # defensively in case one ships later.
-                                    if (child.type().name().split("::")[0]
-                                            in _KARMA_SETTINGS_TYPES):
-                                        karma_lop_path = child.path()
-                                        break
+                if rop_node is None:
+                    return None
+                lp = rop_node.parm("loppath")
+                lop_target = lp.eval() if lp else None  # noqa: S307
+                lop_node = hou.node(lop_target) if lop_target else None
+                if lop_node is None:
+                    return None
+                # Walk up to the parent LOP network
+                lop_net = lop_node.parent() if lop_node.parent() else lop_node
+                for child in lop_net.children():
+                    # base name -- karmarendersettings has no versioned sibling
+                    # on 22.0.368, but strip defensively in case one ships later.
+                    if child.type().name().split("::")[0] in _KARMA_SETTINGS_TYPES:
+                        return child.path()
+                return None
+
+            try:
+                from .main_thread import run_on_main
+                karma_lop_path = run_on_main(
+                    _discover_karma_lop, label="render:karma_lop_discovery")
             except Exception as exc:
                 logger.debug("Karma LOP discovery failed, using ROP path: %s", exc)
 
