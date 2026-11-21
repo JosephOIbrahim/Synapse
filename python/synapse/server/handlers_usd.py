@@ -27,6 +27,12 @@ _log = logging.getLogger(__name__)
 _ARRAY_RETURN_LIMIT = 256
 _ARRAY_SAMPLE = 16
 
+# get_stage_info bounded-list caps (R-022). The aggregate counters and every
+# *_total field are computed over the FULL stage traversal; only these returned
+# lists are capped, and each carries its own omitted/truncated count.
+_STAGE_UNASSIGNED_RETURN_CAP = 50
+_STAGE_UNRESOLVED_RETURN_CAP = 20
+
 
 def _bound_array(value):
     """Summarize a large array attribute instead of returning every element.
@@ -266,7 +272,16 @@ class UsdHandlerMixin:
         )
 
     def _handle_get_stage_info(self, payload: Dict) -> Dict:
-        """Handle get_stage_info command."""
+        """Handle get_stage_info command.
+
+        Aggregates are whole-stage facts (R-022): the traversal always visits
+        every prim and counts there, so a light at prim 4,900 of 5,000 is found
+        even when ``limit`` bounds the returned ``prims`` list to 10. Only the
+        returned lists are bounded; each carries ``*_total`` / ``*_omitted`` /
+        ``*_truncated`` fields, ``inspected_prim_count`` names the returned
+        prefix length, and ``prim_count``/``prim_total`` are full-traversal
+        totals -- never the prefix.
+        """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
@@ -307,26 +322,39 @@ class UsdHandlerMixin:
                 _has_pxr = False
 
             cameras = []
+            camera_total = 0
             lights = []
+            light_total = 0
             renderable_prims = 0
             unassigned_material_prims = []
+            unassigned_total = 0
             unresolved_references = []
+            unresolved_total = 0
             prims = []
+            prim_total = 0
 
+            # Full traversal: aggregates are counted over the WHOLE stage, and
+            # only the returned lists are bounded. The old code stopped at
+            # `limit` prims, so every aggregate silently described the prefix
+            # (a light at prim 4,900 of 5,000 was never seen).
             for prim in stage.Traverse():
-                if len(prims) >= limit:
-                    break
+                prim_total += 1
                 path_str = str(prim.GetPath())
                 type_name = str(prim.GetTypeName())
-                prims.append({"path": path_str, "type": type_name})
+                if len(prims) < limit:
+                    prims.append({"path": path_str, "type": type_name})
 
                 if _has_pxr:
                     # Cameras
                     if prim.IsA(UsdGeom.Camera):
-                        cameras.append(path_str)
+                        camera_total += 1
+                        if len(cameras) < limit:
+                            cameras.append(path_str)
                     # Lights -- check schema and fallback to type name
                     if prim.IsA(UsdLux.LightAPI) or "Light" in type_name:
-                        lights.append(path_str)
+                        light_total += 1
+                        if len(lights) < limit:
+                            lights.append(path_str)
                     # Renderable geometry
                     if prim.IsA(UsdGeom.Gprim):
                         renderable_prims += 1
@@ -335,7 +363,9 @@ class UsdHandlerMixin:
                             binding_api = UsdShade.MaterialBindingAPI(prim)
                             mat, _ = binding_api.ComputeBoundMaterial()
                             if not mat:
-                                unassigned_material_prims.append(path_str)
+                                unassigned_total += 1
+                                if len(unassigned_material_prims) < _STAGE_UNASSIGNED_RETURN_CAP:
+                                    unassigned_material_prims.append(path_str)
                         except Exception:
                             pass
                     # Unresolved references
@@ -349,23 +379,46 @@ class UsdHandlerMixin:
                                             ref.assetPath
                                         )
                                         if not resolved:
-                                            unresolved_references.append({
-                                                "prim": path_str,
-                                                "asset": str(ref.assetPath),
-                                            })
+                                            unresolved_total += 1
+                                            if len(unresolved_references) < _STAGE_UNRESOLVED_RETURN_CAP:
+                                                unresolved_references.append({
+                                                    "prim": path_str,
+                                                    "asset": str(ref.assetPath),
+                                                })
                     except Exception:
                         pass
 
+            inspected = len(prims)
+            unassigned_returned = len(unassigned_material_prims)
+            unresolved_returned = len(unresolved_references)
             return {
                 "node": node.path(),
-                "prim_count": len(prims),
+                # Totals -- full traversal, never the inspected prefix.
+                # `prim_count` keeps its old name for existing consumers; its
+                # meaning is now the honest whole-stage total.
+                "prim_count": prim_total,
+                "prim_total": prim_total,
+                "inspected_prim_count": inspected,
                 "prims": prims,
+                "limit": limit,
+                "truncated": prim_total > inspected,
                 "cameras": sorted(cameras),
+                "cameras_total": camera_total,
+                "cameras_omitted": camera_total - len(cameras),
+                "cameras_truncated": camera_total > len(cameras),
                 "lights": sorted(lights),
+                "lights_total": light_total,
+                "lights_omitted": light_total - len(lights),
+                "lights_truncated": light_total > len(lights),
                 "renderable_prims": renderable_prims,
-                "unassigned_material_prims": sorted(unassigned_material_prims)[:50],
-                "unresolved_references": unresolved_references[:20],
-                "truncated": len(prims) >= limit,
+                "unassigned_material_prims": sorted(unassigned_material_prims),
+                "unassigned_material_prims_total": unassigned_total,
+                "unassigned_material_prims_omitted": unassigned_total - unassigned_returned,
+                "unassigned_material_prims_truncated": unassigned_total > unassigned_returned,
+                "unresolved_references": unresolved_references,
+                "unresolved_references_total": unresolved_total,
+                "unresolved_references_omitted": unresolved_total - unresolved_returned,
+                "unresolved_references_truncated": unresolved_total > unresolved_returned,
             }
 
         return run_on_main(_on_main, label="usd:_handle_get_stage_info")

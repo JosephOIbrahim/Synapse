@@ -97,6 +97,8 @@ def _stage_info_payload(args: dict) -> dict:
     p = {}
     if "node" in args:
         p["node"] = args["node"]
+    if "limit" in args:
+        p["limit"] = args["limit"]
     return p
 
 
@@ -329,9 +331,15 @@ TOOL_DEFS: list[tuple] = [
 
     # -- USD/Solaris --
     ("houdini_stage_info", "get_stage_info", _stage_info_payload,
-     "Get USD stage information: prim list and types.",
+     "Get USD stage information: prim list and types. Aggregates (cameras, lights, "
+     "renderable_prims, unassigned materials, unresolved references) are counted over "
+     "the WHOLE stage; only the returned lists are bounded by `limit` and each carries "
+     "*_total / *_omitted / *_truncated counts, with inspected_prim_count naming the "
+     "returned prefix length.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "Optional LOP node path"},
+         "limit": {"type": "integer", "minimum": 1,
+                   "description": "Max prims/cameras/lights returned per list (default: 500)"},
      }, "required": []},
      True, False, True),
 
