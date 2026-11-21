@@ -27,8 +27,17 @@ the same label was dropped), never allow an old one.
 
 Only labels an agent tool writes count (``AGENT_PREFIXES``): panel actions the
 artist starts ("SYNAPSE insert saved network", "SYNAPSE Identify cleanup") are
-the artist's own work. Redo is further limited to entries this handler itself
-undid, so a group a failed build rolled back, or one the artist undid, is never
+the artist's own work, and so is the panel's Spatial footer click, which writes
+the same label as the agent's trail tool (``ARTIST_STARTED_LABELS``; the agent's
+own trail is refused with it, a safe refusal).
+
+Redo is further limited to entries this handler itself undid. Labels cannot
+tell two entries of one label apart, so the handler records both stacks right
+after each of its own undo/redo steps, and how many entries at the top of the
+redo stack its own undos put there. A redo is allowed only while the history is
+exactly as the handler left it: anything in between (the artist's Ctrl+Z or
+Ctrl+Y, a new edit, a failed build's rollback) changes the stacks and ends the
+run. So a group a failed build rolled back, or one the artist undid, is never
 re-applied by an agent.
 
 A session is one handler's lifetime. Every client of the same route shares it
@@ -59,8 +68,16 @@ logger = logging.getLogger(__name__)
 AGENT_PREFIXES = ("SYNAPSE: ", "synapse_")
 
 
+#: Agent-prefixed labels a panel click also writes, with no model turn: the
+#: Spatial footer button runs ``synapse_spatial_trail`` through the bridge, whose
+#: group is named from ``handlers_spatial.TRAIL_UNDO``. The label cannot tell the
+#: click from an agent call, so both are refused.
+ARTIST_STARTED_LABELS = frozenset({"SYNAPSE: Draw camera path"})
+
+
 def is_agent_label(label) -> bool:
-    return isinstance(label, str) and label.startswith(AGENT_PREFIXES)
+    return (isinstance(label, str) and label.startswith(AGENT_PREFIXES)
+            and label not in ARTIST_STARTED_LABELS)
 
 
 def _as_labels(value) -> Optional[Tuple[str, ...]]:
@@ -84,6 +101,15 @@ def _labels(undos, attr: str) -> Optional[Tuple[str, ...]]:
         logger.debug("hou.undos.%s() unreadable; refusing the step", attr,
                      exc_info=True)
         return None
+
+
+def history(undos):
+    """Both stacks' labels as ``(undo, redo)``, or None if either is unreadable."""
+    undo = _labels(undos, "undoLabels")
+    redo = _labels(undos, "redoLabels")
+    if undo is None or redo is None:
+        return None
+    return undo, redo
 
 
 def _ready_labels(undos, attr: str) -> Optional[Tuple[str, ...]]:
@@ -110,7 +136,10 @@ class UndoScope:
     def __init__(self) -> None:
         self._captured = False
         self._baseline: Optional[Counter] = None
-        self._agent_undone: Counter = Counter()
+        # The history right after this handler's last undo/redo, and how many
+        # entries at the top of the redo stack its own undos put there.
+        self._left_history = None
+        self._redoable = 0
         self.capture_failures = 0
 
     @property
@@ -160,10 +189,11 @@ class UndoScope:
                 "did not record. Taking it back would reverse the artist's own work. "
                 "Nothing was changed; Ctrl+Z still works." % (verb, direction, top)
             )
-        if direction == "redo" and self._agent_undone[top] <= 0:
+        if direction == "redo" and not self._redo_is_ours(undos):
             return (
                 'Redo refused: the next redo step is "%s", which this SYNAPSE '
-                "session did not undo. It may have been taken back for a reason "
+                "session did not undo, or the history changed after it did. It may "
+                "have been taken back for a reason "
                 "(a failed build, or the artist's own Ctrl+Z). Nothing was changed; "
                 "Ctrl+Y still works." % (top,)
             )
@@ -193,9 +223,23 @@ class UndoScope:
             )
         return None
 
-    def note_agent_step(self, direction: str, label: str) -> None:
-        """Record a step this handler took, so redo is limited to what it undid."""
+    def _redo_is_ours(self, undos) -> bool:
+        """The redo top is one this handler undid and nothing happened since."""
+        return (self._redoable > 0 and self._left_history is not None
+                and history(undos) == self._left_history)
+
+    def note_agent_step(self, direction: str, before, after) -> None:
+        """Record a step this handler took; ``before``/``after`` come from ``history()``.
+
+        An undo that starts from the history this handler last left extends its
+        run of redoable entries; any other undo starts a new run of one. A redo
+        uses one up. A history that cannot be read ends the run.
+        """
+        chained = before is not None and before == self._left_history
         if direction == "undo":
-            self._agent_undone[label] += 1
-        elif self._agent_undone[label] > 0:
-            self._agent_undone[label] -= 1
+            self._redoable = (self._redoable if chained else 0) + 1
+        else:
+            self._redoable = self._redoable - 1 if chained else 0
+        self._left_history = after
+        if after is None:
+            self._redoable = 0

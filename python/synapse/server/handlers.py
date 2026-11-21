@@ -57,7 +57,7 @@ from ..core.outcomes import info as _outcome_info, for_exception as _for_excepti
 from .handlers_node import NodeHandlerMixin
 from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
-from .undo_scope import UndoScope
+from .undo_scope import UndoScope, history as undo_history
 # R-034 (CONDUCTOR-7): per-step receipts + the applied-step guard for
 # batch_commands. Pure Python (no hou), importable standalone.
 from .batch_receipts import (
@@ -546,11 +546,11 @@ def _close_autonomy_loop(loop) -> None:
 def _run_autonomy_off_main(driver, intent):
     """Run ``driver.execute`` on a plain loop here, or its sync step loop.
 
-    The loop is built BEFORE the coroutine is created: if Houdini's guard
-    refuses the loop, nothing has been dispatched and the fallback cannot
-    repeat a step. A guard raised after that point is a real mid-run failure
-    and is reported as one -- it is never a reason to try the run again
-    synchronously.
+    The guard is checked where Houdini's haio refuses -- building the loop,
+    then creating the task -- and both happen before the coroutine runs, so
+    nothing has been dispatched and the fallback cannot repeat a step. A
+    guard raised after that point is a real mid-run failure and is reported
+    as one -- it is never a reason to try the run again synchronously.
     """
     loop = None
     try:
@@ -560,7 +560,15 @@ def _run_autonomy_off_main(driver, intent):
             raise
         return driver.execute_sync(intent, reason=str(exc))
     try:
-        return loop.run_until_complete(driver.execute(intent))
+        coro = driver.execute(intent)
+        try:
+            task = loop.create_task(coro)
+        except RuntimeError as exc:
+            coro.close()  # never started: nothing was dispatched
+            if not _is_main_thread_guard(exc):
+                raise
+            return driver.execute_sync(intent, reason=str(exc))
+        return loop.run_until_complete(task)
     finally:
         _close_autonomy_loop(loop)
 
@@ -1494,13 +1502,12 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             refusal = scope.refusal(hou.undos, direction)
             if refusal:
                 raise HistoryScopeRefused(refusal)
-            stack = hou.undos.undoLabels() if direction == "undo" else hou.undos.redoLabels()
-            top = tuple(stack)[0]
+            before = undo_history(hou.undos)
             if direction == "undo":
                 hou.undos.performUndo()
             else:
                 hou.undos.performRedo()
-            scope.note_agent_step(direction, top)
+            scope.note_agent_step(direction, before, undo_history(hou.undos))
 
         run_on_main(_judge_and_step, label="history:%s" % direction)
 

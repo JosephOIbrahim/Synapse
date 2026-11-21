@@ -247,7 +247,8 @@ def test_an_entry_moved_between_the_stacks_is_still_pre_session(env):
     with pytest.raises(mod.HistoryScopeRefused) as caught:
         handler._handle_redo({})
 
-    assert "SYNAPSE: old session build" in str(caught.value)  # refused (it was not undone by this session)
+    assert "SYNAPSE: old session build" in str(caught.value)
+    assert "did not undo" in str(caught.value), "refused because this session never undid it"
     assert undos.calls == []
 
 
@@ -402,3 +403,101 @@ def test_a_disabled_history_records_no_baseline(env):
     undos.enabled = False
     assert handler._undo_scope.note_session_start(undos) is False
     assert handler._undo_scope.needs_baseline is True
+
+
+# ---------------------------------------------------------------------------
+# Refinement round 4: redo is the exact history this handler left; Spatial click
+# ---------------------------------------------------------------------------
+
+def _artist_ctrl_z(undos):
+    undos.redo.insert(0, undos.undo.pop(0))
+
+
+def _artist_ctrl_y(undos):
+    undos.undo.insert(0, undos.redo.pop(0))
+
+
+def test_redo_refuses_a_same_label_step_the_artist_undid(env):
+    """Round 4 BUG-1: two creates share a label; the artist undid the older one."""
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["synapse_node_create", "synapse_node_create"]   # c2 on top of c1
+
+    assert handler._handle_undo({})["status"] == "ok"          # the agent undoes c2
+    _artist_ctrl_z(undos)                                       # the artist undoes c1
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:      # c1 is next: not the agent's
+        handler._handle_redo({})
+    assert "did not undo" in str(caught.value)
+    assert undos.calls == ["undo"]
+
+
+def test_redo_still_works_when_the_artist_returns_the_history_to_where_it_was(env):
+    handler, undos, _mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["synapse_node_create", "synapse_node_create"]
+
+    handler._handle_undo({})
+    _artist_ctrl_z(undos)
+    _artist_ctrl_y(undos)                                       # back to exactly what the agent left
+
+    assert handler._handle_redo({})["status"] == "ok"
+    assert undos.calls == ["undo", "redo"]
+
+
+def test_redo_stops_at_the_entries_this_handler_undid(env):
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["synapse_node_create", "synapse_node_create"]
+    _artist_ctrl_z(undos)                                       # the artist undoes c2 first
+
+    handler._handle_undo({})                                    # the agent undoes c1
+    assert handler._handle_redo({})["status"] == "ok"           # c1 comes back
+    with pytest.raises(mod.HistoryScopeRefused):                # c2 was the artist's undo
+        handler._handle_redo({})
+    assert undos.calls == ["undo", "redo"]
+
+
+def test_redo_refuses_a_failed_builds_rollback_after_an_agent_undo(env):
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["synapse_node_create"]
+    handler._handle_undo({})
+    # A later build opens a group, which drops the redo stack, fails and is rolled back.
+    undos.undo, undos.redo = [], ["SYNAPSE: build_graph"]
+
+    with pytest.raises(mod.HistoryScopeRefused):
+        handler._handle_redo({})
+    assert undos.calls == ["undo"]
+
+
+def test_the_panel_spatial_click_is_the_artists(env):
+    """Round 4 BUG-2: the footer click writes the agent-prefixed trail label."""
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["SYNAPSE: Draw camera path"]
+
+    with pytest.raises(mod.HistoryScopeRefused):
+        handler._handle_undo({})
+    assert undos.calls == []
+
+
+def test_the_refused_trail_label_is_the_one_the_tool_writes():
+    from synapse.server.handlers_spatial import TRAIL_UNDO
+    from synapse.server.undo_scope import ARTIST_STARTED_LABELS
+
+    assert TRAIL_UNDO in ARTIST_STARTED_LABELS
+
+
+def test_redo_of_a_pre_session_entry_is_refused_even_with_a_redo_run():
+    """Defense in depth (round 4 TEST-3): the undo-stack count still guards redo."""
+    from synapse.server.undo_scope import UndoScope, history
+
+    undos = _Undos(undo=["synapse_node_create"])
+    scope = UndoScope()
+    assert scope.note_session_start(undos)
+    undos.undo, undos.redo = [], ["synapse_node_create"]       # the old entry, now on redo
+    scope._left_history, scope._redoable = history(undos), 1   # as if the run were ours
+
+    refusal = scope.refusal(undos, "redo")
+    assert refusal and "before this SYNAPSE session started" in refusal

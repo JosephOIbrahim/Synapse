@@ -797,3 +797,46 @@ def test_a_failing_loop_close_does_not_replace_the_outcome(monkeypatch):
 
     assert done["status"] == STATUS_DONE, done
     assert done["success"] is True
+
+
+def test_a_guard_at_create_task_on_the_plain_loop_runs_the_fallback(monkeypatch):
+    """Round 4 RISK-4: haio refuses at create_task, not at construction.
+
+    If the plain loop were guarded the same way, the refusal comes after the
+    loop exists but before the coroutine runs: nothing was dispatched, so the
+    synchronous pass runs once, and the unstarted coroutine is closed.
+    """
+    import gc
+    import warnings
+
+    registry = _RecordingRegistry()
+    handler = _new_handler()
+    handler._registry = registry
+
+    class _CountingDriver(AutonomousDriver):
+        async_entries = []
+
+        async def execute(self, intent):
+            type(self).async_entries.append(intent)
+            return await super().execute(intent)
+
+    monkeypatch.setattr(asyncio, "SelectorEventLoop", _HaioGuardedLoop)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        with patch.dict(sys.modules, {
+                "synapse.autonomy": _sync_autonomy(
+                    _TwoStepPlanner(), driver_cls=_CountingDriver)}), \
+             patch.object(SynapseHandler, "_resolve_agent_usd",
+                          staticmethod(lambda: None)), \
+             _no_memory_store():
+            started = handler._handle_autonomous_render(
+                {"intent": "render frames 1-2"})
+            done = _await(handler, started["task_id"])
+        gc.collect()
+
+    assert done["status"] == STATUS_DONE, done
+    assert done["result"]["execution_mode"] == "sync_steps"
+    assert _CountingDriver.async_entries == [], "the async run never started"
+    assert registry.calls == ["render_settings", "render_sequence"]
+    assert not [w for w in caught if "never awaited" in str(w.message)], \
+        "the unstarted coroutine must be closed"
