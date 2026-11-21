@@ -28,9 +28,20 @@ HONESTY CONTRACT (per-path anchor semantics, CLAUDE.md §1.3):
     hou.undos.group(...)" live-path claim is therefore no longer doc drift for
     these node handlers — the code now matches it; live mutating handlers
     beyond this tracked set stay un-audited, so this is not a universal claim.)
-  - ``main_thread_executed=True`` IS asserted: every hou-touching live
-    handler marshals through ``server.main_thread.run_on_main``
-    (code-verified), and the envelope's own captures ride the same mechanism.
+  - ``main_thread_executed`` is MEASURED from the real thread that executed
+    the command (sampled at the dispatch seam before the block is handed to
+    the log executor), never asserted. Handlers DO marshal their hou work
+    through ``server.main_thread.run_on_main`` (code-verified), but this
+    envelope only witnesses its own captures — so the field honestly records
+    the thread the command was dispatched on, False included. (R-013 /
+    SUBSTRATE-7: the previous hardcoded True was an assertion no observation
+    backed, so an operation built off-main could never say so.)
+  - FAILURES are recorded. A live mutating command whose handler raises lands
+    a block with ``success=False`` and delta ``execution_failed`` instead of
+    vanishing (before R-013, handle()'s except arms returned before
+    ``_submit_logs``, so the trail could not represent a failed live op at
+    all). ``record_external_block`` counts it as unverified but NOT as an
+    anchor violation, exactly like a failed /mcp op.
 
 Import-guarded, zero-``hou``, standalone-safe: on ImportError every entry
 point no-ops (``envelope_active()`` -> False).
@@ -65,9 +76,14 @@ except ImportError:
 
 
 #: per_agent counter key for live blocks in the shared trail. The envelope
-#: records SUCCESSFUL ops only (handle()'s except branches never reach
-#: _submit_logs), so the LIVE per-agent success rate stays 1.0 and never
-#: trips the ConductorAdvisor agent_health verdict.
+#: records EVERY enveloped outcome — successes AND failures (R-013) — so the
+#: LIVE per-agent success rate is a real claim: it falls when a live handler
+#: raises, which is what lets the ConductorAdvisor agent_health verdict see a
+#: broken live handler. (Before R-013 the envelope recorded successes only, so
+#: the rate was structurally 1.0 and the verdict was blind on the dominant
+#: transport. The repair's other suggested shape — a separate live-failure
+#: counter — would have added a number with no consumer; feeding the existing
+#: per_agent_success_rate['LIVE'] claim instead removes the false claim.)
 LIVE_AGENT_KEY = "LIVE"
 
 # Commands classified mutating by handlers._READ_ONLY_COMMANDS' complement
@@ -246,14 +262,48 @@ def capture_scene_hash(payload):
 
 # ── Block assembly + record ──────────────────────────────────────
 
-def record_live_block(cmd_type, payload, hash_before, hash_after) -> None:
-    """Build the PATH-QUALIFIED IntegrityBlock for one successful live op and
-    append it to the process-wide bridge trail. Runs on the handlers'
-    _log_executor thread (fire-and-forget) — record_external_block is
-    thread-safe."""
+#: delta_hash of a block whose command RAISED. The before-state was captured,
+#: the post-state never was, so no real delta exists — this named sentinel
+#: says why (never a fabricated digest). Paired with success=False, the block
+#: scores FIDELITY_DEGRADED in the trail.
+EXECUTION_FAILED_DELTA = "execution_failed"
+
+
+def _on_main_thread() -> bool:
+    """Thread Safety anchor evidence: is THIS frame on the process main thread?
+
+    Module-level ON PURPOSE (same idiom as ``shared.bridge._on_main_thread``
+    and ``handlers_memory._record_sleep_pass_block``): the anchor is measured
+    from the real thread, never asserted, and a test can call the builder from
+    a worker thread and read the honest False back off the block.
+    """
+    return threading.current_thread() is threading.main_thread()
+
+
+def record_live_block(cmd_type, payload, hash_before, hash_after, *,
+                      success=True, main_thread_executed=None) -> None:
+    """Build the PATH-QUALIFIED IntegrityBlock for one live op and append it to
+    the process-wide bridge trail. Runs on the handlers' _log_executor thread
+    (fire-and-forget) — record_external_block is thread-safe.
+
+    ``success=False`` records a FAILED command (the handler raised): the block
+    keeps the before-hash, records no after-hash, and takes the
+    ``execution_failed`` delta sentinel so the trail can represent failure
+    (R-013). ``main_thread_executed`` is the value MEASURED by the caller at
+    the dispatch seam (``threading.current_thread() is threading.main_thread()``);
+    None — a direct call with no measurement supplied — is measured HERE from
+    the calling thread, so a block built off-main records False rather than
+    asserting True."""
     if not _ENVELOPE_AVAILABLE:
         return
-    if hash_before and hash_after:
+    if main_thread_executed is None:
+        main_thread_executed = _on_main_thread()
+    if not success:
+        # The command raised: post-state never observed, so no delta and no
+        # after-hash. Never a fabricated digest.
+        delta = EXECUTION_FAILED_DELTA
+        hash_after = None
+    elif hash_before and hash_after:
         if hash_before == hash_after:
             delta = "no_change"
         else:
@@ -266,13 +316,14 @@ def record_live_block(cmd_type, payload, hash_before, hash_after) -> None:
         # lives in the sentinel + the empty hash fields.
         delta = "hash_unavailable"
     block = IntegrityBlock(
-        # Anchor honesty (see module docstring): only main-thread marshalling
-        # is asserted; undo/consent/composition are recorded not-verified /
-        # not-applicable — never faked True.
+        # Anchor honesty (see module docstring): main-thread execution is the
+        # one anchor this path MEASURES; undo/consent/composition are recorded
+        # not-verified / not-applicable — never faked True.
         undo_group_active=False,
-        main_thread_executed=True,
+        main_thread_executed=main_thread_executed,
         consent_verified=False,
         composition_valid=False,
+        success=success,
         agent_id=LIVE_AGENT_KEY,
         operation_type=cmd_type,
         timestamp=datetime.now().isoformat(),

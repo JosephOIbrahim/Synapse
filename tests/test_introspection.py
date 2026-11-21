@@ -136,6 +136,10 @@ def _make_node(path, node_type="null", category="Sop", parms=None, inputs=None,
     node.errors.return_value = errors or []
     node.children.return_value = children or []
     node.stickyNotes.return_value = sticky_notes or []
+    # R-019: geometry is only read when the node definitively reports itself
+    # clean. A bare MagicMock's needsToCook() returns a truthy non-bool, which
+    # the gate reads as "unknown" and refuses. Model a clean node explicitly.
+    node.needsToCook.return_value = False
 
     # Parm lookup for code extraction
     def _parm_lookup(name):
@@ -257,6 +261,9 @@ class TestGeometrySummary:
 
     def test_returns_none_when_geometry_is_none(self):
         node = MagicMock()
+        # R-019: geometry is only read when needsToCook() is definitively
+        # False; a bare MagicMock's truthy return reads as "unknown".
+        node.needsToCook.return_value = False
         node.geometry.return_value = None
         result = introspection._geometry_summary(node)
         assert result is None

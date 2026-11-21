@@ -9,7 +9,11 @@ Shared infrastructure for the three inspect tools:
 Runs inside Houdini — assumes ``hou`` is importable.
 """
 
+import json
+import logging
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 try:
     import hou
@@ -27,6 +31,19 @@ except ImportError:  # loaded by file path, outside the package (tests do)
 # sibling network_explain clamps at 5; this matches it deliberately rather than
 # picking a new number.
 DEPTH_CAP = 5
+
+# R-020 (OBSERVER-4): inspect_scene's walk was bounded only by max_depth — one
+# dict per node with no ceiling — so a wide/deep manager returned an unbounded
+# payload (the C1 measurement walked 25,850 nodes). The ceilings below bound
+# what is RETURNED; past them the walk keeps COUNTING (integers only), so
+# overview.node_count/contexts stay true on a degraded read and the omission is
+# stamped (truncated / omitted_count / node_ceiling) instead of a capped tree
+# being presented as the whole scene.
+SCENE_NODE_CAP = 5_000          # records materialised into network_tree
+SCENE_TOKEN_BUDGET = 200_000    # len(json.dumps(payload)) // 4 ceiling
+SCENE_VISIT_CAP = 100_000       # nodes touched by the count-only walk
+SCENE_ISSUE_CAP = 200           # issues records returned
+SCENE_NOTE_CAP = 200            # sticky-note records returned
 
 # ---------------------------------------------------------------------------
 # Low-level helpers
@@ -117,6 +134,65 @@ _VALUE_READERS = {
     ("vertex", "Int", True): "vertexIntListAttribValues",
 }
 
+# R-019 (OBSERVER-3): the primitive-type census visits every prim to tally
+# hou.Prim.type(). On a multi-million-prim mesh that is a main-thread stall
+# with no progress, no cancel and no ceiling. The cap bounds the walk; the
+# result carries an explicit ``dropped`` count so a partial census can never
+# read as a complete one.
+_PRIM_CENSUS_CAP = 100_000
+_CENSUS_PROGRESS_EVERY = 10_000
+
+
+class _NullLongOperation:
+    """No-op stand-in when long_operation cannot be imported (standalone tests)."""
+
+    def step(self, *_args, **_kwargs):
+        return None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+
+def _long_operation(title):
+    """long_operation(title), or a no-op when the module is unavailable.
+
+    The same defensive import the inspect_scene walk uses: this module is
+    loaded by file path in tests, where a bare relative import raises
+    "attempted relative import with no known parent package".
+    """
+    try:
+        from .long_operation import long_operation
+    except ImportError:
+        try:
+            from synapse.server.long_operation import long_operation
+        except ImportError:
+            return _NullLongOperation()
+    return long_operation(title)
+
+
+def _intrinsic_count(geo: Any, name: str) -> Optional[int]:
+    """An element count from ``hou.Geometry.intrinsicValue``, or None.
+
+    ``pointcount`` / ``primitivecount`` are O(1) reads on the cooked
+    geometry. ``len(geo.points())`` instead materialises a tuple of hou.Point
+    wrappers for the whole mesh — exactly the unbounded work this read exists
+    to avoid. Only a real non-negative int is accepted: a bool is not a count,
+    and a stand-in object's attribute must not leak through as one.
+    """
+    reader = getattr(geo, "intrinsicValue", None)
+    if not callable(reader):
+        return None
+    try:
+        value = reader(name)
+    except Exception:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
 
 def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
     """Point/prim/vertex counts, bounding box, primitive types, and attributes.
@@ -124,7 +200,40 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
     Returns ``None`` when geometry isn't accessible (e.g. OBJ-level nodes).
     Attribute values are sampled up to *max_samples* with total count appended.
     Skips sampling on large geometry (> 1M points) for safety.
+
+    Cook safety (R-019): ``node.geometry()`` FORCES a dirty SOP to cook. The
+    read is gated on ``needsToCook()`` first — the same passive-assessment
+    branch ``host/cache_host_probe.py`` takes — and refuses with
+    ``observation_status`` set to ``dirty_not_forced`` (needsToCook True) or
+    ``dirty_unknown`` (the query failed). Geometry is only touched when the
+    node definitively reports itself clean. A node type that has no
+    ``needsToCook`` member at all (duck-typed test doubles; non-OP nodes) is
+    read as before: ``hou.OpNode`` always carries the member on the target
+    runtime, so a cook-forcing node is never in that branch.
     """
+    gate = getattr(node, "needsToCook", None)
+    if callable(gate):
+        try:
+            dirty = gate()
+        except Exception:
+            logger.debug("needsToCook() could not be answered", exc_info=True)
+            dirty = None
+        if dirty is not False:
+            forced = dirty is True
+            return {
+                "observation_status": "dirty_not_forced" if forced else "dirty_unknown",
+                "geometry_read": False,
+                "needs_to_cook": True if forced else None,
+                "reason": (
+                    "node.needsToCook() is True: reading geometry here would "
+                    "force the cook this observation exists to avoid. Observe "
+                    "the cook state instead."
+                    if forced else
+                    "node.needsToCook() could not be answered: the geometry "
+                    "read is refused rather than risking a forced cook."
+                ),
+            }
+
     try:
         geo = node.geometry()
     except Exception:
@@ -132,95 +241,163 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
     if geo is None:
         return None
 
-    pt_count = len(geo.points())
-    prim_count = len(geo.prims())
-    is_large = pt_count > _LARGE_GEO_THRESHOLD
+    try:
+        label = node.path()
+    except Exception:
+        logger.debug("node path unavailable for geometry label", exc_info=True)
+        label = "unknown"
+    if not isinstance(label, str):
+        label = "unknown"
 
-    def _attr_info(attrs, elem_count, attr_class):
-        result = []
-        for attr in attrs:
-            info = {
-                "name": attr.name(),
-                "type": str(attr.dataType()),
-                "size": attr.size(),
-                "count": elem_count,
-            }
-            # Skip sampling on large geometry to avoid hangs
-            if is_large:
-                info["samples"] = []
-                info["sample_status"] = "skipped (large geometry)"
-            else:
+    # The whole geometry walk is one legible, cancellable operation. On a
+    # heavy mesh the census below is the long part, so it reports progress.
+    with _long_operation("SYNAPSE: reading geometry of %s" % label) as op:
+        # Counts first: O(1) intrinsics where available, never a full
+        # materialisation of the element tuples.
+        pt_count = _intrinsic_count(geo, "pointcount")
+        if pt_count is None:
+            try:
+                pt_count = len(geo.points())
+            except Exception:
+                logger.debug("point count unavailable", exc_info=True)
+                pt_count = None
+        prim_count = _intrinsic_count(geo, "primitivecount")
+        if prim_count is None:
+            try:
+                prim_count = len(geo.prims())
+            except Exception:
+                logger.debug("prim count unavailable", exc_info=True)
+                prim_count = None
+        is_large = pt_count is not None and pt_count > _LARGE_GEO_THRESHOLD
+
+        def _attr_info(attrs, elem_count, attr_class):
+            result = []
+            for attr in attrs:
+                info = {
+                    "name": attr.name(),
+                    "type": str(attr.dataType()),
+                    "size": attr.size(),
+                    "count": elem_count,
+                }
+                if elem_count is None:
+                    # No count: nothing to bound sampling with, and a guess
+                    # would be a fabricated number. Say so instead.
+                    info["samples"] = []
+                    info["sample_status"] = "not sampled (element count unavailable)"
+                    result.append(info)
+                    continue
+                # Skip sampling on large geometry to avoid hangs
+                if is_large:
+                    info["samples"] = []
+                    info["sample_status"] = "skipped (large geometry)"
+                else:
+                    try:
+                        limit = min(max_samples, elem_count)
+                        samples = []
+                        dtype = str(attr.dataType())
+                        numeric = "Float" if "Float" in dtype else "Int" if "Int" in dtype else None
+                        if "String" in dtype:
+                            raw = attr.strings()
+                            samples = list(raw[:limit])
+                        elif numeric is None:
+                            info["sample_status"] = f"not sampled ({dtype})"
+                        elif attr_class == "global":
+                            value = geo.attribValue(attr.name())
+                            samples = [list(value) if isinstance(value, tuple) else value]
+                        elif attr.isArrayType():
+                            reader = _VALUE_READERS[(attr_class, numeric, True)]
+                            raw = getattr(geo, reader)(attr.name())
+                            samples = [list(v) for v in raw[:limit]]
+                        else:
+                            reader = _VALUE_READERS[(attr_class, numeric, False)]
+                            size = max(int(attr.size()), 1)
+                            flat = list(getattr(geo, reader)(attr.name())[:limit * size])
+                            samples = flat if size == 1 else [
+                                flat[i:i + size] for i in range(0, len(flat), size)]
+                    except Exception as e:
+                        logger.debug("attribute samples unreadable: %s", e)
+                        samples = []
+                        info["sample_status"] = f"error: {str(e)[:80]}"
+                    info["samples"] = samples
+                result.append(info)
+            return result
+
+        # Bounding box
+        bbox_dict = None
+        try:
+            bbox = geo.boundingBox()
+            if bbox is not None:
+                bbox_dict = {
+                    "min": [float(bbox.minvec()[i]) for i in range(3)],
+                    "max": [float(bbox.maxvec()[i]) for i in range(3)],
+                }
+        except Exception:
+            logger.debug("geometry bounding box unavailable", exc_info=True)
+            pass
+
+        # Primitive type distribution (detect VDB/volume/packed/etc).
+        # CAPPED: one hou.Prim.type() per prim is unbounded work on a heavy
+        # mesh, so the walk stops at _PRIM_CENSUS_CAP and reports how many
+        # prims it did not examine (`dropped`), never presenting a partial
+        # tally as complete. iterPrims() is preferred because it does not
+        # build the full tuple geo.prims() would.
+        prim_types: Dict[str, int] = {}
+        has_volumes = False
+        examined = 0
+        dropped: Optional[int] = None
+        try:
+            source = None
+            iter_prims = getattr(geo, "iterPrims", None)
+            if callable(iter_prims):
                 try:
-                    limit = min(max_samples, elem_count)
-                    samples = []
-                    dtype = str(attr.dataType())
-                    numeric = "Float" if "Float" in dtype else "Int" if "Int" in dtype else None
-                    if "String" in dtype:
-                        raw = attr.strings()
-                        samples = list(raw[:limit])
-                    elif numeric is None:
-                        info["sample_status"] = f"not sampled ({dtype})"
-                    elif attr_class == "global":
-                        value = geo.attribValue(attr.name())
-                        samples = [list(value) if isinstance(value, tuple) else value]
-                    elif attr.isArrayType():
-                        reader = _VALUE_READERS[(attr_class, numeric, True)]
-                        raw = getattr(geo, reader)(attr.name())
-                        samples = [list(v) for v in raw[:limit]]
-                    else:
-                        reader = _VALUE_READERS[(attr_class, numeric, False)]
-                        size = max(int(attr.size()), 1)
-                        flat = list(getattr(geo, reader)(attr.name())[:limit * size])
-                        samples = flat if size == 1 else [
-                            flat[i:i + size] for i in range(0, len(flat), size)]
-                except Exception as e:
-                    samples = []
-                    info["sample_status"] = f"error: {str(e)[:80]}"
-                info["samples"] = samples
-            result.append(info)
+                    source = iter_prims()
+                except Exception:
+                    source = None
+            if source is None:
+                source = geo.prims()
+            for prim in source:
+                if examined >= _PRIM_CENSUS_CAP:
+                    if isinstance(prim_count, int) and prim_count > examined:
+                        dropped = prim_count - examined
+                    break
+                ptype = prim.type().name()
+                prim_types[ptype] = prim_types.get(ptype, 0) + 1
+                if "volume" in ptype.lower() or "vdb" in ptype.lower():
+                    has_volumes = True
+                examined += 1
+                if examined % _CENSUS_PROGRESS_EVERY == 0:
+                    op.step(examined / float(_PRIM_CENSUS_CAP),
+                            "%d prims" % examined)
+        except Exception:
+            pass
+        if dropped is None and isinstance(prim_count, int):
+            # Measured omission, not a fabricated zero: whatever the walk did
+            # not examine is reported. A fully walked census with a known
+            # count is genuinely 0 dropped.
+            dropped = max(0, prim_count - examined)
+
+        result: Dict[str, Any] = {
+            "points": pt_count,
+            "prims": prim_count,
+            "vertices": len(geo.vertices()) if hasattr(geo, "vertices") else 0,
+            "is_empty": pt_count == 0 and prim_count == 0,
+            "bounding_box": bbox_dict,
+            "point_attributes": _attr_info(geo.pointAttribs(), pt_count, "point"),
+            "prim_attributes": _attr_info(geo.primAttribs(), prim_count, "prim"),
+            "detail_attributes": _attr_info(geo.globalAttribs(), 1, "global"),
+            "primitive_types_census": {
+                "examined": examined,
+                "dropped": dropped,
+                "ceiling": _PRIM_CENSUS_CAP,
+            },
+        }
+        if prim_types:
+            result["primitive_types"] = prim_types
+        if has_volumes:
+            result["has_volumes"] = True
+        if is_large:
+            result["large_geometry"] = True
         return result
-
-    # Bounding box
-    bbox_dict = None
-    try:
-        bbox = geo.boundingBox()
-        if bbox is not None:
-            bbox_dict = {
-                "min": [float(bbox.minvec()[i]) for i in range(3)],
-                "max": [float(bbox.maxvec()[i]) for i in range(3)],
-            }
-    except Exception:
-        pass
-
-    # Primitive type distribution (detect VDB/volume/packed/etc)
-    prim_types: Dict[str, int] = {}
-    has_volumes = False
-    try:
-        for prim in geo.prims():
-            ptype = prim.type().name()
-            prim_types[ptype] = prim_types.get(ptype, 0) + 1
-            if "volume" in ptype.lower() or "vdb" in ptype.lower():
-                has_volumes = True
-    except Exception:
-        pass
-
-    result: Dict[str, Any] = {
-        "points": pt_count,
-        "prims": prim_count,
-        "vertices": len(geo.vertices()) if hasattr(geo, "vertices") else 0,
-        "is_empty": pt_count == 0 and prim_count == 0,
-        "bounding_box": bbox_dict,
-        "point_attributes": _attr_info(geo.pointAttribs(), pt_count, "point"),
-        "prim_attributes": _attr_info(geo.primAttribs(), prim_count, "prim"),
-        "detail_attributes": _attr_info(geo.globalAttribs(), 1, "global"),
-    }
-    if prim_types:
-        result["primitive_types"] = prim_types
-    if has_volumes:
-        result["has_volumes"] = True
-    if is_large:
-        result["large_geometry"] = True
-    return result
 
 
 def _node_issues(node) -> Dict[str, Any]:
@@ -345,6 +522,8 @@ def inspect_scene(
     root: str = "/",
     max_depth: int = 3,
     context_filter: Optional[str] = None,
+    max_nodes: Optional[int] = None,
+    token_budget: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Hierarchical scene overview from *root* down to *max_depth*.
 
@@ -352,10 +531,29 @@ def inspect_scene(
         root: Starting node path (default ``"/"``).
         max_depth: Maximum recursion depth.
         context_filter: If set, only include nodes of this category (e.g. ``"Sop"``).
+        max_nodes: Hard ceiling on returned tree records (default
+            ``SCENE_NODE_CAP``). Matching nodes past it are COUNTED but not
+            materialised.
+        token_budget: Approximate ceiling on the returned tree's record
+            payload, in ``len(json.dumps(payload)) // 4`` tokens (default
+            ``SCENE_TOKEN_BUDGET``).
 
     Returns:
-        ``{"overview": {...}, "network_tree": [...], "issues": [...], "artist_notes": [...]}``
+        ``{"overview": {...}, "network_tree": [...], "issues": [...],
+        "artist_notes": [...], "truncated": bool, "omitted_count": int,
+        "node_ceiling": int, "complete": bool, ...}``
+
+    R-020 (OBSERVER-4): the ceiling bounds what is RETURNED, not what is
+    counted \u2014 past it the walk keeps an integer-only census so
+    ``overview.node_count``/``contexts`` remain true, and the honesty fields
+    reused from ``selection_snapshot`` (``truncated``, ``complete``,
+    ``omitted_count``) name the omission. A degraded read is still useful; it
+    is never presented as the whole scene.
     """
+    node_ceiling = SCENE_NODE_CAP if max_nodes is None else max(0, int(max_nodes))
+    budget = SCENE_TOKEN_BUDGET if token_budget is None else max(0, int(token_budget))
+    budget_chars = budget * 4
+
     root_node = hou.node(root)
     if root_node is None:
         raise ValueError(
@@ -363,7 +561,17 @@ def inspect_scene(
             "double-check the path exists"
         )
 
-    node_count = 0
+    node_count = 0                  # matching nodes observed (counting walk)
+    record_count = 0                # dicts materialised into network_tree
+    node_records = 0                # leaf records for counted nodes
+    truncated = False
+    truncated_reason: Optional[str] = None
+    depth_limited = False
+    visits = 0
+    counts_complete = True
+    estimated_chars = 0
+    issues_omitted = 0
+    notes_omitted = 0
     contexts: Dict[str, int] = {}
     issues: List[Dict[str, Any]] = []
     notes: List[Dict[str, Any]] = []
@@ -406,38 +614,79 @@ def inspect_scene(
         if _progress["n"] % 200 == 0:
             op.step(None, "%d nodes" % _progress["n"])
 
-    def _walk(node, current_depth):
-        nonlocal node_count
+    def _walk(node, current_depth, materialise=True):
+        nonlocal node_count, record_count, node_records, truncated, truncated_reason
+        nonlocal depth_limited, visits, counts_complete, estimated_chars
+        nonlocal issues_omitted, notes_omitted
+
+        visits += 1
         _tick(_op)
+        if visits > SCENE_VISIT_CAP:
+            # The count-only walk itself is bounded. Stop and say so; the
+            # counts below are then partial and `counts_complete` is False.
+            counts_complete = False
+            return None
         if current_depth > max_depth:
+            depth_limited = True
             return None
 
         cat = node.type().category().name()
         if context_filter and cat != context_filter:
-            # Still recurse children — filter only excludes leaf reporting
+            # Still recurse children — filter only excludes leaf reporting.
+            # The wrapper is a returned record, so reserve its slot BEFORE the
+            # children are walked; that keeps the returned tree within the
+            # ceiling even when a child would have filled the last slot.
+            wrapper_cost = 16 + len(str(node.path() or ""))
+            reserved = False
+            if materialise:
+                if (record_count < node_ceiling
+                        and estimated_chars + wrapper_cost <= budget_chars):
+                    record_count += 1
+                    estimated_chars += wrapper_cost
+                    reserved = True
+                else:
+                    truncated = True
+                    if truncated_reason is None:
+                        truncated_reason = ("node_ceiling"
+                                            if record_count >= node_ceiling
+                                            else "token_budget")
             children = []
             for child in node.children():
-                c = _walk(child, current_depth + 1)
+                c = _walk(child, current_depth + 1, materialise and reserved)
                 if c is not None:
                     children.append(c)
-            return {"path": node.path(), "children": children} if children else None
+            if not children:
+                if reserved:
+                    # Nothing below the filter; the wrapper is not returned.
+                    record_count -= 1
+                    estimated_chars -= wrapper_cost
+                return None
+            if not reserved:
+                return None
+            return {"path": node.path(), "children": children}
 
         node_count += 1
         contexts[cat] = contexts.get(cat, 0) + 1
 
-        # Collect issues
+        # Collect issues (bounded; the omission is counted, not hidden)
         node_issues = _node_issues(node)
         if node_issues["warnings"] or node_issues["errors"]:
-            issues.append({"path": node.path(), **node_issues})
+            if len(issues) < SCENE_ISSUE_CAP:
+                issues.append({"path": node.path(), **node_issues})
+            else:
+                issues_omitted += 1
 
-        # Collect sticky notes
+        # Collect sticky notes (bounded the same way)
         try:
             for item in node.stickyNotes():
-                notes.append({
-                    "type": "sticky",
-                    "path": node.path(),
-                    "text": item.text()[:200],
-                })
+                if len(notes) < SCENE_NOTE_CAP:
+                    notes.append({
+                        "type": "sticky",
+                        "path": node.path(),
+                        "text": item.text()[:200],
+                    })
+                else:
+                    notes_omitted += 1
         except Exception:
             pass
 
@@ -448,11 +697,29 @@ def inspect_scene(
             "category": cat,
         }
 
+        if materialise:
+            cost = len(json.dumps(entry, separators=(",", ":")))
+            if (record_count < node_ceiling
+                    and estimated_chars + cost <= budget_chars):
+                record_count += 1
+                node_records += 1
+                estimated_chars += cost
+            else:
+                # Ceiling reached: keep counting and recursing, but no record.
+                truncated = True
+                if truncated_reason is None:
+                    truncated_reason = ("node_ceiling"
+                                        if record_count >= node_ceiling
+                                        else "token_budget")
+                materialise = False
+
         children = []
         for child in node.children():
-            c = _walk(child, current_depth + 1)
+            c = _walk(child, current_depth + 1, materialise)
             if c is not None:
                 children.append(c)
+        if not materialise:
+            return None
         if children:
             entry["children"] = children
 
@@ -465,15 +732,35 @@ def inspect_scene(
     with long_operation("SYNAPSE: reading %s" % root) as _op:
         tree = _walk(root_node, 0)
 
-    return {
+    omitted_count = node_count - node_records
+    result: Dict[str, Any] = {
         "overview": {
             "node_count": node_count,
             "contexts": contexts,
+            "counts_complete": counts_complete,
+            "visit_ceiling": SCENE_VISIT_CAP,
         },
         "network_tree": [tree] if tree else [],
         "issues": issues,
         "artist_notes": notes,
+        # Honesty fields (the shape selection_snapshot returns): a capped read
+        # names its cap and its omission instead of reading as the whole scene.
+        "truncated": truncated,
+        "truncated_reason": truncated_reason,
+        "complete": (not truncated) and counts_complete,
+        "omitted_count": omitted_count,
+        "node_ceiling": node_ceiling,
+        "record_count": record_count,
+        "token_budget": budget,
+        "depth_limited": depth_limited,
+        "issues_omitted_count": issues_omitted,
+        "notes_omitted_count": notes_omitted,
     }
+    result["token_estimate"] = (
+        len(json.dumps(result, separators=(",", ":"))) // 4
+    )
+    result["budget_exceeded"] = result["token_estimate"] > budget
+    return result
 
 
 def inspect_node_detail(

@@ -46,6 +46,7 @@ from .resources import get_resources, get_resource_templates, resolve_resource
 from .tools import dispatch_tool, get_tools, has_tool
 from . import read_only_mode
 from ..core.outcomes import info as _outcome, outcome_line as _outcome_line, tool_result as _tool_result
+from ..core.outcomes import is_service_failure
 from ..core.tool_results import carry_structured
 from synapse.core.farm_contract import is_farm_control
 
@@ -903,11 +904,20 @@ class MCPServer:
         # A tool failure comes back as a result flagged isError (Level 1, R-6)
         if isinstance(result, dict) and result.get("isError"):
             error_text = _isError_text(result)
-            # Only record infrastructure failures for circuit breaker
-            # (not user errors like "node not found")
-            if any(k in error_text.lower() for k in ("timeout", "main thread", "crashed", "unresponsive")):
-                if self._circuit_breaker:
-                    self._circuit_breaker.record_failure()
+            # BRAINSTEM-5: prefer the outcome the HANDLER attached (dispatch_tool
+            # carries response.data as structuredContent) over any text guess.
+            structured = result.get("structuredContent")
+            attached = (structured.get("outcome")
+                        if isinstance(structured, dict) else None)
+            # R-015 (BRAINSTEM-7): the circuit breaker classifies by that outcome
+            # code — the exception TYPE's classification, never the error text.
+            # A service-level failure (SynapseServiceError -> tool.failed, a
+            # main-thread timeout -> transport.timeout) is recorded; a user error
+            # ("node not found") is not. A result with no attached outcome is
+            # unclassified and does not count: absent evidence is not evidence
+            # of a service fault.
+            if self._circuit_breaker and is_service_failure(attached):
+                self._circuit_breaker.record_failure()
                 self.broadcast_event(SSE_HEALTH_UPDATE, {
                     "component": "mcp",
                     "reason": error_text[:200],
@@ -915,15 +925,11 @@ class MCPServer:
                 })
             # A timeout or a stalled main thread may leave the operation running: the
             # artist checks the scene first. Anything else ran and failed. (Level 1, M1)
+            # This text fallback only builds the WIRE outcome for a result that
+            # carries no outcome object (a bare failure dict, an unknown tool); it
+            # never feeds the breaker above. The Level 1 R-6 tests pin it.
             infra = any(k in error_text.lower()
                         for k in ("timeout", "main thread", "crashed", "unresponsive"))
-            # BRAINSTEM-5: prefer the outcome the HANDLER attached (dispatch_tool
-            # carries response.data as structuredContent) over the text heuristic
-            # above. The heuristic stays as the fallback for results that carry no
-            # outcome object (a bare failure dict, an unknown tool).
-            structured = result.get("structuredContent")
-            attached = (structured.get("outcome")
-                        if isinstance(structured, dict) else None)
             if isinstance(attached, dict) and attached.get("outcome"):
                 return carry_structured(_tool_result(attached, result), result)
             return carry_structured(

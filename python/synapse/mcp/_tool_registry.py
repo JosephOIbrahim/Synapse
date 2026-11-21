@@ -1498,6 +1498,7 @@ TOOL_DEFS: list[tuple] = [
      "Execute multiple Synapse commands in a single round-trip.",
      {"type": "object", "properties": {
          "commands": {"type": "array", "items": {"type": "object"}, "description": "Commands to execute"},
+         "batch_id": {"type": "string", "description": "Stable id for this batch. Choose a new one for a new batch; retain it after a timeout or lost reply and pass it again so a retry skips steps that already ran."},
          "atomic": {"type": "boolean", "description": "Wrap in undo group (default: true)"},
          "stop_on_error": {"type": "boolean", "description": "Stop on first error (default: false)"},
      }, "required": ["commands"]},
@@ -1628,14 +1629,20 @@ TOOL_DEFS: list[tuple] = [
 
     # -- Autonomous Render --
     ("synapse_autonomous_render", "autonomous_render", _identity,
-     "Execute an autonomous render loop: plan the render from intent, validate the scene, "
-     "execute via TOPS, evaluate quality, and re-render if needed. Returns a full report.",
+     "Start an autonomous render loop: plan the render from intent, validate the scene, "
+     "execute via TOPS, evaluate quality, and re-render if needed. Non-blocking by "
+     "default: returns a task_id immediately while the loop runs on a worker thread, so "
+     "the call cannot outlive its client budget. Poll this tool with {task_id} for the "
+     "terminal receipt (success, stop_reason, and the full plan/evaluation under "
+     "'result'). A second start for the same intent and plan is JOINED to the in-flight "
+     "task (reused=true, same task_id) instead of starting a duplicate run.",
      {"type": "object", "properties": {
-         "intent": {"type": "string", "description": "What to render (e.g., 'render frames 1-48', 'render turntable with ARRI Alexa 35 at 50mm')"},
+         "intent": {"type": "string", "description": "What to render (required unless task_id is given); e.g. 'render frames 1-48', 'render turntable with ARRI Alexa 35 at 50mm'"},
+         "task_id": {"type": "string", "description": "Poll an autonomous render started by an earlier call; returns the terminal report once finished"},
          "max_iterations": {"type": "integer", "default": 3, "description": "Max re-render attempts if quality check fails (server-clamped to 10)"},
-         "max_wall_clock_seconds": {"type": "number", "default": 600, "description": "Per-run wall-clock bound in seconds; past it the loop stops at the next iteration boundary and reports stop_reason='wall_clock_exceeded'"},
+         "max_wall_clock_seconds": {"type": "number", "default": 600, "description": "Per-run wall-clock bound in seconds; past it the loop stops at the next STEP boundary and reports stop_reason='wall_clock_exceeded'"},
          "quality_threshold": {"type": "number", "default": 0.85, "description": "Minimum quality score (0.0-1.0) for frames to pass"},
-     }, "required": ["intent"]},
+     }, "required": []},
      False, True, False),
 
     # -- Safe / Progressive Render --

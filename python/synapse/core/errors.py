@@ -50,7 +50,17 @@ class SynapseServiceError(SynapseError):
     """Service-level errors (Houdini down, crashes, timeouts).
 
     These DO trip the circuit breaker.
+
+    ``outcome_code`` is what makes that true on the wire (R-015, BRAINSTEM-7):
+    ``handlers._failure_receipt_data`` puts the outcome on the failed
+    response's data, and every transport classifies a breaker failure by that
+    code (``core.outcomes.is_service_failure``) instead of by matching words in
+    the error text. A subclass that knows a more specific case overrides it
+    (ExecutionAborted -> tool.internal, ExecutionDeadlineExceeded ->
+    execution.deadline_exceeded).
     """
+
+    outcome_code = "tool.failed"
 
 
 class NodeNotFoundError(SynapseUserError):

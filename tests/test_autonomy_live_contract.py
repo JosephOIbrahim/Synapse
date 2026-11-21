@@ -26,6 +26,7 @@ Mock-based -- no Houdini required.
 
 import asyncio
 import sys
+import time
 import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -134,6 +135,19 @@ class _NullHandlerInterface:
         )
 
 
+def _await_autonomy(handler, task_id, timeout=30.0):
+    """Poll an R-035 autonomy task to its terminal receipt (bounded)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        receipt = handler._handle_autonomous_render({"task_id": task_id})
+        if receipt.get("status") != "running":
+            return receipt
+        time.sleep(0.02)
+    raise AssertionError(
+        "autonomous render task %s did not finish in %.1fs" % (task_id, timeout)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tests: the live plan -> registry -> driver -> evaluator contract
 # ---------------------------------------------------------------------------
@@ -207,12 +221,18 @@ class TestAutonomyLiveContract:
     def test_autonomous_render_tool_reports_honest_failure(self, handler):
         """Outer pin: the registered tool, driven through the live registry,
         must come back success=False headless with no step ever dying on a
-        missing parameter."""
-        out = handler._registry.invoke(
+        missing parameter.
+
+        R-035: the registered tool now returns a task id immediately; the
+        honest-failure report is the terminal poll receipt."""
+        started = handler._registry.invoke(
             "autonomous_render",
             {"intent": "render frames 1-2", "max_iterations": 1},
         )
+        assert isinstance(started, dict)
+        assert started["task_id"], "the start call must return a task id"
+        out = _await_autonomy(handler, started["task_id"])
         assert isinstance(out, dict)
         assert out["success"] is False
-        for step in out["plan"]["steps"]:
+        for step in out["result"]["plan"]["steps"]:
             assert "Missing required parameter" not in (step.get("error") or "")

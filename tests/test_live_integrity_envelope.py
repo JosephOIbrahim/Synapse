@@ -207,6 +207,29 @@ class TestRecordExternalBlock:
         assert stats["operations_verified"] == 0
         assert stats["anchor_violations"] == 1
 
+    def test_failed_block_is_unverified_but_not_an_anchor_violation(self):
+        # R-013: a failed live command must read as a FAILURE, not vanish and
+        # not be mislabelled an anchor violation (mirrors _fail_with_integrity:
+        # total + log, never verified, never anchor_violations).
+        bridge = b.LosslessExecutionBridge()
+        bridge.record_external_block(_live_block(
+            success=False, delta_hash=env.EXECUTION_FAILED_DELTA))
+        stats = bridge.operation_stats()
+        assert stats["operations_total"] == 1
+        assert stats["operations_verified"] == 0
+        assert stats["anchor_violations"] == 0
+        assert stats["success_rate"] == 0.0
+        assert stats["per_agent"] == {env.LIVE_AGENT_KEY: 1}
+        assert stats["per_agent_success_rate"][env.LIVE_AGENT_KEY] == 0.0
+
+    def test_failed_block_never_claims_perfect_fidelity(self):
+        # A failed op never observed its post-state: degraded, never perfect —
+        # even though every anchor that APPLIES on the live path holds.
+        block = _live_block(success=False, delta_hash=env.EXECUTION_FAILED_DELTA)
+        assert block.anchors_hold is True
+        assert block.fidelity < 1.0
+        assert block.to_dict()["success"] is False
+
     def test_operation_stats_keys_unchanged(self):
         # §16.2 pinned read surface — additive only.
         # stage_hash_reduced_ops / composition_checks_reduced_ops added by R306
@@ -421,6 +444,33 @@ class TestEnvelopeModule:
         assert block.scene_hash_before == ""
         assert block.fidelity == 1.0
 
+    def test_off_main_assembly_measures_the_real_thread(self):
+        # R-013 (SUBSTRATE-7): main_thread_executed is MEASURED from the real
+        # thread that executes the operation, never asserted True. A block
+        # built on a worker thread records the honest False.
+        worker = threading.Thread(
+            target=lambda: env.record_live_block(
+                "create_node", {"node": "/obj/x"}, "aaaa", "bbbb"))
+        worker.start()
+        worker.join(10)
+        assert not worker.is_alive()
+        block = b.get_process_bridge().recent_operations(1)[0]
+        assert block.main_thread_executed is False
+        # ...and the measured value is what the Thread Safety anchor judges.
+        assert block.anchors_hold is False
+        assert block.fidelity == 0.0
+
+    def test_failed_record_keeps_before_hash_and_names_the_delta(self):
+        # A failed command: before-state captured, post-state never observed.
+        env.record_live_block("set_parm", {"node": "/obj/x"}, "aaaa", "bbbb",
+                              success=False)
+        block = b.get_process_bridge().recent_operations(1)[0]
+        assert block.success is False
+        assert block.scene_hash_before == "aaaa"
+        assert block.scene_hash_after == "", "no after-hash may be fabricated"
+        assert block.delta_hash == env.EXECUTION_FAILED_DELTA
+        assert block.fidelity < 1.0
+
     def test_capture_timeout_fixed_default_and_env_override(self, monkeypatch):
         # The timeout is FIXED and short — never derived from dispatch-wait
         # stats (an earlier draft derived max*1.5 clamped [2,8]s: on a busy
@@ -523,6 +573,79 @@ class TestHandleSeam:
         assert resp.success
         # read-only never submits logs at all — nothing lands, ever
         assert b.get_process_bridge().operation_stats()["operations_total"] == 0
+
+    def test_failed_mutating_command_lands_as_a_failure(self):
+        # R-013 predicate, half 1: a failing live mutating command appears in
+        # operation_stats() as a failure. Before the repair, every except arm
+        # returned before _submit_logs, so the trail could not represent it.
+        h = SynapseHandler()
+
+        def _boom(payload):
+            raise ValueError("bad parm value")
+
+        h._registry.register("fake_fail", _boom)
+        resp = h.handle(SynapseCommand(
+            type="fake_fail", id="f1", payload={"node": "/obj/x"},
+        ))
+        assert resp.success is False
+        assert "bad parm value" in resp.error
+        stats = self._wait_for_total(1)
+        assert stats["operations_total"] == 1
+        assert stats["operations_verified"] == 0
+        assert stats["anchor_violations"] == 0
+        assert stats["success_rate"] == 0.0
+        assert stats["per_agent"] == {env.LIVE_AGENT_KEY: 1}
+        assert stats["per_agent_success_rate"][env.LIVE_AGENT_KEY] == 0.0
+        block = b.get_process_bridge().recent_operations(1)[0]
+        assert block.success is False
+        assert block.operation_type == "fake_fail"
+        assert block.execution_path == "live"
+        assert block.delta_hash == env.EXECUTION_FAILED_DELTA
+        assert block.fidelity < 1.0
+
+    def test_failed_command_not_recorded_when_envelope_disabled(self):
+        # The failure record obeys the same suppression as the success path:
+        # kill switch off -> no failure block either.
+        h = SynapseHandler()
+
+        def _boom(payload):
+            raise RuntimeError("x")
+
+        h._registry.register("fake_fail", _boom)
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setenv("SYNAPSE_LIVE_ENVELOPE", "0")
+            resp = h.handle(SynapseCommand(
+                type="fake_fail", id="f2", payload={"node": "/obj/x"},
+            ))
+        assert resp.success is False
+        futs = [handlers_mod._log_executor.submit(lambda: None)
+                for _ in range(2)]
+        for f in futs:
+            f.result(timeout=5)
+        time.sleep(0.05)
+        assert b.get_process_bridge().operation_stats()["operations_total"] == 0
+
+    def test_off_main_handle_measures_the_real_thread(self):
+        # R-013 predicate, half 2 through the real seam: a command dispatched
+        # on a worker thread records main_thread_executed=False (measured, not
+        # asserted) and the Thread Safety anchor judges that value.
+        h = SynapseHandler()
+        h._registry.register("fake_mutate", lambda payload: {"ok": True})
+        out = []
+        worker = threading.Thread(target=lambda: out.append(h.handle(
+            SynapseCommand(type="fake_mutate", id="t8",
+                           payload={"node": "/obj/x"}))))
+        worker.start()
+        worker.join(30)
+        assert not worker.is_alive()
+        assert out and out[0].success
+        stats = self._wait_for_total(1)
+        block = b.get_process_bridge().recent_operations(1)[0]
+        assert block.main_thread_executed is False
+        assert block.success is True
+        assert stats["operations_verified"] == 0
+        assert stats["anchor_violations"] == 1
+        assert stats["per_agent_success_rate"][env.LIVE_AGENT_KEY] == 0.0
 
     def test_kill_switch_off_lands_zero_blocks(self, handler, monkeypatch):
         # SYNAPSE_LIVE_ENVELOPE=0 end-to-end: a mutating handle() still

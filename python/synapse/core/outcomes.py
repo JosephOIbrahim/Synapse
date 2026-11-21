@@ -101,6 +101,40 @@ CODES: Dict[str, Tuple[Outcome, str, str]] = {
 #: The codes whose ``next`` names a wait when the caller knows how long.
 _WAITS = frozenset({"server.busy", "houdini.busy"})
 
+#: The outcome codes that name a SERVICE-level failure: Houdini or the transport
+#: failed, not the request. The transports' circuit breakers count these and only
+#: these (R-015, BRAINSTEM-7); no user error carries one.
+#:
+#:   tool.failed                 SynapseServiceError's own code (core/errors.py):
+#:                               Houdini unreachable, an execution/operation crash
+#:   tool.internal               ExecutionAborted (a script raised SystemExit) and a
+#:                               native (Rust) panic
+#:   execution.deadline_exceeded a script stopped at its main-thread deadline
+#:   transport.timeout           a mutating call's main-thread timeout (it may still run)
+#:
+#: ``transport.read_retry`` is deliberately absent: a READ that timed out changes
+#: nothing, so it is a retry for the caller, not evidence of a service fault.
+SERVICE_FAILURE_CODES = frozenset({
+    "tool.failed",
+    "tool.internal",
+    "execution.deadline_exceeded",
+    "transport.timeout",
+})
+
+
+def is_service_failure(outcome: Optional[Dict[str, Any]]) -> bool:
+    """True when a failed reply names a service-level failure.
+
+    Classification reads the machine-readable outcome a handler attached to its
+    failed response (``handlers._failure_receipt_data`` ->
+    ``SynapseResponse.data['outcome']``), never the error text: the same words
+    can describe a caller's bad request or a dead Houdini. A reply with no
+    attached outcome is UNCLASSIFIED and returns False -- absent evidence is not
+    evidence of a service fault, so no breaker is ever tripped by a guess.
+    """
+    code = outcome.get("code") if isinstance(outcome, dict) else None
+    return code in SERVICE_FAILURE_CODES
+
 
 @dataclass(frozen=True)
 class OutcomeInfo:

@@ -220,6 +220,12 @@ class SynapseServer:
         self._command_queue = DeterministicCommandQueue()
         self._response_queue = ResponseDeliveryQueue()
         self._handler = SynapseHandler()
+        # R-014 (BRAINSTEM-6): the handler owns the tiered router (constructed
+        # there because both transports build their handler through it). Expose
+        # that same object on the server so the metrics aggregator below
+        # measures the router the synapse_router_stats tool reads — before
+        # this every getattr(self, "_router") probe returned None.
+        self._router = getattr(self._handler, "_router", None)
 
         # Multi-user sessions (studio mode only)
         self._session_manager: Optional[SessionManager] = None

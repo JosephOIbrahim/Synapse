@@ -135,7 +135,7 @@ PDG farm cooks are inherently async (minutes to hours). R8 bridges this to FastM
 
 ## 2. MOE Routing Protocol
 
-> **⚠ Live-path reality (verified 2026-07-10).** `MOERouter` (`shared/router.py`) is a panel-side classifier — consumed by `panel/tool_filter.py`, `routing_log.py`, `agent_health.py` + the §16 advisor. Live `/synapse` dispatch uses `TieredRouter` (`python/synapse/routing/router.py`, built in `server/handlers.py`) — a tiered cascade, not MOE. The 6 specialists are Claude-level orchestration personae, not live-path processes.
+> **⚠ Live-path reality (verified 2026-07-10; router claim corrected 2026-11-20).** `MOERouter` (`shared/router.py`) is a panel-side classifier — consumed by `panel/tool_filter.py`, `routing_log.py`, `agent_health.py` + the §16 advisor. Live `/synapse` dispatch uses **neither router**: commands go `SynapseServer` → `SynapseHandler.handle()` → the command registry. `TieredRouter` (`python/synapse/routing/router.py`) is constructed in `SynapseHandler.__init__` — the single construction seam the `/synapse` and `/mcp` transports share — and is exposed read-only through `synapse_router_stats` / `get_metrics`; no live dispatch path calls `route()`, so its counters read zero. The 6 specialists are Claude-level orchestration personae, not live-path processes.
 
 ### 2.1 Feature Extraction (4 Dimensions)
 

@@ -25,7 +25,7 @@ def _capture_include_geometry(monkeypatch, payload):
 
     monkeypatch.setattr(handlers_mod, "HOU_AVAILABLE", True)
     monkeypatch.setattr(introspection_mod, "inspect_node_detail", fake_detail)
-    def dispatch(fn, *, label):
+    def dispatch(fn, *, label, timeout=None):
         assert label == "handlers:_handle_inspect_node"
         return fn()
     monkeypatch.setattr(main_thread_mod, "run_on_main", dispatch)

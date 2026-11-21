@@ -58,6 +58,22 @@ from .handlers_node import NodeHandlerMixin
 from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
 from .undo_scope import UndoScope
+# R-034 (CONDUCTOR-7): per-step receipts + the applied-step guard for
+# batch_commands. Pure Python (no hou), importable standalone.
+from .batch_receipts import (
+    BatchIdConflict,
+    BatchReceiptStore,
+    STATUS_ERROR,
+    STATUS_IN_PROGRESS,
+    STATUS_NOT_RUN,
+    STATUS_OK,
+    STATUS_UNKNOWN,
+    new_batch_id,
+    step_summary as _batch_step_summary,
+)
+# R-035 (CONDUCTOR-8): in-flight autonomous-render task registry. Pure Python
+# (no hou, no autonomy import), importable standalone.
+from .autonomy_tasks import AutonomyTaskStore, fingerprint as _autonomy_fingerprint
 from .handlers_render import (
     RenderHandlerMixin, _undo_labels_snapshot, _rollback_if_group_left_entry,
 )
@@ -399,6 +415,142 @@ def run_on_main_observed(fn, timeout, label):
             _note_inline_overrun(f"handlers.{label}:inline", _elapsed, timeout)
 
 
+def _marshal_inspect_read(fn, *, command: str, label: str, subject: str):
+    """Marshal an inspect read on its canonical budget, naming a timed-out payload.
+
+    ``run_on_main``'s timeout bounds the WAIT, never the WORK: when it fires the
+    payload may still be executing on Houdini's main thread. The stock message
+    says "the call may still be running" without saying WHICH call — and a
+    geometry walk (R-019) is exactly the payload that can outlive its budget on
+    a heavy SOP. R-019 requires the timeout to name what is still running and
+    where, so the re-raise keeps the ``MainThreadTimeout`` type the WS
+    transports classify on (``transport.timeout`` / ``transport.read_retry``)
+    and replaces only the message.
+
+    The budget is read from ``core/timeouts.py`` so the marshal and the MCP
+    transport fire at the same boundary (the F6 pattern used by inspect_scene
+    and reference_usd).
+    """
+    from .main_thread import run_on_main, MainThreadTimeout
+    from ..core.timeouts import timeout_for
+
+    budget = timeout_for(command)
+    try:
+        return run_on_main(fn, timeout=budget, label=label)
+    except MainThreadTimeout:
+        raise MainThreadTimeout(
+            "%s timed out after %.1fs waiting for Houdini's main thread; the "
+            "read of %s is still running there and may still be cooking. "
+            "Check the scene before retrying -- the result was not applied."
+            % (command, budget, subject)
+        ) from None
+
+
+_AUTONOMY_STORE_INIT_LOCK = threading.Lock()
+
+
+def _autonomy_task_store(handler) -> AutonomyTaskStore:
+    """This handler's autonomous-render task store, created on first use.
+
+    Same double-checked pattern as ``_batch_store``: handler objects built
+    with ``__new__`` (tests, degraded startup) never ran ``__init__``, and
+    first use must still work.
+    """
+    store = getattr(handler, "_autonomy_tasks", None)
+    if store is not None:
+        return store
+    with _AUTONOMY_STORE_INIT_LOCK:
+        store = getattr(handler, "_autonomy_tasks", None)
+        if store is None:
+            store = AutonomyTaskStore()
+            handler._autonomy_tasks = store
+    return store
+
+
+def _serialize_render_report(obj):
+    """JSON-safe dict for an autonomy RenderReport (dataclasses/enums/datetime)."""
+    from dataclasses import asdict
+
+    if hasattr(obj, "__dataclass_fields__"):
+        return {k: _serialize_render_report(v) for k, v in asdict(obj).items()}
+    if isinstance(obj, dict):
+        return {k: _serialize_render_report(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_serialize_render_report(v) for v in obj]
+    if hasattr(obj, "value"):  # Enum
+        return obj.value
+    return obj
+
+
+_BATCH_STORE_INIT_LOCK = threading.Lock()
+
+
+def _batch_store(handler) -> BatchReceiptStore:
+    """This handler's batch receipt store, created on first use.
+
+    Handler objects built with ``__new__`` (tests, degraded startup) never ran
+    ``__init__``; first use must still work rather than raise AttributeError.
+    The double-checked lock only guards the one-time creation.
+    """
+    store = getattr(handler, "_batch_receipt_store", None)
+    if store is not None:
+        return store
+    with _BATCH_STORE_INIT_LOCK:
+        store = getattr(handler, "_batch_receipt_store", None)
+        if store is None:
+            store = BatchReceiptStore()
+            handler._batch_receipt_store = store
+    return store
+
+
+def _batch_timeout_exception(batch_id, budget, receipts, original):
+    """The timeout a batch caller gets: named steps, honest state, resume key.
+
+    R-034: a timed-out batch is not a definite failure. The payload stops at
+    its next step boundary, so the caller is told which steps ran, which one
+    was in flight (``unknown`` -- never ``error``), and to reuse this batch id
+    on a retry so the completed steps are not applied twice.
+    """
+    from .main_thread import MainThreadTimeout
+
+    snapshot = receipts.snapshot()
+    started = getattr(original, "started", None)
+    if started is False:
+        head = ("Batch %s did not start within %.0fs waiting for Houdini's "
+                "main thread; it never began, so nothing was applied."
+                % (batch_id, budget))
+    elif snapshot["status"] == "complete":
+        head = ("Batch %s finished all %d step(s) just as the %.0fs wait "
+                "expired; the changes were applied."
+                % (batch_id, snapshot["step_count"], budget))
+    elif snapshot["status"] == "not_started":
+        # The payload began but no step recorded an outcome -- say that and no
+        # more. Silence must never read as "nothing happened".
+        head = ("Batch %s timed out after %.0fs waiting for Houdini's main "
+                "thread; the payload had started but no step recorded an "
+                "outcome, so it may still be running. No further step will "
+                "be issued." % (batch_id, budget))
+    else:
+        head = ("Batch %s timed out after %.0fs waiting for Houdini's main "
+                "thread; no further step will be issued."
+                % (batch_id, budget))
+    unknown = snapshot.get("unknown_steps") or []
+    middle = (" A step reported unknown may still be changing the scene -- "
+              "check it before retrying." if unknown else "")
+    exc = MainThreadTimeout(
+        "%s Steps: %s.%s Retry with batch_id=%s to skip the steps that "
+        "already ran."
+        % (head, _batch_step_summary(snapshot), middle, batch_id)
+    )
+    # ``receipt`` is the generic structured-failure slot _failure_receipt_data
+    # merges into response.data; the other attributes name the batch for
+    # callers that read the exception directly instead of the wire.
+    exc.receipt = snapshot
+    exc.batch_id = batch_id
+    exc.started = started
+    return exc
+
+
 # =============================================================================
 # COMMAND HANDLER REGISTRY
 # =============================================================================
@@ -494,10 +646,35 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         self._session_id: Optional[str] = None
         self._user_id: str = ""
         self._bridge = None
+        # R-014 (BRAINSTEM-6): the tiered router is constructed HERE, because
+        # this is the single seam every transport builds its handler through —
+        # the /synapse WS server (SynapseServer.__init__) and the /mcp server
+        # (MCPServer._get_handler) both call SynapseHandler(). Before this it
+        # was never constructed anywhere, so the advertised synapse_router_stats
+        # tool could only raise "Router not initialized". It is NOT on the live
+        # command dispatch path (handle() goes straight to the registry), so its
+        # counters read zero until something routes through it — the tool
+        # reports that honestly instead of failing. Local import: the routing
+        # package must not become a module-level dependency of the handler stack;
+        # a construction failure leaves router_stats raising its typed error
+        # (never a fake success), while the rest of the handler still serves.
+        try:
+            from ..routing.router import TieredRouter
+            self._router = TieredRouter()
+        except Exception:
+            self._router = None
+            _log.debug(
+                "TieredRouter construction failed; router_stats will report "
+                "unavailable", exc_info=True)
         # R-012: the agent's history tools may only step over SYNAPSE's own
         # entries. The baseline is recorded in handle() before the first
         # command runs (main thread only -- hou.undos is not thread-safe).
         self._undo_scope = UndoScope()
+        # R-034 (CONDUCTOR-7): per-batch step receipts. The id a caller
+        # supplies (or gets back) is the resume key: a retry skips steps this
+        # store already recorded ok, so a timed-out batch is never replayed.
+        # Bounded (BatchReceiptStore evicts settled batches first).
+        self._batch_receipt_store = BatchReceiptStore()
         # Per-tool call-duration accumulator (Mile 0). Thread-safe: handle()
         # may run under the FastMCP executor on worker threads.
         self._tool_durations: Dict[str, Dict[str, Any]] = {}
@@ -558,6 +735,15 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         Returns:
             SynapseResponse with the result
         """
+        # R-013 (SUBSTRATE-7): the envelope decision/state must exist BEFORE
+        # the try, because every except arm below returns without reaching
+        # _submit_logs — and a failed live operation must still be able to
+        # land in the integrity trail. False/None here means "not enveloped",
+        # so the arms record nothing unless the command was actually observed.
+        _enveloped = False
+        _hash_before = None
+        _hash_after = None
+        cmd_type = command.type
         try:
             # Fast path: try raw type first (aliases are pre-populated in registry)
             cmd_type = command.type
@@ -649,6 +835,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         except SynapseUserError as e:
             # User errors: bad input, missing node, bad parm. Don't trip CB.
+            if _enveloped:
+                self._record_live_failure(cmd_type, command.payload, _hash_before)
             return SynapseResponse(
                 id=command.id,
                 success=False,
@@ -661,6 +849,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             # A ParmWriteRefused carries the structured write receipt the
             # caller needs to tell "not attempted" from "applied but
             # unverified"; keep it beside the human error, never instead of it.
+            if _enveloped:
+                self._record_live_failure(cmd_type, command.payload, _hash_before)
             return SynapseResponse(
                 id=command.id,
                 success=False,
@@ -672,6 +862,8 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             # Service errors: Houdini down, execution crash. DO trip CB.
             # A typed subclass (ExecutionAborted, ExecutionDeadlineExceeded)
             # carries its outcome here, so the wire type survives (BRAINSTEM-3/4).
+            if _enveloped:
+                self._record_live_failure(cmd_type, command.payload, _hash_before)
             return SynapseResponse(
                 id=command.id,
                 success=False,
@@ -687,16 +879,27 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             # A read changes nothing, so a read that timed out stays retryable.
             # The class is resolved from the LIVE main_thread module (as
             # run_on_main itself does) so a reload cannot split the identity.
+            # R-013: a failed live mutation is recorded in the integrity trail
+            # here — this arm and the ones above return before _submit_logs.
+            if _enveloped:
+                self._record_live_failure(cmd_type, command.payload, _hash_before)
             from .main_thread import MainThreadTimeout as _LiveMainThreadTimeout
             if isinstance(e, _LiveMainThreadTimeout):
                 _timeout_code = (
                     "transport.read_retry" if cmd_type in _READ_ONLY_COMMANDS
                     else "transport.timeout"
                 )
+                # R-034: a timed-out batch carries a structured receipt naming
+                # which steps ran. It rides the same generic failure slot as
+                # every other handler exception; the outcome stays the
+                # authoritative timeout classification.
+                _timeout_data = _failure_receipt_data(e) or {}
+                _timeout_data["outcome"] = _outcome_info(
+                    _timeout_code, str(e)).to_dict()
                 return SynapseResponse(
                     id=command.id,
                     success=False,
-                    data={"outcome": _outcome_info(_timeout_code, str(e)).to_dict()},
+                    data=_timeout_data,
                     error=str(e),
                     sequence=command.sequence,
                 )
@@ -723,6 +926,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 raise exc from None
             if not is_native_panic(exc):
                 raise
+            # R-013: this is a failed live mutation like any other arm's.
+            if _enveloped:
+                self._record_live_failure(cmd_type, command.payload, _hash_before)
             _log.error(
                 "A native (Rust) extension panicked while handling %r (%s: %s); "
                 "answering this request with an error",
@@ -746,6 +952,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                      hash_after: Optional[str] = None,
                      enveloped: bool = False):
         """Submit bridge + audit log in a single executor call."""
+        # R-013 (SUBSTRATE-7): measure the Thread Safety anchor on the thread
+        # that just executed the command. The log executor is off-main by
+        # construction, so sampling there could never describe the operation.
+        executed_on_main = threading.current_thread() is threading.main_thread()
         # Detached farm control must not initialize the artist memory store
         # from a transport worker. Its journal and the audit below own history.
         bridge = None if cmd_type in FARM_CONTROL_COMMANDS else self._get_bridge()
@@ -785,12 +995,47 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             if enveloped:
                 try:
                     _envelope.record_live_block(
-                        cmd_type, payload, hash_before, hash_after)
+                        cmd_type, payload, hash_before, hash_after,
+                        main_thread_executed=executed_on_main)
                 except Exception:
                     _log.debug("live integrity envelope record failed",
                                exc_info=True)
 
         _log_executor.submit(_do_log)
+
+    def _record_live_failure(self, cmd_type: str, payload: Dict,
+                             hash_before: Optional[str]) -> None:
+        """Record a FAILED enveloped live command in the integrity trail.
+
+        R-013 (SUBSTRATE-7): handle()'s except arms return before
+        ``_submit_logs`` is reached, so before this the trail could only ever
+        contain successes — a live handler that failed every call still
+        reported a perfect LIVE success rate and zero anchor violations.
+        This appends a ``success=False`` block (no after-hash: the command
+        raised before the post-state was observed) on the same fire-and-forget
+        executor as the success path. It never raises: on the failure path the
+        command's own error must reach the caller unmasked.
+        """
+        # Measured on the dispatch thread, before the hop to the executor
+        # (same anchor evidence as the success path).
+        executed_on_main = threading.current_thread() is threading.main_thread()
+
+        def _do_record():
+            try:
+                _envelope.record_live_block(
+                    cmd_type, payload, hash_before, None,
+                    success=False,
+                    main_thread_executed=executed_on_main)
+            except Exception:
+                # An observe-only record can never mask the command's error.
+                _log.debug("live integrity envelope failure record failed",
+                           exc_info=True)
+
+        try:
+            _log_executor.submit(_do_record)
+        except Exception:
+            # Executor shut down (interpreter exit): the response still goes out.
+            _log.debug("could not submit live failure record", exc_info=True)
 
     def _register_handlers(self):
         """Register all built-in command handlers."""
@@ -1143,6 +1388,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             commands: list of {type: str, payload: dict}
             atomic: accepted for compatibility but cannot disable grouping
             stop_on_error: bool (default False) -- halt on first error
+            batch_id: optional stable id. A retry that reuses it skips every
+                step this handler already recorded ok; when absent one is
+                generated and returned in the result as ``batch_id``.
 
         R-012 (SIDEFXCTO-2): ``synapse_batch`` is model-reachable and the live
         ``/synapse`` handlers are not bridge-routed, so a batch payload must not
@@ -1157,6 +1405,18 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
           the other mutating handlers depend on their own inline group either
           way. The old flag could only ever skip this group; that skip was the
           bypass.
+
+        R-034 (CONDUCTOR-7): a timed-out batch neither keeps issuing steps nor
+        replays on retry. Every step leaves a receipt before and after it runs
+        (``server/batch_receipts.py``); the caller, the marshal and the step
+        loop share ONE budget from ``core/timeouts.py`` -- the shipped
+        ``batch_commands`` value -- so no layer gives up while another still
+        considers the batch live. The loop checks that deadline before issuing
+        each step, and a caller whose wait expired is told which steps ran. A
+        step that was in flight is reported ``unknown``, never ``failed``: it
+        may still be changing the scene. A retry with the same ``batch_id``
+        skips the steps already recorded ok; a step left in flight is not
+        re-executed (a new batch id is the explicit way to start over).
         """
         commands = payload.get("commands")
         if not commands or not isinstance(commands, list):
@@ -1166,6 +1426,34 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             raise ValueError("Use render preparation, submission and status tools as separate requests, outside a scene-edit batch.")
 
         stop_on_error = payload.get("stop_on_error", False)
+
+        # R-034: the batch id is the resume key. A caller may choose it (so a
+        # retry after a lost reply can present it) or let us generate one and
+        # read it back from the result / timeout receipt.
+        batch_id = payload.get("batch_id")
+        if batch_id in (None, ""):
+            batch_id = new_batch_id()
+        elif not isinstance(batch_id, str):
+            raise ValueError("'batch_id' must be a string")
+        elif len(batch_id) > 128:
+            raise ValueError("'batch_id' must be 128 characters or fewer")
+        try:
+            receipts = _batch_store(self).get_or_create(batch_id, commands)
+        except BatchIdConflict as conflict:
+            # A reused id for a different command list is the caller's mistake,
+            # not a service fault: answer it as a user error, unmasked.
+            raise SynapseUserError(str(conflict)) from None
+
+        from .main_thread import MainThreadTimeout
+        from ..core.timeouts import timeout_for
+
+        # ONE budget for the caller, the marshal and the step loop (C7). The
+        # old 30 s marshal under a 60 s client budget let the payload keep
+        # mutating for up to 30 s after the caller was told it timed out.
+        budget = timeout_for("batch_commands")
+        # Inline callers (panel, in-process) are synchronous: nobody stops
+        # waiting for them, so there is no deadline to honour.
+        deadline = None if _would_run_inline_on_main() else time.monotonic() + budget
 
         # The batch envelope's provenance record is the +1 emitted by the outer
         # handle()->invoke('batch_commands') wrap. Read THAT wrap's real op-id
@@ -1179,12 +1467,22 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             session=self._session_id, origin="batch", parent=batch_op_id,
         )
 
-        from .main_thread import _SLOW_TIMEOUT
-
         def _on_main():
             results: list = []
             statuses: list = []
             errors: list = []
+            resumed: list = []
+
+            def _stop_remaining(start_index):
+                # Positional parity: one slot per declared step, so the
+                # receipt and any report line up with the declared list. Only
+                # the R-034 paths reach this -- stop_on_error keeps its
+                # shipped shape exactly.
+                for index in range(start_index, len(commands)):
+                    results.append(None)
+                    statuses.append(STATUS_NOT_RUN)
+                    errors.append("Step %d: not run -- the batch stopped "
+                                  "before issuing it." % index)
 
             def _run_batch():
                 # R-012: every alias that resolve_param() maps to the execute
@@ -1193,11 +1491,43 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 undo_toggle_keys = frozenset(
                     PARAM_ALIASES.get("atomic", ("atomic", "use_undo")))
                 for i, cmd_spec in enumerate(commands):
+                    state = receipts.status(i)
+                    if state == STATUS_OK:
+                        # Applied-step guard (R-034): this step completed on an
+                        # earlier attempt. Reuse its recorded result -- never
+                        # replay a mutation the scene already holds.
+                        results.append(receipts.result(i))
+                        statuses.append(STATUS_OK)
+                        errors.append(None)
+                        resumed.append(i)
+                        continue
+                    if state in (STATUS_IN_PROGRESS, STATUS_UNKNOWN):
+                        # It was mid-flight when an earlier attempt's caller
+                        # stopped waiting and no outcome was recorded. It may
+                        # have mutated, so it is NOT re-run; stopping here also
+                        # avoids applying later steps that may depend on it.
+                        note = ("Step %d: state unknown — an earlier attempt "
+                                "had it in flight when its caller stopped "
+                                "waiting. Not re-run: it may already have "
+                                "changed the scene." % i)
+                        receipts.finish_unknown(i, note)
+                        results.append(None)
+                        statuses.append(STATUS_UNKNOWN)
+                        errors.append(note)
+                        _stop_remaining(i + 1)
+                        break
+                    if deadline is not None and time.monotonic() >= deadline:
+                        # The caller has stopped waiting. The in-flight step is
+                        # the accepted residual; no NEW step is issued.
+                        _stop_remaining(i)
+                        break
                     if not isinstance(cmd_spec, dict):
                         # Malformed step: fail it as data, never let it reach
                         # a handler or the grouping decision.
-                        errors.append(f"Step {i}: command entry must be an object")
-                        statuses.append("error")
+                        err = f"Step {i}: command entry must be an object"
+                        receipts.finish_error(i, err)
+                        errors.append(err)
+                        statuses.append(STATUS_ERROR)
                         results.append(None)
                         if stop_on_error:
                             break
@@ -1215,25 +1545,29 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
                     if handler is None:
                         err = f"Step {i}: unknown command '{cmd_type}'"
+                        receipts.finish_error(i, err)
                         errors.append(err)
-                        statuses.append("error")
+                        statuses.append(STATUS_ERROR)
                         results.append(None)
                         if stop_on_error:
                             break
                         continue
 
+                    receipts.begin(i)
                     try:
                         # Route through invoke() so each sub-op emits its own
                         # provenance record nested under the batch envelope.
                         result = self._registry.invoke(
                             cmd_type, cmd_payload, ctx=batch_ctx,
                         )
+                        receipts.finish_ok(i, result)
                         results.append(result)
-                        statuses.append("ok")
+                        statuses.append(STATUS_OK)
                         errors.append(None)
                     except Exception as e:
+                        receipts.finish_error(i, f"Step {i}: {e}")
                         results.append(None)
-                        statuses.append("error")
+                        statuses.append(STATUS_ERROR)
                         errors.append(f"Step {i}: {e}")
                         if stop_on_error:
                             break
@@ -1247,20 +1581,30 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             else:
                 _run_batch()
 
+            if STATUS_UNKNOWN in statuses:
+                batch_status = "in_progress"
+            elif STATUS_NOT_RUN in statuses:
+                batch_status = "stopped"
+            elif STATUS_ERROR in statuses:
+                batch_status = "partial"
+            else:
+                batch_status = "complete"
             return {
                 "results": results,
                 "statuses": statuses,
                 "errors": errors,
+                "batch_id": batch_id,
+                "batch_status": batch_status,
+                "resumed": resumed,
             }
 
-        # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED. A batch is an unbounded
-        # fan-out of sub-handlers, so 30s is already a compromise -- but it is the
-        # shipped budget for off-main callers and tightening or loosening it here
-        # would change working behaviour. Off-main: identical. Inline (/mcp, panel):
-        # the budget was always a no-op; it is now logged instead of silent.
-        return run_on_main_observed(
-            _on_main, timeout=_SLOW_TIMEOUT, label="batch_commands",
-        )
+        try:
+            return run_on_main_observed(
+                _on_main, timeout=budget, label="batch_commands",
+            )
+        except MainThreadTimeout as exc:
+            raise _batch_timeout_exception(
+                batch_id, budget, receipts, exc) from None
 
     # =========================================================================
     # PARAMETER HANDLERS
@@ -1916,14 +2260,19 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from .introspection import inspect_selection
-        from .main_thread import run_on_main
         defaults = {"depth": 0, "include_parameters": False, "include_geometry": False,
                     "max_nodes": 200, "max_edges": 2000, "node_paths": None,
                     "expected_identities": None, "expected_scene": None,
                     "expected_topology_hash": None}
         options = {key: resolve_param_with_default(payload, key, default)
                    for key, default in defaults.items()}
-        return run_on_main(lambda: inspect_selection(**options), label="handlers:_handle_inspect_selection")
+        return _marshal_inspect_read(
+            lambda: inspect_selection(**options),
+            command="inspect_selection",
+            label="handlers:_handle_inspect_selection",
+            subject="the current selection (include_geometry=%s)"
+                    % bool(options["include_geometry"]),
+        )
 
     def _handle_inspect_scene(self, payload: Dict) -> Dict:
         """Hierarchical scene overview with issues and artist notes."""
@@ -1952,7 +2301,6 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from .introspection import inspect_node_detail
-        from .main_thread import run_on_main
         node_path = resolve_param(payload, "node")
         include_code = resolve_param_with_default(payload, "include_code", True)
         # Geometry is the expensive part of an inspect (full _geometry_summary).
@@ -1960,20 +2308,26 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # stays cheap; callers opt in with include_geometry=true (Mile 3a).
         include_geometry = resolve_param_with_default(payload, "include_geometry", False)
         include_expressions = resolve_param_with_default(payload, "include_expressions", True)
-        return run_on_main(lambda: inspect_node_detail(
-            node_path=node_path,
-            include_code=bool(include_code),
-            include_geometry=bool(include_geometry),
-            include_expressions=bool(include_expressions),
-        ), label="handlers:_handle_inspect_node")
+        return _marshal_inspect_read(
+            lambda: inspect_node_detail(
+                node_path=node_path,
+                include_code=bool(include_code),
+                include_geometry=bool(include_geometry),
+                include_expressions=bool(include_expressions),
+            ),
+            command="inspect_node",
+            label="handlers:_handle_inspect_node",
+            subject="%s (include_geometry=%s)" % (node_path, bool(include_geometry)),
+        )
 
     def _handle_get_metrics(self, payload: Dict) -> Dict:
         """Return Prometheus-format metrics text."""
         from .metrics import render_prometheus
 
         router_stats = None
-        if hasattr(self, "_router"):
-            router_stats = self._router.stats()
+        router = getattr(self, "_router", None)
+        if router is not None:
+            router_stats = router.stats()
 
         cb_state = "closed"
         memory_count = 0
@@ -2075,10 +2429,17 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         return {"format": "prometheus", "text": text}
 
     def _handle_router_stats(self, payload: Dict) -> Dict:
-        """Return tier cascade statistics for LLM self-reflection."""
-        if not hasattr(self, "_router"):
+        """Return tier cascade statistics for LLM self-reflection.
+
+        R-014: a default-constructed handler carries its router (see
+        __init__), so this serves real stats. The explicit None check keeps
+        the F01 contract for the degraded case where construction failed:
+        raise a typed service error rather than return a fake success dict.
+        """
+        router = getattr(self, "_router", None)
+        if router is None:
             raise SynapseServiceError("Router not initialized")
-        return self._router.stats()
+        return router.stats()
 
     def _handle_list_recipes(self, payload: Dict) -> Dict:
         """List all available recipes for artist discovery."""
@@ -2323,21 +2684,45 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             _log.debug("autonomy task recording failed for %s: %s", task_id, e)
 
     def _handle_autonomous_render(self, payload: Dict) -> Dict:
-        """Run the autonomous render pipeline: Plan -> Validate -> Execute -> Evaluate -> Report.
+        """Start or poll an autonomous render task (R-035).
 
-        Payload:
+        Payload -- start:
             intent (str, required): Natural-language render intent (e.g. 'render frames 1-48').
             max_iterations (int, optional): Max re-render attempts (default: 3, clamped to 10).
             max_wall_clock_seconds (float, optional): Per-run wall-clock bound
                 (default: the canonical 600s client budget; past it the run stops
-                honestly with stop_reason='wall_clock_exceeded').
+                at the next step boundary with stop_reason='wall_clock_exceeded').
             quality_threshold (float, optional): Minimum quality score 0.0-1.0 (default: 0.85).
 
+        Payload -- poll:
+            task_id (str): The id returned by a start call.
+
+        The Plan -> Validate -> Execute -> Evaluate -> Report loop runs on a
+        worker thread; this call returns a task receipt immediately, so the
+        tool can never outlive its client budget with the render still inside
+        it. A second start whose intent resolves to the same plan (and the
+        same run parameters) JOINS the in-flight task -- ``reused: true`` and
+        an incremented ``joined_calls`` -- instead of starting a duplicate run.
+
         Returns:
-            Serialized RenderReport with plan, evaluation, decisions, and success flag.
+            A task receipt. A poll of a finished task carries the serialized
+            RenderReport under ``result``, with ``success`` and ``stop_reason``
+            (including 'wall_clock_exceeded') mirrored at the top level.
         """
+        store = _autonomy_task_store(self)
+
+        task_id = payload.get("task_id")
+        if task_id:
+            receipt = store.public(str(task_id))
+            if receipt is None:
+                raise ValueError(
+                    "Couldn't find an autonomous render task with id %r -- it may "
+                    "have finished and been evicted, or never existed. Start a new "
+                    "run with 'intent'." % (task_id,)
+                )
+            return receipt
+
         import asyncio
-        from dataclasses import asdict
 
         intent = payload.get("intent")
         if not intent:
@@ -2348,6 +2733,16 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
 
         max_iterations = int(payload.get("max_iterations", 3))
         quality_threshold = min(1.0, max(0.0, float(payload.get("quality_threshold", 0.85))))
+        wall_clock_seconds = payload.get("max_wall_clock_seconds")
+
+        # The driver resolves the budget the same way; deriving the effective
+        # value here keeps a default start and an explicit-600 s start on the
+        # same join key instead of running the plan twice.
+        from ..core.timeouts import timeout_for
+        effective_wall_clock = (
+            float(wall_clock_seconds) if wall_clock_seconds
+            else timeout_for("autonomous_render")
+        )
 
         # Late import to keep autonomy optional (no import at module level)
         from ..autonomy import (
@@ -2392,23 +2787,61 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         validator = PreFlightValidator(adapter)
         evaluator = RenderEvaluator(pass_threshold=quality_threshold)
 
-        driver = AutonomousDriver(
-            planner=planner,
-            validator=validator,
-            evaluator=evaluator,
-            handler_interface=adapter,
-            memory_system=memory,
-            max_iterations=max_iterations,
-            max_wall_clock_seconds=payload.get("max_wall_clock_seconds"),
-        )
+        # Join key: the intent, the plan it resolves to, and the run
+        # parameters. Planning is pure CPU (regex + step templates), so
+        # deriving it here means a second identical start joins the first
+        # instead of racing it into a duplicate run.
+        steps_key = []
+        try:
+            planned = planner.plan(intent)
+            steps_key = [
+                {"handler": step.handler, "params": step.params}
+                for step in getattr(planned, "steps", []) or []
+            ]
+        except Exception as e:
+            _log.debug("Autonomy plan fingerprint skipped: %s", e)
+        key = _autonomy_fingerprint(str(intent), steps_key, {
+            "max_iterations": max_iterations,
+            "quality_threshold": quality_threshold,
+            "max_wall_clock_seconds": effective_wall_clock,
+        })
+
+        task, joined = store.start_or_join(key, str(intent), meta={
+            "max_iterations": max_iterations,
+            "quality_threshold": quality_threshold,
+        })
+        if joined:
+            receipt = store.public(task["task_id"]) or {"task_id": task["task_id"]}
+            receipt["reused"] = True
+            receipt["note"] = (
+                "An autonomous render for this intent and plan is already in "
+                "flight -- returning its task id instead of starting a second "
+                "run. Poll with task_id '%s'." % task["task_id"]
+            )
+            return receipt
+
+        task_id = task["task_id"]
+
+        try:
+            driver = AutonomousDriver(
+                planner=planner,
+                validator=validator,
+                evaluator=evaluator,
+                handler_interface=adapter,
+                memory_system=memory,
+                max_iterations=max_iterations,
+                max_wall_clock_seconds=wall_clock_seconds,
+            )
+        except BaseException as exc:
+            # Never leave the registry with a 'running' record and no worker.
+            store.fail(task_id, str(exc), type(exc).__name__)
+            raise
 
         # Provenance: open a task lifecycle in agent.usd on dispatch.
         # Best-effort -- a writer failure must never abort or slow the render.
         # The pending task is the producer for the already-live
         # suspend_all_tasks(agent_usd) consumer (websocket.py:483 /
         # mcp/session.py:207), which until now had nothing to find.
-        import uuid as _uuid
-        task_id = f"autorender-{_uuid.uuid4().hex[:8]}"
         agent_usd = self._resolve_agent_usd()
         if agent_usd:
             try:
@@ -2417,62 +2850,56 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             except Exception as e:
                 _log.debug("create_task failed for %s: %s", task_id, e)
 
-        # The autonomy pipeline is async; run it from this sync handler context.
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
+        owner = self
 
-        try:
-            if loop and loop.is_running():
-                # Already inside an event loop (e.g. hwebserver) — schedule as a task.
-                import concurrent.futures
-                future: concurrent.futures.Future = concurrent.futures.Future()
-
-                async def _run():
-                    try:
-                        result = await driver.execute(intent)
-                        future.set_result(result)
-                    except Exception as exc:
-                        future.set_exception(exc)
-
-                loop.create_task(_run())
-                report = future.result(timeout=driver._max_wall_clock + 60.0)
-            else:
+        def _worker():
+            """Run the async loop off the handler thread and record its outcome."""
+            try:
                 report = asyncio.run(driver.execute(intent))
-        except Exception:
-            # Render raised (driver error, timeout, ...) — close the task lifecycle
-            # to 'failed' (best-effort) so it doesn't leak as an orphan 'pending'
-            # that the disconnect consumer would later mislabel 'suspended'. Then
-            # propagate the original exception unchanged.
+                store.complete(
+                    task_id,
+                    _serialize_render_report(report),
+                    success=bool(getattr(report, "success", False)),
+                    stop_reason=str(getattr(report, "stop_reason", "") or ""),
+                )
+            except BaseException as exc:  # noqa: BLE001 -- surfaced in the receipt
+                # Render raised (driver error, timeout, ...) -- close the task
+                # lifecycle to 'failed' (best-effort) so it does not leak as an
+                # orphan 'pending' that the disconnect consumer would later
+                # mislabel 'suspended'. The error is reported through the task
+                # receipt, not raised into a thread nobody is joined on.
+                store.fail(task_id, str(exc), type(exc).__name__)
+                if agent_usd:
+                    try:
+                        from ..memory.agent_state import update_task_status
+                        update_task_status(agent_usd, task_id, "failed")
+                    except Exception as e:  # pragma: no cover - defensive
+                        _log.debug("failed-task lifecycle close failed for %s: %s",
+                                   task_id, e)
+                return
+
+            # Provenance: close the task lifecycle + write render-quality
+            # verification. The helper is fully best-effort -- on ANY internal
+            # failure the recorded result is left unchanged.
             if agent_usd:
-                try:
-                    from ..memory.agent_state import update_task_status
-                    update_task_status(agent_usd, task_id, "failed")
-                except Exception as e:  # pragma: no cover - defensive
-                    _log.debug("failed-task lifecycle close failed for %s: %s", task_id, e)
-            raise
+                owner._record_autonomy_task(agent_usd, task_id, report)
 
-        # Provenance: close the task lifecycle + write render-quality verification.
-        # Helper is fully best-effort -- on ANY internal failure the render result
-        # below is returned unchanged.
-        if agent_usd:
-            self._record_autonomy_task(agent_usd, task_id, report)
+        worker = threading.Thread(
+            target=_worker,
+            name="synapse.autonomy.%s" % task_id,
+            daemon=True,
+        )
+        worker.start()
 
-        # Serialize the dataclass report to a plain dict
-        def _serialize(obj):
-            """Convert dataclass / enum / datetime to JSON-safe dict."""
-            if hasattr(obj, "__dataclass_fields__"):
-                return {k: _serialize(v) for k, v in asdict(obj).items()}
-            if isinstance(obj, dict):
-                return {k: _serialize(v) for k, v in obj.items()}
-            if isinstance(obj, list):
-                return [_serialize(v) for v in obj]
-            if hasattr(obj, "value"):  # Enum
-                return obj.value
-            return obj
-
-        return _serialize(report)
+        receipt = store.public(task_id) or {"task_id": task_id}
+        receipt["reused"] = False
+        if receipt.get("status") == "running":
+            receipt["note"] = (
+                "Autonomous render started on a worker thread -- this call "
+                "returned immediately. Poll synapse_autonomous_render with "
+                '{"task_id": "%s"} for the final report.' % task_id
+            )
+        return receipt
 
 def _run_compiled(compiled_code, globals_dict, locals_dict):
     """

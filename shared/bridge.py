@@ -703,6 +703,15 @@ class IntegrityBlock:
     # silently folded into SYNAPSE's integrity narrative.
     external_change_detected: bool = False
 
+    # Truthful outcomes (R-013 / SUBSTRATE-7). True = the operation returned
+    # normally. False = the handler RAISED and this block records that failure
+    # instead of the failure vanishing from the trail. A failed block never
+    # scores perfect fidelity (see `fidelity`), and record_external_block
+    # accounts it exactly like _fail_with_integrity accounts a failed /mcp
+    # op: total + log, neither verified nor an anchor violation.
+    # Default True preserves every pre-existing construction site.
+    success: bool = True
+
     # Path-qualified provenance (live-envelope, 2026-07). Defaults preserve
     # exact pre-existing "/mcp" semantics at every existing construction site.
     # *_applicable=False means "no such check EXISTS on this path" — the anchor
@@ -753,9 +762,15 @@ class IntegrityBlock:
 
     @property
     def fidelity(self) -> float:
-        """1.0 = pipeline functioning. <1.0 = pipeline bug."""
+        """1.0 = pipeline functioning. <1.0 = pipeline bug — or a failed op."""
         if not self.anchors_hold:
             return 0.0
+        if not self.success:
+            # A failed op never observed its post-state. Degraded, never
+            # perfect — the same score a failed /mcp op gets from its empty
+            # delta. (A failure is not itself an anchor violation; the
+            # anchors above are judged first and independently.)
+            return FIDELITY_DEGRADED
         if not self.delta_hash and self.operation_type not in READ_ONLY_OPS:
             return FIDELITY_DEGRADED
         return FIDELITY_PERFECT
@@ -764,6 +779,7 @@ class IntegrityBlock:
         return {
             "anchors_hold": self.anchors_hold,
             "fidelity": self.fidelity,
+            "success": self.success,
             "undo": self.undo_group_active,
             "thread": self.main_thread_executed,
             "consent": self.consent_verified,
@@ -1029,12 +1045,27 @@ class LosslessExecutionBridge:
         handler envelope) into this bridge's log + lifetime counters.
         Thread-safe — callers are the handlers' _log_executor threads,
         concurrent with execute() on the main thread. Mirrors _finalize's
-        counting: fidelity == 1.0 -> verified, else anchor_violations."""
+        counting: success + fidelity == 1.0 -> verified, else anchor
+        violations — except a FAILED block (``success=False``), which is
+        counted exactly like a failed /mcp op counts through
+        ``_fail_with_integrity``: total + per-agent + log, never verified and
+        never an anchor violation (a failed command implicates no anchor).
+
+        R-013 (SUBSTRATE-7): before this, the live path could only ever record
+        successes. ``per_agent_success_rate['LIVE']`` was structurally 1.0 and
+        ``anchor_violations`` could never rise on the dominant transport, so
+        the §16 agent-health loop was blind to a broken live handler. A failed
+        live command now lowers the LIVE success rate it claims.
+        """
         with self._log_lock:
             self._operations_total += 1
             key = integrity.agent_id or ""
             self._per_agent_total[key] = self._per_agent_total.get(key, 0) + 1
-            if integrity.fidelity >= FIDELITY_PERFECT:
+            if not integrity.success:
+                # Failed command: visible through total>verified and the
+                # per-agent rate; not an anchor violation by itself.
+                pass
+            elif integrity.fidelity >= FIDELITY_PERFECT:
                 self._operations_verified += 1
                 self._per_agent_verified[key] = (
                     self._per_agent_verified.get(key, 0) + 1

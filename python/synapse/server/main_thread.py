@@ -19,7 +19,10 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 10.0   # seconds -- scene queries, parm reads/writes
-_SLOW_TIMEOUT = 30.0      # seconds -- execute_python, execute_vex, batch
+_SLOW_TIMEOUT = 30.0      # seconds -- execute_python, execute_vex
+# batch_commands budgets from core/timeouts.py (R-034): the marshal, the step
+# loop and every client must share one value, or a caller stops waiting while
+# the payload still considers the batch live.
 
 
 class MainThreadTimeout(RuntimeError):
@@ -27,7 +30,26 @@ class MainThreadTimeout(RuntimeError):
 
     RuntimeError compatibility is retained for existing transport callers.
     Observation code can distinguish this from an actual handler failure.
+
+    ``run_on_main`` fills three attributes on the exception it raises
+    (R-034); a caller that constructs one directly (tests, adapters) leaves
+    them ``None``:
+
+    ``started``
+        ``True`` when the payload had begun on Houdini's main thread, so its
+        outcome is unknown and the scene may be changing. ``False`` when it
+        never started -- the C4 abandoned flag makes ``fn()`` a no-op from
+        then on, so nothing can have been applied.
+    ``label``
+        The payload label (``"batch_commands"``, ``"handlers:..."``), so a
+        timeout can name what it stopped waiting for.
+    ``timeout``
+        The budget the caller waited, in seconds.
     """
+
+    started = None
+    label = None
+    timeout = None
 
 # Thread-local flag to detect reentrant calls (e.g. batch_commands calling
 # sub-handlers that each use run_on_main). When already on the main thread
@@ -621,14 +643,22 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
         if not done.wait(timeout=timeout):
             with state_lock:
                 abandoned[0] = True
+                # Read under the same lock _on_main sets it under (R-034):
+                # False means fn() had not begun and, with the abandoned flag
+                # now set, cannot begin -- so nothing was applied.
+                _started = started[0]
             _discard_deferred(token)
             if record_stall:
                 _record_timeout(timeout)
-            raise MainThreadTimeout(
+            exc = MainThreadTimeout(
                 "Houdini's main thread didn't respond in time -- "
                 "it may be busy cooking or rendering. "
                 "The call may still be running; check the scene before trying again."
             )
+            exc.started = _started
+            exc.label = label
+            exc.timeout = timeout
+            raise exc
 
         # A delivered payload proves the main thread responded, even when fn()
         # raised. A failed scheduler registration is not a recovery signal.

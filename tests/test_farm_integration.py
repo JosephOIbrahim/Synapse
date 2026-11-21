@@ -261,8 +261,12 @@ def test_primary_hweb_cancel_survives_gates_without_memory(monkeypatch, gate, al
           "_client_sessions": {},
           # The Level 1 preflight gate (R-5) does not apply without Houdini; the rig has none.
           "_preflight_refusal_for": lambda *args: None, "_preflight_note_for": lambda *args: None,
+          # R-015: the shipped breaker classification (outcome code, not text).
+          "_service_failure": __import__("synapse.server.hwebserver_adapter",
+                                         fromlist=["_service_failure"])._service_failure,
           "_rate_limiter": SimpleNamespace(acquire=lambda _: (False, {"reason": "full"})) if gate == "rate" else None,
-          "_circuit_breaker": SimpleNamespace(can_execute=lambda: (False, {}), record_success=lambda: None) if gate == "breaker" else None}
+          "_circuit_breaker": SimpleNamespace(can_execute=lambda: (False, {}), record_success=lambda: None,
+                                              record_failure=lambda: None) if gate == "breaker" else None}
     exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), ns)
     connection = SimpleNamespace(_authenticated=True, _client_id="local", _session_id=None, send=send)
     asyncio.run(ns["receive"](connection, json.dumps({"type": "farm_cancel", "id": "stop", "payload": {"request_id": "job"}})))

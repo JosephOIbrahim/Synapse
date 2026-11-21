@@ -135,6 +135,12 @@ class AutonomousDriver:
         self._decisions: List[Decision] = []
         self._checkpoints: Dict[str, Dict[str, Any]] = {}
         self._cancelled = False
+        # R-035: the run's absolute deadline, set by _execute_inner. The
+        # step loop consults it so a run stops at a STEP boundary (never
+        # starting work the caller's budget cannot cover), not only at the
+        # next iteration boundary.
+        self._deadline: Optional[float] = None
+        self._wall_clock_stopped = False
 
         # Approval callback — override for UI integration
         self._approval_callback: Optional[Callable[[RenderPlan], bool]] = None
@@ -163,6 +169,10 @@ class AutonomousDriver:
     async def _execute_inner(self, intent: str) -> RenderReport:
         start_time = time.monotonic()
         deadline = start_time + self._max_wall_clock
+        # R-035: the step loop reads the same deadline. Reset the trip flag so
+        # a reused driver cannot report a previous run's stop.
+        self._deadline = deadline
+        self._wall_clock_stopped = False
         stop_reason = ""
         self._cancelled = False
         self._decisions = []
@@ -355,6 +365,21 @@ class AutonomousDriver:
                 )
                 stop_reason = "cancelled"
                 break
+            # R-035: the wall clock expired at a step boundary while steps were
+            # being dispatched. The steps that were already running finished;
+            # the rest were SKIPPED and never started. Stop here -- collecting
+            # and grading a partial sequence would present an unfinished run.
+            if self._wall_clock_stopped:
+                self._log_decision(
+                    context="wall_clock_exceeded",
+                    decision=f"Stopping at a step boundary: wall-clock budget "
+                             f"({self._max_wall_clock:.0f}s) exceeded",
+                    reasoning="Per-run wall-clock bound -- steps that had not "
+                              "started were skipped and are reported as such",
+                    gate=GateLevel.INFORM,
+                )
+                stop_reason = "wall_clock_exceeded"
+                break
             if not execution_ok:
                 self._log_decision(
                     context="execution_failed",
@@ -532,10 +557,21 @@ class AutonomousDriver:
         """Execute all steps in the plan sequentially.
 
         Returns True if all steps completed, False if any failed.
+
+        R-035: the wall clock is checked at every STEP boundary as well as at
+        each iteration boundary. An in-flight step is never aborted (a render
+        cannot be safely torn mid-call), but once the deadline has passed no
+        further step starts; the remaining steps are marked SKIPPED and
+        ``_wall_clock_stopped`` tells the caller why the report is partial.
         """
         for step in plan.steps:
             if self._cancelled:
                 step.status = StepStatus.SKIPPED
+                continue
+
+            if self._deadline is not None and time.monotonic() >= self._deadline:
+                step.status = StepStatus.SKIPPED
+                self._wall_clock_stopped = True
                 continue
 
             step.status = StepStatus.RUNNING

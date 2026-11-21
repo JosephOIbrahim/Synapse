@@ -60,8 +60,15 @@ def test_unreadable_stack_does_not_undo():
 
 
 def test_both_sites_use_the_guard():
+    """The execute_python site is pinned BEHAVIOURALLY, not by source text.
+
+    R-016: a NameError through the public handler entry point must reach
+    ``performUndo`` exactly once, after the group closes —
+    ``tests/test_r016_rollback_and_timeouts.py::test_a_name_error_rolls_back_exactly_once``.
+    That test goes red if the rollback call is deleted, so the old
+    ``inspect.getsource(handlers)`` substring pin here would only re-pin text.
+    The render site keeps its source pin: it has no behavioural fake yet.
+    """
     assert handlers._rollback_if_group_left_entry is handlers_render._rollback_if_group_left_entry
-    exec_src = inspect.getsource(handlers)
     render_src = inspect.getsource(handlers_render.RenderHandlerMixin)
-    assert "_rollback_if_group_left_entry(hou, _labels_before)" in exec_src
     assert "_rollback_if_group_left_entry(hou, labels_before)" in render_src

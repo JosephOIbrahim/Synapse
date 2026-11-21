@@ -53,6 +53,7 @@ from ..core.protocol import (
     SynapseResponse,
     PROTOCOL_VERSION,
 )
+from ..core.outcomes import is_service_failure
 from .auth import (get_auth_key, authenticate, validate_origin, header_value,
                    AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE)
 from .bind_posture import (enforce_bind_posture, hwebserver_settings,
@@ -80,10 +81,13 @@ _metrics_aggregator = None  # live MetricsAggregator (Sprint E) — None until s
 # a sustained-freeze escalation has something to open on the live transport.
 # The FreezeChain's never-construct invariant is honored: freeze_chain only
 # READS this; construction happens here, at startup, never in the freeze
-# handler. This breaker opens only through explicit force_open/reset (the
-# freeze escalation + recovery) or its timeout → half-open probe cycle —
-# handler errors are NOT recorded as failures (attributing an op error to the
-# transport is an unprobed policy the WS failover path never ran either).
+# handler. It opens through explicit force_open/reset (the freeze escalation +
+# recovery), through its timeout → half-open probe cycle, and — R-015
+# (BRAINSTEM-7) — through consecutive SERVICE-ERROR responses, classified by
+# the outcome code the handler attached (SynapseServiceError -> tool.failed, a
+# main-thread timeout -> transport.timeout), never by the error text. A user
+# error ("Couldn't find a node") carries no service code and is not counted,
+# exactly as core/errors.py says. Read-only commands keep the F3 bypass below.
 _circuit_breaker: Optional[CircuitBreaker] = None
 _client_counter = 0
 _client_lock = threading.Lock()
@@ -101,6 +105,21 @@ def _get_handler() -> SynapseHandler:
     if _handler is None:
         _handler = SynapseHandler()
     return _handler
+
+
+def _service_failure(response) -> bool:
+    """True when a failed handler response names a SERVICE-level failure (R-015).
+
+    The handler is the only seam that sees the exception type, so it puts that
+    type's classification on the failed response's data as an outcome
+    (``handlers._failure_receipt_data``: SynapseServiceError -> tool.failed, a
+    main-thread timeout -> transport.timeout). This reads that code and never
+    the error text — "node not found" and "Houdini is down" are told apart by
+    class, not by matching words.
+    """
+    data = getattr(response, "data", None)
+    outcome = data.get("outcome") if isinstance(data, dict) else None
+    return is_service_failure(outcome)
 
 
 def _preflight_refusal_for(connection, command) -> Optional[Dict]:
@@ -265,13 +284,14 @@ if HWEBSERVER_AVAILABLE:
                         await self.send(busy.to_json(), is_binary=False)
                         return
 
-                # F3 breaker gate (2026-08-14): when the freeze chain has opened
-                # the transport breaker (sustained main-thread freeze), fast-fail
-                # NEW mutating commands instead of queueing them behind the
-                # frozen main thread. Read-only commands bypass (their whole job
-                # is observability during a freeze — same bypass as the websocket
-                # path). The "frozen" sentence is honest about WHY: a human reads
-                # this when the UI comes back.
+                # F3 breaker gate (2026-08-14): while the transport breaker is
+                # open — a sustained main-thread freeze, or (R-015) a run of
+                # service-error responses — fast-fail NEW mutating commands
+                # instead of queueing them behind a dead service. The answer is
+                # retryable (server.busy on the wire, which is what the
+                # retry_after data maps to) and nothing is dispatched.
+                # Read-only commands bypass (their whole job is observability
+                # during a freeze — same bypass as the websocket path).
                 if (_circuit_breaker is not None and command.type not in _READ_ONLY_COMMANDS
                         and command.type != "farm_cancel"):
                     can_exec, cb_info = _circuit_breaker.can_execute()
@@ -279,9 +299,8 @@ if HWEBSERVER_AVAILABLE:
                         paused = SynapseResponse(
                             id=command.id,
                             success=False,
-                            error=("Houdini's main thread was unresponsive, so Synapse "
-                                   "paused new commands while it recovers — try again "
-                                   "shortly"),
+                            error=("Synapse paused commands temporarily to recover "
+                                   "from errors — try again shortly"),
                             data={"retry_after": cb_info.get("retry_after", 30.0),
                                   "state": cb_info.get("state", "open")},
                             sequence=command.sequence
@@ -344,11 +363,19 @@ if HWEBSERVER_AVAILABLE:
                         response = handler.handle(command)
                 # F3: record successes so a HALF_OPEN breaker (post-timeout
                 # probe cycle) can close again after the main thread recovers.
-                # Failures are deliberately NOT recorded as breaker failures —
-                # see the _circuit_breaker declaration comment.
-                if (_circuit_breaker is not None and response.success
+                # R-015 (BRAINSTEM-7): a service-level failure is recorded too,
+                # classified by the outcome code the handler attached to the
+                # response (SynapseServiceError -> tool.failed, a main-thread
+                # timeout -> transport.timeout) — never by the error text. A
+                # user error ("Couldn't find a node") attaches no service code
+                # and leaves the breaker alone, as core/errors.py says it must.
+                # Read-only commands keep the F3 bypass.
+                if (_circuit_breaker is not None and response is not None
                         and command.type not in _READ_ONLY_COMMANDS):
-                    _circuit_breaker.record_success()
+                    if response.success:
+                        _circuit_breaker.record_success()
+                    elif _service_failure(response):
+                        _circuit_breaker.record_failure()
                 _preflight_note_for(self, response)
                 await self.send(response.to_json(), is_binary=False)
 

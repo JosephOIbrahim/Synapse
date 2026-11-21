@@ -343,7 +343,9 @@ class FaceWork(QtWidgets.QWidget):
         # CRIT.md 2026-09-15 #17 (P8 · Work face resting phrases): the title
         # is the word and nothing else. "· routed %s" named the router, and
         # CLAUDE.md §2 rules the six specialists Claude-level personae, not
-        # live-path processes (live dispatch is TieredRouter). And the eyebrow
+        # live-path processes (live dispatch is the handler's command
+        # registry; R-014 corrected the old "live dispatch is TieredRouter"
+        # claim). And the eyebrow
         # earns its place only once there are steps under it to label.
         self._plan_title.setText("PLAN")
         self._plan_title.setVisible(bool(self._steps))

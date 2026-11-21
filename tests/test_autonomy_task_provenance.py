@@ -155,6 +155,20 @@ def _task_prim(path, task_id):
     return _stage_for(path).GetPrimAtPath(f"/SYNAPSE/agent/tasks/{safe}")
 
 
+def _await_autonomy(handler, task_id, timeout=10.0):
+    """Poll an R-035 autonomy task to its terminal receipt (bounded)."""
+    import time
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        receipt = handler._handle_autonomous_render({"task_id": task_id})
+        if receipt.get("status") != "running":
+            return receipt
+        time.sleep(0.01)
+    raise AssertionError(
+        "autonomy task %s did not finish in %.1fs" % (task_id, timeout)
+    )
+
+
 # ═════════════════════════════════════════════════════════════════
 # THE LOOP-CLOSURE TEST (proof it is NOT theater)
 # ═════════════════════════════════════════════════════════════════
@@ -317,11 +331,14 @@ class TestBestEffort:
              patch.object(H.SynapseHandler, "_resolve_agent_usd", staticmethod(lambda: agent_usd)), \
              patch.object(agent_state, "write_verification", _boom), \
              patch.object(agent_state, "create_task", _boom):
-            out = handler._handle_autonomous_render({"intent": "render frames 1-48"})
+            started = handler._handle_autonomous_render({"intent": "render frames 1-48"})
+            # R-035: the start call returns a task id; the report is the poll.
+            out = _await_autonomy(handler, started["task_id"])
 
         # Render result survives a writer explosion on BOTH dispatch + completion.
         assert isinstance(out, dict)
         assert out["success"] is True
+        assert out["result"]["success"] is True
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -362,9 +379,11 @@ class TestHandlerLevelActivation:
 
         with patch.dict(sys.modules, {"synapse.autonomy": fake_autonomy}), \
              patch.object(H.SynapseHandler, "_resolve_agent_usd", staticmethod(lambda: agent_usd)):
-            out = handler._handle_autonomous_render({"intent": "render frames 1-48"})
+            started = handler._handle_autonomous_render({"intent": "render frames 1-48"})
+            out = _await_autonomy(handler, started["task_id"])
 
         assert out["success"] is True
+        assert out["result"]["success"] is True
         # A task prim was authored THROUGH the handler (create_task fired live).
         tasks = _stage_for(agent_usd).GetPrimAtPath("/SYNAPSE/agent/tasks").GetChildren()
         assert len(tasks) == 1, "handler did not author a task through the live wiring"
