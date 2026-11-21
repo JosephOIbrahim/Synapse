@@ -1938,8 +1938,14 @@ class CopsHandlerMixin:
     def _handle_cops_temporal_analysis(self, payload: Dict) -> Dict:
         """Analyze temporal coherence across frames.
 
-        Checks for flicker, temporal noise, and frame-to-frame consistency
-        by comparing pixel data across a frame range.
+        Cooks the node at each frame in the range and records cook errors.
+        It does not read pixels: the pixel metrics a caller asks for
+        ('flicker', 'diff', 'consistency') are recorded under
+        ``metrics_requested`` and are not run, ``metrics_performed`` lists
+        what did run, and ``overall`` is ``not_analyzed`` unless a pixel
+        metric actually ran (R-028, 2026-11-20: it used to answer ``stable``
+        from a clean cook sweep alone -- mirrors cops_analyze_render's
+        COP-21).
 
         Payload:
             node (str, required): COP node path.
@@ -1978,6 +1984,7 @@ class CopsHandlerMixin:
                 "frame_range": [start, end],
                 "frame_count": end - start + 1,
                 "metrics_requested": metrics,
+                "metrics_performed": ["cook_errors"],
                 "analysis": {},
             }
 
@@ -2003,9 +2010,10 @@ class CopsHandlerMixin:
             )
 
             if frame_errors == 0:
-                result["overall"] = "stable"
-            elif frame_errors < (end - start + 1) * 0.1:
-                result["overall"] = "mostly_stable"
+                # No pixel was read, so a clean cook sweep is not a verdict
+                # on temporal stability -- never "stable" without a pixel
+                # metric (R-028).
+                result["overall"] = "not_analyzed"
             else:
                 result["overall"] = "unstable"
 

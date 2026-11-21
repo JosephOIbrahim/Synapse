@@ -2240,6 +2240,47 @@ class TestCopsTemporalAnalysis:
         assert result.success
         assert set_frame.call_args_list[-1] == call(50.0)
 
+    def test_temporal_reports_metrics_performed_not_stable(self, handler):
+        """No pixel is read, so a clean cook sweep is not_analyzed, never
+        'stable', and metrics_performed names the one metric that ran (R-028)."""
+        node = _make_cop_node("/obj/cop2net1/file1", "file")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            with patch.object(_handlers_hou, "frame", return_value=50.0, create=True):
+                with patch.object(_handlers_hou, "setFrame", create=True):
+                    result = handler.handle(handlers_mod.SynapseCommand(
+                        type="cops_temporal_analysis",
+                        id="test-51",
+                        payload={
+                            "node": "/obj/cop2net1/file1",
+                            "frame_range": [10, 12],
+                        },
+                    ))
+        assert result.success
+        assert result.data["metrics_requested"] == [
+            "flicker", "diff", "consistency"]
+        assert result.data["metrics_performed"] == ["cook_errors"]
+        assert result.data["overall"] == "not_analyzed"
+
+    def test_temporal_frame_errors_report_unstable(self, handler):
+        """Frame cook errors are real evidence -- overall says unstable, and
+        the pixel metrics still did not run (R-028)."""
+        node = _make_cop_node("/obj/cop2net1/file1", "file", errors=["boom"])
+        with patch.object(_handlers_hou, "node", return_value=node):
+            with patch.object(_handlers_hou, "frame", return_value=50.0, create=True):
+                with patch.object(_handlers_hou, "setFrame", create=True):
+                    result = handler.handle(handlers_mod.SynapseCommand(
+                        type="cops_temporal_analysis",
+                        id="test-52",
+                        payload={
+                            "node": "/obj/cop2net1/file1",
+                            "frame_range": [10, 12],
+                        },
+                    ))
+        assert result.success
+        assert result.data["analysis"]["frame_errors"] == 3
+        assert result.data["metrics_performed"] == ["cook_errors"]
+        assert result.data["overall"] == "unstable"
+
 
 class TestCopsStampScatter:
     def test_stamp_scatter_basic(self, handler):

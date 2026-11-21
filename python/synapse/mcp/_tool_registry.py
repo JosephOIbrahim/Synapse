@@ -1918,7 +1918,9 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("cops_temporal_analysis", "cops_temporal_analysis", _identity,
-     "Temporal coherence analysis: flicker, frame diff, consistency check.",
+     "Cook a COP node across a frame range and report cook errors. It does not read "
+     "pixels: the metrics asked for come back as metrics_requested, metrics_performed "
+     "lists what ran, and overall is not_analyzed when nothing was found.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "COP node path"},
          "frame_range": {"type": "array", "items": {"type": "integer"}, "description": "[start, end]"},
