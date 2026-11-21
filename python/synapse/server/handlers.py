@@ -856,7 +856,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                     and threading.current_thread() is threading.main_thread()):
                 scope = getattr(self, "_undo_scope", None)
                 if scope is not None and scope.needs_baseline and HOU_AVAILABLE:
-                    scope.note_session_start(hou)
+                    scope.note_session_start(hou.undos)
             # C5: serialize mutating commands across clients (skip on the main
             # thread — already serialized there, and locking would deadlock
             # run_on_main). Read-only commands never contend.

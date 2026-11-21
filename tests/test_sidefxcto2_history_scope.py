@@ -146,6 +146,25 @@ def test_synapse_step_from_before_this_session_refuses(env):
     assert undos.calls == []
 
 
+def test_handle_captures_the_baseline_from_hou_undos(env):
+    """handle() itself must baseline from hou.undos, not from the hou module.
+
+    Before the fix handle() passed ``hou``: both label reads came back None, no
+    baseline was ever captured, and a SYNAPSE step left by an earlier session
+    passed the prefix check (release review, 2026-11-21).
+    """
+    handler, undos, _mod = env
+    undos.undo = ["SYNAPSE: old session build"]
+    assert handler._undo_scope.needs_baseline is True
+
+    handler.handle(SynapseCommand(id="b-001", type="ping", payload={}))
+    assert handler._undo_scope.needs_baseline is False, "handle() captured no baseline"
+
+    response = handler.handle(SynapseCommand(id="b-002", type="undo", payload={}))
+    assert response.success is False
+    assert "before this SYNAPSE session started" in response.error
+    assert undos.calls == []
+
 def test_disabled_history_refuses(env):
     handler, undos, mod = env
     undos.enabled = False
