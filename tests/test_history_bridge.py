@@ -199,6 +199,9 @@ def pump_main_thread(run_worker):
     work = queue.Queue()
     result = []
     def marshal(fn, **kw):
+        # Like run_on_main: a caller already on the main thread runs inline.
+        if threading.current_thread() is threading.main_thread():
+            return fn()
         done = threading.Event()
         value = []
         work.put((fn, done, value))
@@ -236,6 +239,7 @@ def test_tool_executor_off_main_keeps_native_history_on_main(env, monkeypatch):
     from synapse.server import main_thread
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     history, _, handler = env
+    _session_started_before_the_build(handler)
     executor = ToolExecutor()
     monkeypatch.setattr(executor, '_get_handler', lambda: handler)
     request = ToolRequest('history-test', 'houdini_undo', {})
