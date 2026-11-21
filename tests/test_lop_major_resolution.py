@@ -12,8 +12,13 @@ selection pattern):
                           CONTEXT truth is the stale-advice class C-U5 kills)
   * explicit ``path``  -> honored verbatim, untouched by resolution
 
-Plus the 22.0.368 catalog content pins (probe truth, authored by
-scripts/author_lop_knowledge_22.py from the banked hython probe): the renamed
+R-026 adds the per-BUILD stamp gate: a packaged catalog stamped for a build
+other than the RUNNING one (``hou.applicationVersionString()``) is refused in
+strict mode and reads as ``None`` in the validator posture — a within-major
+point-release drift must never advise in silence.
+
+Plus the 22.0.400 catalog content pins (live-catalogue truth, authored by
+scripts/author_lop_knowledge_22.py from rag/catalog/h22.0.400/): the renamed
 instancer family is IN, the per-shape lights are OUT (known_absent, superseded
 by the consolidated light LOP), plane is REAL now (was H21 known_absent), and
 GraphValidator's additive LOP phase advises from the _22 catalog on an H22
@@ -56,7 +61,7 @@ _REPO = Path(__file__).resolve().parents[1]
 _DATA = _REPO / "python/synapse/cognitive/tools/data"
 PKG_21 = _DATA / "lop_solaris_knowledge_21.json"
 PKG_22 = _DATA / "lop_solaris_knowledge_22.json"
-HARNESS_22 = _REPO / "harness/notes/verified_lop_solaris_knowledge_22.0.368.json"
+HARNESS_22 = _REPO / "harness/notes/verified_lop_solaris_knowledge_22.0.400.json"
 
 _H22_INSTANCERS = (
     "copytopoints", "extractinstances", "mergepointinstancers",
@@ -66,9 +71,10 @@ _H22_INSTANCERS = (
 _H22_DEAD_LIGHTS = ("cylinderlight", "disklight", "rectlight", "spherelight")
 
 
-def _fake_hou(major):
+def _fake_hou(major, build=None):
     mod = types.ModuleType("hou")
-    mod.applicationVersion = lambda: (major, 0, 368)
+    mod.applicationVersion = lambda: (major, 0, 400)
+    mod.applicationVersionString = lambda: build or "%d.0.400" % major
     return mod
 
 
@@ -89,7 +95,7 @@ class TestMajorResolution:
         monkeypatch.setitem(sys.modules, "hou", _fake_hou(22))
         assert lop_knowledge._pkg_catalog_path() == PKG_22
         cat = load_lop_catalog()
-        assert cat["houdini_version"] == "22.0.368"
+        assert cat["houdini_version"] == "22.0.400"
 
     def test_missing_major_fails_loud_never_cross_major(self, monkeypatch):
         monkeypatch.setitem(sys.modules, "hou", _fake_hou(99))
@@ -109,6 +115,46 @@ class TestMajorResolution:
         monkeypatch.setitem(sys.modules, "hou", _fake_hou(22))
         cat = load_lop_catalog(PKG_21)
         assert cat["houdini_version"] == "21.0.671"
+
+
+# ---------------------------------------------------------------------------
+# 1b. R-026 — the per-BUILD stamp gate on the resolved packaged catalog
+# ---------------------------------------------------------------------------
+
+class TestRunningBuildStampGate:
+    """A catalog stamped for another build must never advise in silence.
+
+    The gate is judged on (path, running build), not cached with the file, so
+    these pin the strict raise, the validator-posture None, and the explicit-
+    path exemption in one place.
+    """
+
+    def test_matching_running_build_loads(self, monkeypatch):
+        monkeypatch.setitem(sys.modules, "hou", _fake_hou(22, "22.0.400"))
+        assert load_lop_catalog(strict=True)["houdini_version"] == "22.0.400"
+
+    def test_point_release_drift_refuses_in_strict_mode(self, monkeypatch):
+        # THE R-026 shape: same major (22), older point release (22.0.368).
+        # Before the gate this loaded in silence; it must now refuse.
+        monkeypatch.setitem(sys.modules, "hou", _fake_hou(22, "22.0.368"))
+        with pytest.raises(LopKnowledgeError,
+                           match=r"22\.0\.400.*22\.0\.368"):
+            load_lop_catalog(strict=True)
+        # Validator posture: an honest skip, never stale advice.
+        assert load_lop_catalog(strict=False) is None
+
+    def test_newer_point_release_drift_also_refuses(self, monkeypatch):
+        # Drift is not directional: a 22.0.401 seat is also served by a
+        # 22.0.400-authored catalog only after a deliberate re-author.
+        monkeypatch.setitem(sys.modules, "hou", _fake_hou(22, "22.0.401"))
+        with pytest.raises(LopKnowledgeError, match=r"22\.0\.401"):
+            load_lop_catalog(strict=True)
+
+    def test_explicit_path_not_subject_to_running_build_gate(self, monkeypatch):
+        # Explicit paths stay honored verbatim (historical catalogs, fixtures).
+        monkeypatch.setitem(sys.modules, "hou", _fake_hou(22, "22.0.401"))
+        assert load_lop_catalog(PKG_21)["houdini_version"] == "21.0.671"
+        assert load_lop_catalog(PKG_22)["houdini_version"] == "22.0.400"
 
 
 # ---------------------------------------------------------------------------
@@ -134,11 +180,11 @@ class TestH22CatalogTruth:
         ).hexdigest()
         assert digest == raw["blake2b"]
         assert raw["schema"] == "lop_solaris_knowledge/v1"
-        assert raw["houdini_version"] == "22.0.368"
+        assert raw["houdini_version"] == "22.0.400"
 
     def test_h22_instancer_family_present(self):
-        # The W.3 rename class: ALL nine instancers resolve on 22.0.368 as
-        # unversioned Lop types (probe truth) and are catalog entries.
+        # The W.3 rename class: ALL nine instancers resolve on 22.0.400 as
+        # unversioned Lop types (live catalogue truth) and are catalog entries.
         entries = self._cat()["content"]["entries"]
         for name in _H22_INSTANCERS:
             assert name in entries, f"instancer '{name}' missing from the _22 catalog"
@@ -162,7 +208,7 @@ class TestH22CatalogTruth:
 
     def test_plane_is_real_now_grid_still_absent(self):
         # The exact stale-advice kill: H21 marked plane known_absent; on
-        # 22.0.368 the probe proves it is a real LOP type.
+        # 22.0.400 the live catalogue proves it is a real LOP type.
         cat = self._cat()
         entries = cat["content"]["entries"]
         absent = known_absent(cat)
@@ -171,8 +217,8 @@ class TestH22CatalogTruth:
 
     def test_instancer_opalias_flagged_known_absent(self):
         # DECISION-POINT pin (W.3 "canonical spelling, never the opalias"):
-        # 'instancer' is gone from the type table but createNode() silently
-        # aliases to copytopoints — known_absent remediation states both facts.
+        # 'instancer' is gone from the 22.0.400 type table but the instancer tab
+        # resolves to copytopoints — known_absent remediation states both facts.
         absent = known_absent(self._cat())
         assert "instancer" in absent
         assert "copytopoints" in absent["instancer"]["remediation"]
@@ -253,7 +299,7 @@ def _proposal(nodes, edges):
         edges=edges,
         natural_language_intent="C-U5 golden H22 LOP fixture",
         model_id="fixture",
-        houdini_version_stamp="22.0.368",
+        houdini_version_stamp="22.0.400",
     )
 
 
@@ -320,6 +366,6 @@ class TestValidatorAgainstH22Catalog:
         monkeypatch.setitem(sys.modules, "hou", _fake_hou(22))
         v = GraphValidator(_AllExist(), _MockConn())
         assert v._lop_catalog is not None
-        assert v._lop_catalog["houdini_version"] == "22.0.368"
+        assert v._lop_catalog["houdini_version"] == "22.0.400"
         report = v.validate(_proposal([_node("l", "rectlight", "key")], []))
         assert report.status == ValidationStatus.INVALID

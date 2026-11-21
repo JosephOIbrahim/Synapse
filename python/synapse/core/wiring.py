@@ -32,9 +32,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 CATALOG_SCHEMA = "verified_connectivity/v2"
 
@@ -75,6 +78,22 @@ def _running_houdini_major() -> Optional[int]:
     except Exception:
         return None
     return major if isinstance(major, int) else None
+
+
+def _running_houdini_version() -> Optional[str]:
+    """The RUNNING Houdini build string via ``hou.applicationVersionString()``
+    (e.g. ``"22.0.400"``) — the point-release identity the per-build knowledge
+    catalogs are stamped with. Same posture as :func:`_running_houdini_major`:
+    guarded LOCAL import, ``None`` standalone, and anything non-str (test
+    fakes, residency-leaked MagicMocks) reads as unknown — never a guessed
+    build, so a caller's stamp check skips instead of refusing on fiction."""
+    try:
+        import hou  # local + guarded on purpose (doctor.py pattern)
+        version = hou.applicationVersionString()
+    except Exception:
+        logger.debug("running Houdini version unavailable", exc_info=True)
+        return None
+    return version if isinstance(version, str) and version.strip() else None
 
 
 def _pkg_catalog_path() -> Path:

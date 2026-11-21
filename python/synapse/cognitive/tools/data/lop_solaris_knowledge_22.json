@@ -1,8 +1,8 @@
 {
-  "blake2b": "3f88cdf088eb80bb0ed026feea5b5b70",
+  "blake2b": "9192c3181d5e2442df61efae7591d743",
   "content": {
     "authored": {
-      "_provenance": "authored from the banked hython probe harness/notes/lop_solaris_probe_22.0.368_2026-07-17.json on H22.0.368 (probe truth — no H22 solaris_reference corpus exists, so the H21 miner's corpus grounding does not transfer); carried verbatim, NOT re-derived by this script; re-author on source_digest mismatch. source_digest = blake2b over connectivity_22.json's blake2b stamp + the probe artifact's sha256. Tier notes: usd_type is semantic USD-schema knowledge carried at authored tier (the probe records node types + parm templates, not USD prim classes); key_parms use TEMPLATE spellings (t/r/s tuple parms cover tx..sz components; multiparm templates carry '#', runtime instance 1 is '1'); materiallibrary's cook(force=True) gotcha is H21-era operational knowledge carried NOT re-proved by this template-walk probe."
+      "_provenance": "authored from the committed live node catalogue rag/catalog/h22.0.400/ (scripts/build_node_catalog.py on H22.0.400: the type-level hou.NodeType.parmTemplateGroup() walk — VERIFIED-RUNTIME by construction, 222 Lop types; Vop.json carries the Vop-resident shader types), with connectivity_22.json as the advisory probe_confirmed cross-check; carried verbatim, NOT re-derived by this script; re-author on source_digest mismatch. source_digest = blake2b over the sha256 of Lop.json + Vop.json plus connectivity_22.json's blake2b stamp. Tier notes: usd_type is semantic USD-schema knowledge carried at authored tier (the catalogue records parm templates, not USD prim classes); key_parms use TEMPLATE spellings (t/r/s tuple parms cover tx..sz components; multiparm templates carry '#', runtime instance 1 is '1'). Carried-not-re-proved on 22.0.400: createNode('domelight'/'distantlight'/'light') version resolution (recorded by the 22.0.368 creation probe; the catalogue records the type table only), and materiallibrary's cook(force=True) gotcha (H21-era operational knowledge; no catalogue walk can prove cook behaviour)."
     },
     "composition": {
       "reference": {
@@ -28,7 +28,7 @@
       "assignmaterial": {
         "category": "Lop",
         "gotchas": [
-          "primpattern#/matspecpath# are multiparm TEMPLATES on 22.0.368 — the H21 catalog carried the instance spellings primpattern1/matspecpath1, which have no parm template; created nodes expose instance 1 as primpattern1/matspecpath1."
+          "primpattern#/matspecpath# are multiparm TEMPLATES on 22.0.400 — the H21 catalog carried the instance spellings primpattern1/matspecpath1, which have no parm template; created nodes expose instance 1 as primpattern1/matspecpath1."
         ],
         "key_parms": [
           "matspecpath#",
@@ -41,7 +41,7 @@
       "camera": {
         "category": "Lop",
         "gotchas": [
-          "Transform templates are the t/r tuple parms on 22.0.368 — component spellings (tx..rz) are not template names."
+          "Transform templates are the t/r tuple parms on 22.0.400 — component spellings (tx..rz) are not template names."
         ],
         "key_parms": [
           "fStop",
@@ -56,7 +56,7 @@
       "copytopoints": {
         "category": "Lop",
         "gotchas": [
-          "The H21-era 'instancer' spelling is gone from the 22.0.368 type table; createNode('instancer') silently aliases here — author the canonical 'copytopoints' spelling."
+          "The H21-era 'instancer' spelling is gone from the 22.0.400 type table; the instancer tab resolves here — author the canonical 'copytopoints' spelling."
         ],
         "key_parms": [
           "method",
@@ -82,7 +82,7 @@
       "distantlight": {
         "category": "Lop",
         "gotchas": [
-          "createNode('distantlight') resolves to distantlight::2.0 on 22.0.368 — UsdLux inputs are punycode-namespaced (xn__inputs*); plain intensity/exposure live only on the legacy unversioned template."
+          "On 22.0.400 the versioned distantlight::2.0 template carries the punycode-namespaced UsdLux inputs (xn__inputs*); the plain intensity/exposure spellings live only on the legacy unversioned distantlight template. (createNode('distantlight') resolved to the ::2.0 type on the 22.0.368 creation probe; the 22.0.400 catalogue records the type table, not creation resolution.)"
         ],
         "key_parms": [
           "primpath",
@@ -97,7 +97,7 @@
       "domelight": {
         "category": "Lop",
         "gotchas": [
-          "createNode('domelight') resolves to domelight::3.0 on 22.0.368 — its UsdLux inputs are punycode-namespaced (xn__inputs*); plain intensity/exposure/xn__texturefile_0ta spellings live only on the legacy unversioned template."
+          "On 22.0.400 the versioned domelight::3.0 template carries the punycode-namespaced UsdLux inputs (xn__inputs*); the plain intensity/exposure/xn__texturefile_0ta spellings live only on the legacy unversioned domelight template. (createNode('domelight') resolved to the ::3.0 type on the 22.0.368 creation probe; the 22.0.400 catalogue records the type table, not creation resolution.)"
         ],
         "key_parms": [
           "primpath",
@@ -138,7 +138,7 @@
       "karmarenderproperties": {
         "category": "Lop",
         "gotchas": [
-          "DEPRECATED on 22.0.368 (nodeType deprecation flag) — still resolves; prefer karmarendersettings."
+          "DEPRECATED on 22.0.400 (catalogue deprecation flag) — still resolves; prefer karmarendersettings."
         ],
         "key_parms": [
           "engine"
@@ -161,7 +161,7 @@
       "light": {
         "category": "Lop",
         "gotchas": [
-          "The consolidated light LOP supersedes the H21-era per-shape lights (sphere/rect/disk/cylinder) — shape via the lighttype parm, so usd_type varies with it. createNode('light') resolves to light::2.0, whose UsdLux inputs are punycode-namespaced (xn__inputs*): per-shape dims at xn__inputsradius_mva / xn__inputswidth_zta / xn__inputsheight_mva / xn__inputslength_mva."
+          "The consolidated light LOP supersedes the H21-era per-shape lights (sphere/rect/disk/cylinder) — shape via the lighttype parm, so usd_type varies with it. The versioned light::2.0 template on 22.0.400 carries the punycode-namespaced UsdLux inputs (xn__inputs*): per-shape dims at xn__inputsradius_mva / xn__inputswidth_zta / xn__inputsheight_mva / xn__inputslength_mva. (createNode('light') resolved to light::2.0 on the 22.0.368 creation probe; the 22.0.400 catalogue records the type table, not creation resolution.)"
         ],
         "key_parms": [
           "lighttype",
@@ -176,7 +176,7 @@
       "materiallibrary": {
         "category": "Lop",
         "gotchas": [
-          "After creating materiallibrary, call matlib.cook(force=True) before creating child shader nodes, else createNode() returns None. (H21-era operational knowledge; NOT re-proved by the 22.0.368 template-walk probe.)"
+          "After creating materiallibrary, call matlib.cook(force=True) before creating child shader nodes, else createNode() returns None. (H21-era operational knowledge; NOT re-proved by the 22.0.400 catalogue walk.)"
         ],
         "key_parms": [
           "matnode#",
@@ -220,7 +220,7 @@
       "mtlxstandard_surface": {
         "category": "Vop",
         "gotchas": [
-          "NOT a Lop type on 22.0.368 — resolves only in the Vop category (creation at /stage fails 'Invalid node type name'); create it INSIDE a materiallibrary as a child shader node."
+          "NOT a Lop type on 22.0.400 — it resolves only in the Vop category (rag/catalog/h22.0.400/Vop.json); create it INSIDE a materiallibrary as a child shader node. (Creation at /stage failed 'Invalid node type name' on the 22.0.368 creation probe.)"
         ],
         "key_parms": [],
         "role": "material",
@@ -249,7 +249,7 @@
       "plane": {
         "category": "Lop",
         "gotchas": [
-          "NEW on 22.0.368 — the H21 catalog marked plane known_absent; it is now a real LOP type."
+          "real LOP type on 22.0.400 — NEW in H22; the H21 catalog marked plane known_absent."
         ],
         "key_parms": [
           "axis",
@@ -349,7 +349,7 @@
       "sublayer": {
         "category": "Lop",
         "gotchas": [
-          "The H21-era 'position' parm is gone on 22.0.368 — use positionindex/positiontype; filepath# is a multiparm template (instance 1 is filepath1)."
+          "The H21-era 'position' parm is gone on 22.0.400 — use positionindex/positiontype; filepath# is a multiparm template (instance 1 is filepath1)."
         ],
         "key_parms": [
           "filepath#",
@@ -374,22 +374,22 @@
     },
     "known_absent": {
       "cylinderlight": {
-        "remediation": "no cylinderlight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the cylinder shape"
+        "remediation": "no cylinderlight LOP on 22.0.400 — use the consolidated light LOP (versioned light::2.0) and set its lighttype parm to the cylinder shape"
       },
       "disklight": {
-        "remediation": "no disklight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the disk shape"
+        "remediation": "no disklight LOP on 22.0.400 — use the consolidated light LOP (versioned light::2.0) and set its lighttype parm to the disk shape"
       },
       "grid": {
-        "remediation": "there is NO grid LOP on 22.0.368 (grid is a Sop type) — use the plane LOP (a real LOP type on 22.0.368) or a cube scaled flat"
+        "remediation": "there is NO grid LOP on 22.0.400 (grid is a Sop type) — use the plane LOP (a real LOP type on 22.0.400) or a cube scaled flat"
       },
       "instancer": {
-        "remediation": "gone from the 22.0.368 type table — createNode('instancer') silently aliases to copytopoints (a silent-success trap); author the canonical copytopoints (or pointinstancer for PointInstancer prims) instead"
+        "remediation": "gone from the 22.0.400 type table (lop_has_instancer false in the live .400 harvest) — the instancer tab resolves to copytopoints (a silent-success trap); author the canonical copytopoints (or pointinstancer for PointInstancer prims) instead"
       },
       "rectlight": {
-        "remediation": "no rectlight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the rectangle shape"
+        "remediation": "no rectlight LOP on 22.0.400 — use the consolidated light LOP (versioned light::2.0) and set its lighttype parm to the rectangle shape"
       },
       "spherelight": {
-        "remediation": "no spherelight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the sphere shape"
+        "remediation": "no spherelight LOP on 22.0.400 — use the consolidated light LOP (versioned light::2.0) and set its lighttype parm to the sphere shape"
       }
     },
     "ordering_rules": [
@@ -408,7 +408,7 @@
     "recipes": [
       {
         "name": "solaris_render_scene",
-        "note": "geo -> matlib (+child shader, cooked) -> assignmaterial -> camera -> light -> karmarendersettings (karmarenderproperties is deprecated on 22.0.368) -> OUTPUT null",
+        "note": "geo -> matlib (+child shader, cooked) -> assignmaterial -> camera -> light -> karmarendersettings (karmarenderproperties is deprecated on 22.0.400) -> OUTPUT null",
         "sequence": [
           "sphere",
           "materiallibrary",
@@ -421,14 +421,18 @@
       }
     ]
   },
-  "houdini_version": "22.0.368",
+  "houdini_version": "22.0.400",
   "probe_confirmed_types": [
     "assignmaterial",
     "camera",
     "copytopoints",
+    "cube",
+    "distantlight",
     "domelight",
+    "edit",
     "extractinstances",
     "karmarenderproperties",
+    "karmarendersettings",
     "light",
     "materiallibrary",
     "merge",
@@ -436,12 +440,17 @@
     "modifypointinstances",
     "null",
     "paintinstances",
+    "plane",
     "pointinstancer",
     "reference",
+    "retimeinstances",
+    "scatterinstances",
     "sopimport",
+    "sphere",
     "splitpointinstancers",
-    "sublayer"
+    "sublayer",
+    "usdrender_rop"
   ],
   "schema": "lop_solaris_knowledge/v1",
-  "source_digest": "c6808219f54c721373c66f1020c83e80"
+  "source_digest": "f95a66f95a5cc266ed7d8a02b01fc96f"
 }

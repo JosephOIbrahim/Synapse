@@ -767,11 +767,12 @@ if __name__ == '__main__':
 
     # G5a: the packaged LOP catalog stamp, reported beside the others and
     # DELIBERATELY ABSENT from the exit gate below. harness/finalize.ps1:105
-    # runs this file in the release path, and the shipped h22 catalog is in
-    # observed drift right now, so gating here would stop releases on a harvest
-    # that is nobody's current work. `--lop-catalog-only` exits 1 on FAIL for a
-    # caller that wants the gate; wire it into the line below once the 22.x
-    # catalog is re-harvested on the running build.
+    # runs this file in the release path; when the shipped h22 catalog was in
+    # observed drift, gating here would have stopped releases on a harvest that
+    # was nobody's current work. R-026 (2026-11-20) re-authored that catalog on
+    # 22.0.400, so the check is GREEN on this tree — but making it a RELEASE
+    # gate is a release-policy decision, not a repair default.
+    # `--lop-catalog-only` exits 1 on FAIL for a caller that wants the gate.
     lop = lop_catalog_agreement()
     print('LOPCAT  %s  (%s)' % (lop['status'], lop['reason']))
     sys.exit(0 if (agree and apex['ok'] and public['ok'] and graph['ok']) else 1)

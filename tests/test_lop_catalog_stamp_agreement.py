@@ -1,11 +1,14 @@
-"""G5a: a packaged LOP knowledge catalog stamped on a build the runtime has
-moved past must be detected.
+"""G5a / R-026: a packaged LOP knowledge catalog stamped on a build the runtime
+has moved past must be detected — and must not serve.
 
 ``core/lop_knowledge.py:_pkg_catalog_path()`` resolves the packaged catalog by
-MAJOR only, and the loader validates ``schema`` plus a blake2b over ``content``
-without ever reading ``houdini_version`` — so a within-major point-release drift
-passes in silence. These pin the detector for that gap. The detector reports;
-it changes nothing about what the loader or the validator DOES on mismatch.
+MAJOR only. The G5a detector compares each catalog's ``houdini_version`` with
+the same-major ``h<major>_symbol_table.json`` (the introspected build
+authority) and reports a within-major point-release drift. These pin the
+detector. R-026 (2026-11-20) re-authored the 22.x catalog on the shipping
+22.0.400 build and added the runtime half: ``load_lop_catalog`` itself now
+refuses a stamp that differs from the running build (pinned in
+``tests/test_lop_major_resolution.py::TestRunningBuildStampGate``).
 """
 import importlib.util
 import json
@@ -115,20 +118,23 @@ def test_offline_check_does_not_invent_a_live_runtime(tree):
     assert result["runtime_comparison"] == {"status": "UNKNOWN", "build": None}
 
 
-def test_shipped_h22_catalog_is_in_observed_drift():
-    """The hazard on this tree, read from the files themselves.
+def test_shipped_h22_catalog_agrees_with_the_symbol_table():
+    """R-026: the 22.x catalog was re-authored on the shipping 22.0.400 build.
 
-    LAW 6: when the 22.x catalog is re-harvested on the running build this test
-    gets REWRITTEN to assert PASS — never deleted, never skipped.
+    LAW 6, inverted: this test used to pin the observed drift as expected. It is
+    now the PASS pin — when the catalog drifts from the symbol table again this
+    goes RED and the file is re-authored, never deleted, never skipped.
     """
     data = ROOT / DATA
     catalog = json.loads((data / "lop_solaris_knowledge_22.json").read_text(
         encoding="utf-8"))["houdini_version"]
     table = json.loads((data / "h22_symbol_table.json").read_text(
         encoding="utf-8"))["houdini_version"]
-    assert catalog != table, (catalog, table)
+    assert catalog == table, (catalog, table)
+    assert catalog == "22.0.400"
     result = verifier.lop_catalog_agreement(repo_root=ROOT)
-    assert result["status"] == "FAIL", result
+    assert result["status"] == "PASS", result
+    assert result["ok"] is True
     assert result["catalogs"]["22"]["catalog_build"] == catalog
     assert result["catalogs"]["22"]["reference_build"] == table
     # The 21 pair is the control: both artifacts stamped on the same build.

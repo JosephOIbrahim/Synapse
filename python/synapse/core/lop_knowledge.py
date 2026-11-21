@@ -22,6 +22,15 @@ advice class this fold exists to kill (H22 renamed the instancer LOPs and
 consolidated the per-shape lights). ``strict=False`` still returns ``None``:
 GraphValidator's LOP phase skips honestly instead of advising from H21 truth.
 
+R-026: the per-BUILD stamp is now ENFORCED, not merely recorded. When a running
+Houdini is detectable, a packaged catalog whose ``houdini_version`` differs
+from ``hou.applicationVersionString()`` is refused (strict ->
+:class:`LopKnowledgeError`, lenient -> ``None`` so the LOP phase skips instead
+of advising from another build's truth). A within-major point-release drift
+(22.0.368 truth on a 22.0.400 seat) is exactly the case this gate catches.
+Standalone (no ``hou``) has no running build to compare against and keeps the
+H21 default; an explicitly passed ``path`` stays honored verbatim.
+
 Zero ``hou`` import at module scope — the major resolver
 (:func:`synapse.core.wiring._running_houdini_major`, shared on purpose so
 U.1b hardening lands in ONE place) does a guarded LOCAL ``hou`` import.
@@ -33,7 +42,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from .wiring import _running_houdini_major
+from .wiring import _running_houdini_major, _running_houdini_version
 
 CATALOG_SCHEMA = "lop_solaris_knowledge/v1"
 
@@ -73,12 +82,38 @@ def load_lop_catalog(path: Optional[Path] = None, *,
     (see :func:`_pkg_catalog_path`); an explicit ``path`` is honored verbatim,
     untouched by major resolution."""
     fp = Path(path) if path is not None else _pkg_catalog_path()
+    # The per-build stamp gate applies ONLY to the resolved packaged catalog for
+    # the running build; an explicit path is honored verbatim (test fixtures and
+    # historical catalogs load untouched, as documented).
+    resolved_for_running = path is None
     key = str(fp)
+
+    def _stamp_gate(data: dict):
+        """Refuse a packaged catalog stamped for a build other than the RUNNING
+        one. Deliberately NOT cached: the verdict belongs to the (path, running
+        build) pair, never to the file, so a later call under a different
+        running build is re-judged instead of inheriting this answer."""
+        if not resolved_for_running or data is None:
+            return data
+        running = _running_houdini_version()
+        if running is None:
+            return data  # standalone: no running build to compare against
+        stamped = data.get("houdini_version")
+        if stamped == running:
+            return data
+        reason = (f"is stamped {stamped!r} but the running Houdini build is "
+                  f"{running!r} — wrong-build CONTEXT truth is the stale-advice "
+                  f"class this loader refuses; re-probe the build "
+                  f"(scripts/author_lop_knowledge_22.py pattern) and re-author")
+        if strict:
+            raise LopKnowledgeError(f"LOP knowledge catalog {reason} ({fp})")
+        return None
+
     if key in _CACHE:
         cached = _CACHE[key]
         if cached is None and strict:
             raise LopKnowledgeError(f"LOP knowledge catalog unusable at {fp}")
-        return cached
+        return _stamp_gate(cached)
 
     def _fail(reason: str):
         _CACHE[key] = None
@@ -112,7 +147,7 @@ def load_lop_catalog(path: Optional[Path] = None, *,
     if digest != data.get("blake2b"):
         return _fail("checksum mismatch (corrupt or hand-edited)")
     _CACHE[key] = data
-    return data
+    return _stamp_gate(data)
 
 
 def lop_entry(catalog: Optional[dict], type_name: str) -> Optional[dict]:
