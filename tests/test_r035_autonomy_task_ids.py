@@ -17,6 +17,14 @@ These tests pin the repair:
   passes, no further step starts, the skipped steps say so, and the report
   carries ``stop_reason='wall_clock_exceeded'``.
 
+It also pins the live follow-up defect (found on 22.0.400): Houdini's patched
+asyncio ("haio") refuses ``create_task`` off the main thread, so the worker's
+``asyncio.run`` died before its first task and the receipt read ``error`` in
+0.07 s. The worker now builds a plain ``asyncio.SelectorEventLoop`` (no
+policy); if even that construction is refused, the driver runs its
+synchronous step loop, labeled ``execution_mode='sync_steps'``, and no step
+is ever dispatched twice.
+
 Headless. Plant-or-enrich hou-fake convention (tests/test_m2_cook_verify.py
 header); handler-module globals patched directly, never sys.modules residency.
 No Houdini, no hython, no network.
@@ -426,3 +434,302 @@ def test_driver_never_starts_a_step_after_the_deadline():
     assert report.success is False
     assert [step.status for step in report.executed.steps] == [
         StepStatus.SKIPPED, StepStatus.SKIPPED]
+
+
+# ---------------------------------------------------------------------------
+# R-035 live defect: Houdini 22's patched asyncio (haio) refuses the loop
+# ---------------------------------------------------------------------------
+#
+# Measured live on 22.0.400: the worker thread's ``asyncio.run`` died in
+# ``haio.py create_task`` with "Current thread is not the main thread", so the
+# task never validated or rendered. The repair builds a plain
+# asyncio.SelectorEventLoop (no policy, no haio loop) and falls back to a
+# synchronous step loop if even that construction is refused.
+
+def _raise_main_thread_guard(*args, **kwargs):
+    """Exactly the refusal haio raises off Houdini's main thread."""
+    raise RuntimeError("Current thread is not the main thread")
+
+
+class _HaioGuardedLoop(asyncio.SelectorEventLoop):
+    """The haio shape from the live traceback: a loop that refuses a task.
+
+    The loop itself is constructible off the main thread (measured on
+    hython 22.0.400); the first ``create_task`` is what raises the guard, and
+    that is exactly where ``asyncio.run`` died. Later task creations are
+    allowed so ``Runner`` can tear the loop down after the refusal.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.refusals_left = 1
+
+    def create_task(self, coro, **kwargs):
+        if self.refusals_left:
+            self.refusals_left -= 1
+            raise RuntimeError("Current thread is not the main thread")
+        return super().create_task(coro, **kwargs)
+
+
+def _guard_the_default_loop(monkeypatch):
+    """Simulate haio at both loop-acquisition seams.
+
+    ``asyncio.new_event_loop()`` raises the guard outright, and the policy
+    still hands back a loop whose ``create_task`` raises it -- the measured
+    live traceback (haio.py:2217 -> check_thread). ``asyncio.run``, the
+    pre-fix worker's call, dies on that first task.
+    """
+    monkeypatch.setattr(asyncio, "new_event_loop", _raise_main_thread_guard)
+    policy = asyncio.get_event_loop_policy()
+    monkeypatch.setattr(policy, "new_event_loop", lambda: _HaioGuardedLoop())
+
+
+def _guard_the_plain_loop(monkeypatch):
+    """Even asyncio.SelectorEventLoop itself refuses (the fallback's trigger)."""
+    _guard_the_default_loop(monkeypatch)
+    monkeypatch.setattr(asyncio, "SelectorEventLoop", _raise_main_thread_guard)
+
+
+class _RecordingRegistry:
+    """Registry seam: get() answers existence, invoke() records and answers."""
+
+    def __init__(self, results=None):
+        self.calls = []
+        self._results = dict(results or {})
+
+    def get(self, tool_name):
+        return lambda payload=None: self._results.get(tool_name, {"success": True})
+
+    def invoke(self, tool_name, payload, ctx=None):
+        self.calls.append(tool_name)
+        return self._results.get(tool_name, {"success": True})
+
+
+def _sync_autonomy(planner, driver_cls=AutonomousDriver):
+    """A ``synapse.autonomy`` stand-in with the REAL driver under test.
+
+    Only the planner and the unused collaborators are faked; the driver is
+    the production class, so the handler exercises ``execute_sync`` itself
+    rather than a test double that could agree with the test.
+    """
+    module = ModuleType("synapse.autonomy")
+    module.AutonomousDriver = driver_cls
+    module.RenderPlanner = lambda *a, **k: planner
+    module.PreFlightValidator = lambda *a, **k: object()
+    module.RenderEvaluator = lambda *a, **k: object()
+    return module
+
+
+def _no_memory_store():
+    """Keep the handler's optional decision-memory out of the test."""
+    return patch("synapse.memory.store.get_synapse_memory",
+                 side_effect=RuntimeError("memory disabled for test"))
+
+
+class TestHoudiniAsyncioGuard:
+    def test_a_haio_guarded_default_policy_does_not_kill_the_task(
+            self, monkeypatch):
+        """haio's off-main create_task refusal must not end the run.
+
+        Pre-fix, the worker called ``asyncio.run``, which asks the policy for
+        its loop and then refuses the very first ``create_task`` -- the live
+        failure. The simulation is asserted live below, then the repaired
+        worker builds a plain loop and the task reaches ``done``.
+        """
+        observed = {}
+
+        async def _value(v):
+            return v
+
+        class _PlainLoopDriver:
+            def __init__(self, **kwargs):
+                pass
+
+            async def execute(self, intent):
+                observed["loop"] = asyncio.get_running_loop()
+                observed["gathered"] = await asyncio.gather(_value(1), _value(2))
+                await asyncio.sleep(0)
+                return _FakeReport(success=True, stop_reason="")
+
+        _guard_the_default_loop(monkeypatch)
+        # The simulation is live at both seams: the constructor refuses, and
+        # asyncio.run dies on the policy loop's first create_task.
+        with pytest.raises(RuntimeError, match="main thread"):
+            asyncio.new_event_loop()
+        coro = _value(None)
+        with pytest.raises(RuntimeError, match="main thread"):
+            asyncio.run(coro)
+        coro.close()  # the runner never got to schedule it
+
+        handler = _new_handler()
+        with patch.dict(sys.modules, {"synapse.autonomy": _fake_autonomy(_PlainLoopDriver)}), \
+             patch.object(SynapseHandler, "_resolve_agent_usd",
+                          staticmethod(lambda: None)), \
+             _no_memory_store():
+            started = handler._handle_autonomous_render(
+                {"intent": "render frames 1-2"})
+            done = _await(handler, started["task_id"])
+
+        assert done["status"] == STATUS_DONE, \
+            "a guarded default policy must not fail the task: %r" % (done,)
+        assert done["success"] is True
+        assert isinstance(observed["loop"], asyncio.SelectorEventLoop), \
+            "the driver must run on the plain loop, not the policy's loop"
+        assert not isinstance(observed["loop"], _HaioGuardedLoop), \
+            "the driver must not run on haio's guarded loop"
+        assert observed["gathered"] == [1, 2], \
+            "asyncio.gather must work on the plain loop off the main thread"
+
+    def test_a_plain_loop_refusal_runs_the_synchronous_fallback(
+            self, monkeypatch):
+        """If the plain loop class is guarded too, steps run synchronously.
+
+        The receipt must be terminal and honest: execution_mode says
+        'sync_steps', validation is reported as not run, evaluation and
+        prediction are None, and the stop reason says the output went
+        ungraded instead of claiming a pass.
+        """
+        registry = _RecordingRegistry({
+            "render_sequence": {"success": True,
+                                "image_path": "/tmp/frame_0001.exr"},
+        })
+        handler = _new_handler()
+        handler._registry = registry
+
+        _guard_the_plain_loop(monkeypatch)
+
+        with patch.dict(sys.modules, {
+                "synapse.autonomy": _sync_autonomy(_TwoStepPlanner())}), \
+             patch.object(SynapseHandler, "_resolve_agent_usd",
+                          staticmethod(lambda: None)), \
+             _no_memory_store():
+            started = handler._handle_autonomous_render(
+                {"intent": "render frames 1-2"})
+            done = _await(handler, started["task_id"])
+
+        assert done["status"] == STATUS_DONE, \
+            "the fallback must end in a terminal receipt: %r" % (done,)
+        result = done["result"]
+        assert result["execution_mode"] == "sync_steps"
+        assert result["success"] is False
+        assert result["stop_reason"] == "sync_steps_ungraded"
+        assert result["evaluation"] is None, "nothing was graded"
+        assert result["prediction"] is None, "nothing was predicted"
+        assert result["verification"] is None, "nothing was verified"
+        assert result["executed"]["validation_checks"] == [], \
+            "an empty check list means no check ran"
+        assert [step["status"] for step in result["executed"]["steps"]] == [
+            "completed", "completed"]
+        contexts = [d["context"] for d in result["decisions"]]
+        assert "sync_fallback" in contexts
+        assert "validation_skipped" in contexts
+        assert registry.calls == ["render_settings", "render_sequence"]
+
+    def test_the_fallback_never_dispatches_a_step_twice(self, monkeypatch):
+        """A refused loop is chosen before dispatch: no step is replayed.
+
+        The primary ``execute`` coroutine is never created (the loop is built
+        first), and the synchronous pass dispatches each planned step exactly
+        once -- proving the fallback is a first attempt, not a retry.
+        """
+        registry = _RecordingRegistry()
+        handler = _new_handler()
+        handler._registry = registry
+
+        class _CountingDriver(AutonomousDriver):
+            async_entries = []
+
+            async def execute(self, intent):
+                type(self).async_entries.append(intent)
+                return await super().execute(intent)
+
+        _guard_the_plain_loop(monkeypatch)
+
+        with patch.dict(sys.modules, {
+                "synapse.autonomy": _sync_autonomy(
+                    _TwoStepPlanner(), driver_cls=_CountingDriver)}), \
+             patch.object(SynapseHandler, "_resolve_agent_usd",
+                          staticmethod(lambda: None)), \
+             _no_memory_store():
+            started = handler._handle_autonomous_render(
+                {"intent": "render frames 1-2"})
+            done = _await(handler, started["task_id"])
+
+        assert done["status"] == STATUS_DONE
+        assert _CountingDriver.async_entries == [], \
+            "the async loop must never be entered once its construction fails"
+        assert registry.calls == ["render_settings", "render_sequence"], \
+            "each planned step dispatches exactly once across both paths"
+        assert [step["status"] for step in done["result"]["executed"]["steps"]] == [
+            "completed", "completed"]
+
+
+def test_a_guard_raised_mid_run_is_reported_not_retried():
+    """Only loop CONSTRUCTION may select the fallback.
+
+    A RuntimeError carrying the guard's message, raised from inside the
+    running driver, is a real failure: the task goes terminal ``error`` and
+    the synchronous fallback is never entered -- re-running there would
+    replay steps the async attempt may already have started.
+    """
+    fallback_entries = []
+
+    class _MidRunGuardDriver:
+        def __init__(self, **kwargs):
+            pass
+
+        async def execute(self, intent):
+            await asyncio.sleep(0)
+            raise RuntimeError("Current thread is not the main thread")
+
+        def execute_sync(self, intent, reason=""):
+            fallback_entries.append(intent)
+            return _FakeReport(success=True, stop_reason="")
+
+    handler = _new_handler()
+    with patch.dict(sys.modules, {"synapse.autonomy": _fake_autonomy(_MidRunGuardDriver)}), \
+         patch.object(SynapseHandler, "_resolve_agent_usd",
+                      staticmethod(lambda: None)), \
+         _no_memory_store():
+        started = handler._handle_autonomous_render(
+            {"intent": "render frames 1-2"})
+        done = _await(handler, started["task_id"])
+
+    assert done["status"] == STATUS_ERROR
+    assert done["error_type"] == "RuntimeError"
+    assert "main thread" in done["error"]
+    assert fallback_entries == [], \
+        "a guard raised mid-run must be reported, never replayed synchronously"
+
+
+def test_the_sync_fallback_reports_a_failed_step_without_grading():
+    """A failed sync step stops the pass; nothing is evaluated or claimed."""
+    calls = []
+
+    class _FailingSyncHandler:
+        def call_sync(self, name, params):
+            calls.append(name)
+            raise RuntimeError("scene is not renderable")
+
+    class _NeverGrade:
+        def evaluate_sequence(self, results, **kw):
+            raise AssertionError("a failed execution must not be graded")
+
+    driver = AutonomousDriver(
+        planner=_TwoStepPlanner(),
+        validator=_NoChecks(),
+        evaluator=_NeverGrade(),
+        handler_interface=_FailingSyncHandler(),
+    )
+
+    report = driver.execute_sync("render frames 1-2", reason="guarded")
+
+    assert calls == ["render_settings"], "the loop stops at the failed step"
+    assert report.stop_reason == "execution_failed"
+    assert report.success is False
+    assert report.execution_mode == "sync_steps"
+    assert report.evaluation is None
+    assert report.executed.validation_checks == [], "no check ran"
+    assert [step.status for step in report.executed.steps] == [
+        StepStatus.FAILED, StepStatus.PENDING]
+    assert any(d.context == "validation_skipped" for d in report.decisions)

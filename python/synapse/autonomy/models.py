@@ -190,8 +190,15 @@ class RenderReport:
     iterations: int = 0
     total_time_seconds: float = 0.0
     success: bool = False
+    # How the loop ran. "" = not recorded (reports built outside the driver),
+    # "async" = a real event loop drove the coroutines, "sync_steps" = the
+    # R-035 no-loop fallback (no validation, prediction or grading ran; every
+    # sync report is labeled so a consumer can tell the two apart).
+    execution_mode: str = ""
     # M3-E: why the loop ended -- "" (passed), "max_iterations", "cancelled",
     # "wall_clock_exceeded", "gate_rejected", "validation_failed",
     # "unsupported_plan_shape" (more than one render step: no single product
-    # set to grade)
+    # set to grade), "execution_failed" (a step raised in the synchronous
+    # fallback), "sync_steps_ungraded" (the synchronous fallback ran every
+    # step but nothing graded the output)
     stop_reason: str = ""

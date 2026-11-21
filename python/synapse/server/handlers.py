@@ -482,6 +482,86 @@ def _serialize_render_report(obj):
     return obj
 
 
+# ---------------------------------------------------------------------------
+# R-035: running the autonomy loop on a worker thread under Houdini's asyncio
+# ---------------------------------------------------------------------------
+
+#: Houdini 22 ships a patched asyncio ("haio"): its event loop refuses
+#: ``create_task`` on a non-main thread with this message, which is what kills
+#: ``asyncio.run`` before its first task on the autonomous-render worker.
+_MAIN_THREAD_GUARD_MARKER = "main thread"
+
+
+def _is_main_thread_guard(exc: BaseException) -> bool:
+    """True only for Houdini's off-main-thread asyncio refusal.
+
+    A RuntimeError without the marker is a different failure. Treating it as
+    the guard would trade a reported error for a plan nobody asked to run a
+    second time.
+    """
+    return isinstance(exc, RuntimeError) and _MAIN_THREAD_GUARD_MARKER in str(exc).lower()
+
+
+def _new_autonomy_loop():
+    """Construct a plain asyncio loop without consulting the process policy.
+
+    ``asyncio.new_event_loop()`` -- and therefore ``asyncio.run`` -- reads the
+    current policy, which Houdini 22 patches to hand back its guarded
+    ``haio.HoudiniEventLoop``. The selector loop is constructed by name and has
+    no thread check; ``gather``/``sleep`` are known to work on it off the main
+    thread.
+    """
+    import asyncio
+
+    return asyncio.SelectorEventLoop()
+
+
+def _close_autonomy_loop(loop) -> None:
+    """Close a plain loop, cancelling whatever a failed run left pending.
+
+    Closing with tasks still pending makes the garbage collector print "Task
+    was destroyed but it is pending" later, from a thread that cannot explain
+    it. Cleanup never outranks the run's outcome -- the receipt already
+    carries that -- so a cleanup failure is logged, not raised.
+    """
+    import asyncio
+
+    try:
+        try:
+            pending = [task for task in asyncio.all_tasks(loop) if not task.done()]
+            for task in pending:
+                task.cancel()
+            if pending:
+                loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True))
+        except Exception as exc:  # noqa: BLE001 -- cleanup must not outrank the result
+            _log.debug("autonomy loop cleanup failed: %s", exc)
+    finally:
+        loop.close()
+
+
+def _run_autonomy_off_main(driver, intent):
+    """Run ``driver.execute`` on a plain loop here, or its sync step loop.
+
+    The loop is built BEFORE the coroutine is created: if Houdini's guard
+    refuses the loop, nothing has been dispatched and the fallback cannot
+    repeat a step. A guard raised after that point is a real mid-run failure
+    and is reported as one -- it is never a reason to try the run again
+    synchronously.
+    """
+    loop = None
+    try:
+        loop = _new_autonomy_loop()
+    except RuntimeError as exc:
+        if not _is_main_thread_guard(exc):
+            raise
+        return driver.execute_sync(intent, reason=str(exc))
+    try:
+        return loop.run_until_complete(driver.execute(intent))
+    finally:
+        _close_autonomy_loop(loop)
+
+
 _BATCH_STORE_INIT_LOCK = threading.Lock()
 
 
@@ -2711,6 +2791,12 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         same run parameters) JOINS the in-flight task -- ``reused: true`` and
         an incremented ``joined_calls`` -- instead of starting a duplicate run.
 
+        The worker runs the driver on a plain asyncio loop it builds itself
+        (Houdini 22's patched asyncio refuses the default loop's first
+        ``create_task`` off the main thread). If even the plain loop cannot be
+        constructed, the driver's synchronous step loop runs instead and the
+        poll receipt is labeled ``execution_mode: "sync_steps"``.
+
         Returns:
             A task receipt. A poll of a finished task carries the serialized
             RenderReport under ``result``, with ``success`` and ``stop_reason``
@@ -2767,10 +2853,14 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             def __init__(self, registry):
                 self._registry = registry
 
-            async def call(self, tool_name, params):
+            def _resolve(self, tool_name):
                 handler = self._registry.get(tool_name)
                 if handler is None:
                     raise ValueError(f"Couldn't find handler: {tool_name}")
+                return handler
+
+            async def call(self, tool_name, params):
+                self._resolve(tool_name)
                 # Route through invoke() so autonomy-driven ops emit provenance
                 # records (origin='autonomy'). Coroutine results still awaited.
                 result = self._registry.invoke(
@@ -2778,6 +2868,26 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
                 )
                 if asyncio.iscoroutine(result):
                     return await result
+                return result
+
+            def call_sync(self, tool_name, params):
+                """The same dispatch with no event loop (R-035 sync fallback).
+
+                Every live registry handler is synchronous, so this is the
+                normal case. A handler that returns a coroutine cannot run
+                here (the loop was refused); the step fails honestly instead
+                of leaking an un-awaited coroutine.
+                """
+                self._resolve(tool_name)
+                result = self._registry.invoke(
+                    tool_name, params, ctx=FloorContext(origin="autonomy"),
+                )
+                if asyncio.iscoroutine(result):
+                    result.close()
+                    raise RuntimeError(
+                        "Handler %r returned a coroutine, and the synchronous "
+                        "fallback has no event loop to run it." % (tool_name,)
+                    )
                 return result
 
         adapter = _HandlerAdapter(self._registry)
@@ -2860,9 +2970,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         owner = self
 
         def _worker():
-            """Run the async loop off the handler thread and record its outcome."""
+            """Run the autonomy loop off the handler thread and record its outcome."""
             try:
-                report = asyncio.run(driver.execute(intent))
+                # R-035: no asyncio.run -- Houdini's patched asyncio refuses
+                # its first create_task off the main thread. A plain loop is
+                # built explicitly; if even that is refused, the driver runs
+                # its synchronous step loop instead.
+                report = _run_autonomy_off_main(driver, intent)
                 store.complete(
                     task_id,
                     _serialize_render_report(report),

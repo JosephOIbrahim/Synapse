@@ -71,7 +71,13 @@ def get_live_driver():
 
 
 class HandlerInterface(Protocol):
-    """Async callable interface for executing MCP handler tools."""
+    """Async callable interface for executing MCP handler tools.
+
+    The R-035 synchronous fallback (``AutonomousDriver.execute_sync``) also
+    needs a ``call_sync(tool_name, params)`` method. It is looked up at call
+    time, so an async-only interface still satisfies the normal ``execute``
+    path.
+    """
 
     async def call(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Call a handler tool by name with the given parameters."""
@@ -223,6 +229,7 @@ class AutonomousDriver:
                 total_time_seconds=time.monotonic() - start_time,
                 success=False,
                 stop_reason="unsupported_plan_shape",
+                execution_mode="async",
             )
 
         # The frames the artist asked for, captured from the original plan and
@@ -262,6 +269,7 @@ class AutonomousDriver:
                     total_time_seconds=time.monotonic() - start_time,
                     success=False,
                     stop_reason="gate_rejected",
+                    execution_mode="async",
                 )
 
         while iteration < self._max_iterations:
@@ -313,6 +321,7 @@ class AutonomousDriver:
                     total_time_seconds=time.monotonic() - start_time,
                     success=False,
                     stop_reason="validation_failed",
+                    execution_mode="async",
                 )
 
             if soft_warns:
@@ -508,6 +517,7 @@ class AutonomousDriver:
             # the frames that did come back says.
             success=bool(evaluation and evaluation.passed and not stop_reason),
             stop_reason=stop_reason,
+            execution_mode="async",
         )
 
         # Persist to memory
@@ -524,6 +534,189 @@ class AutonomousDriver:
                 logger.warning("Couldn't persist render report to memory")
 
         return report
+
+    def execute_sync(self, intent: str, reason: str = "") -> RenderReport:
+        """Run the plan's steps on THIS thread, with no asyncio at all (R-035).
+
+        The fallback for a worker thread where no event loop can be created.
+        Houdini 22 ships a patched asyncio ("haio") whose event loop refuses
+        ``create_task`` off the main thread, which kills ``asyncio.run`` before
+        its first task; a future build could refuse the plain loop class too.
+        This path plans, applies the gate policy, and dispatches each step
+        through ``handler_interface.call_sync`` -- the same handlers the async
+        path calls, which marshal themselves onto Houdini's main thread.
+
+        What does NOT run here, and is never claimed in the report: the
+        pre-flight validator (its eight checks are one ``asyncio.gather``),
+        the predictor, verification, and quality grading. ``validation_checks``
+        is empty ("no check ran", per ``RenderReport``), and the report leaves
+        ``evaluation``/``prediction``/``verification`` as None. A run whose
+        steps all completed stops with ``stop_reason='sync_steps_ungraded'``
+        and ``success=False`` -- frames may be on disk, but nothing graded
+        them. ``execution_mode='sync_steps'`` is set on every report.
+
+        The fallback is selected BEFORE any coroutine is created by the caller,
+        so no step can be dispatched twice. A guard raised mid-run is a real
+        failure to report through the async path, never a reason to replay the
+        plan here.
+        """
+        # M3-E parity: the kill switch reaches this run too.
+        _register_live_driver(self)
+        try:
+            return self._execute_sync_inner(intent, reason)
+        finally:
+            _register_live_driver(None, only_if=self)
+
+    def _execute_sync_inner(self, intent: str, reason: str) -> RenderReport:
+        start_time = time.monotonic()
+        deadline = start_time + self._max_wall_clock
+        self._deadline = deadline
+        self._wall_clock_stopped = False
+        self._cancelled = False
+        self._decisions = []
+
+        original_plan = self._planner.plan(intent)
+        plan = self._execution_copy(original_plan)
+
+        self._log_decision(
+            context="sync_fallback",
+            decision="Running the plan with the synchronous step loop",
+            reasoning=(
+                "No asyncio event loop could be created on the render worker "
+                "thread (%s), so the plan's steps run without one; validation, "
+                "prediction and quality grading need a loop and did not run."
+                % (reason or "event-loop construction was refused")
+            ),
+            gate=GateLevel.INFORM,
+        )
+
+        def _report(stop_reason: str, iterations: int) -> RenderReport:
+            return RenderReport(
+                plan=original_plan,
+                executed=plan,
+                decisions=list(self._decisions),
+                iterations=iterations,
+                total_time_seconds=time.monotonic() - start_time,
+                # Nothing was graded, so nothing may read as a pass.
+                success=False,
+                stop_reason=stop_reason,
+                execution_mode="sync_steps",
+            )
+
+        render_steps = [
+            step for step in original_plan.steps
+            if step.handler in RENDER_HANDLERS
+        ]
+        if len(render_steps) > 1:
+            self._log_decision(
+                context="unsupported_plan_shape",
+                decision=f"Refusing a plan with {len(render_steps)} render steps",
+                reasoning="The driver grades a single render product set; "
+                          "a plan with more than one render step would "
+                          "silently grade only the first",
+                gate=GateLevel.INFORM,
+            )
+            return _report("unsupported_plan_shape", 0)
+
+        if plan.gate_level in (GateLevel.REVIEW, GateLevel.CONFIRM):
+            if not self._decide_approval(plan):
+                self._log_decision(
+                    context="gate_rejected",
+                    decision="Artist declined the render plan",
+                    reasoning="Plan was presented for approval and rejected",
+                    gate=plan.gate_level,
+                )
+                return _report("gate_rejected", 0)
+
+        if self._cancelled:
+            self._log_decision(
+                context="emergency_stop",
+                decision="Render loop cancelled via emergency stop",
+                reasoning="emergency_stop() was called before the sync loop ran",
+                gate=GateLevel.INFORM,
+            )
+            return _report("cancelled", 0)
+
+        if time.monotonic() >= deadline:
+            self._log_decision(
+                context="wall_clock_exceeded",
+                decision=f"Stopping: wall-clock budget ({self._max_wall_clock:.0f}s) "
+                         f"exceeded before the first step",
+                reasoning="Per-run wall-clock bound -- no step was started",
+                gate=GateLevel.INFORM,
+            )
+            return _report("wall_clock_exceeded", 0)
+
+        self._log_decision(
+            context="validation_skipped",
+            decision="Pre-flight validation did not run",
+            reasoning="The eight pre-flight checks run through asyncio.gather; "
+                      "this thread has no event loop, so an empty "
+                      "validation_checks list means no check ran",
+            gate=GateLevel.INFORM,
+        )
+
+        call_sync = getattr(self._handler, "call_sync", None)
+        if call_sync is None:
+            raise RuntimeError(
+                "The synchronous autonomy fallback needs "
+                "handler_interface.call_sync(); %s provides only call()."
+                % (type(self._handler).__name__,)
+            )
+
+        execution_ok = True
+        for step in plan.steps:
+            if self._step_blocked(step):
+                continue
+            step.status = StepStatus.RUNNING
+            try:
+                step.result = call_sync(step.handler, step.params)
+                step.status = StepStatus.COMPLETED
+            except Exception as exc:
+                step.error = str(exc)
+                step.status = StepStatus.FAILED
+                logger.error("Step '%s' failed: %s", step.description, exc)
+                execution_ok = False
+                break
+
+        if self._cancelled:
+            self._log_decision(
+                context="cancelled_during_execution",
+                decision="Render sequence cancelled while steps were running",
+                reasoning="emergency_stop() was called during execution; "
+                          "frames after the cancel never rendered",
+                gate=GateLevel.INFORM,
+            )
+            return _report("cancelled", 1)
+        if self._wall_clock_stopped:
+            self._log_decision(
+                context="wall_clock_exceeded",
+                decision=f"Stopping at a step boundary: wall-clock budget "
+                         f"({self._max_wall_clock:.0f}s) exceeded",
+                reasoning="Per-run wall-clock bound -- steps that had not "
+                          "started were skipped and are reported as such",
+                gate=GateLevel.INFORM,
+            )
+            return _report("wall_clock_exceeded", 1)
+        if not execution_ok:
+            self._log_decision(
+                context="execution_failed",
+                decision="One or more render steps failed",
+                reasoning="Handler returned an error during execution; the "
+                          "synchronous fallback does not retry",
+                gate=GateLevel.INFORM,
+            )
+            return _report("execution_failed", 1)
+
+        self._log_decision(
+            context="sync_steps_ungraded",
+            decision="Every planned step ran; nothing graded the output",
+            reasoning="Quality grading needs the event loop this thread cannot "
+                      "create, so the step results are reported as they came "
+                      "back, never as a pass",
+            gate=GateLevel.INFORM,
+        )
+        return _report("sync_steps_ungraded", 1)
 
     def emergency_stop(self) -> None:
         """Cancel the current render loop at the next iteration boundary.
@@ -565,13 +758,7 @@ class AutonomousDriver:
         ``_wall_clock_stopped`` tells the caller why the report is partial.
         """
         for step in plan.steps:
-            if self._cancelled:
-                step.status = StepStatus.SKIPPED
-                continue
-
-            if self._deadline is not None and time.monotonic() >= self._deadline:
-                step.status = StepStatus.SKIPPED
-                self._wall_clock_stopped = True
+            if self._step_blocked(step):
                 continue
 
             step.status = StepStatus.RUNNING
@@ -588,6 +775,25 @@ class AutonomousDriver:
                 return False
 
         return True
+
+    def _step_blocked(self, step: RenderStep) -> bool:
+        """Mark ``step`` SKIPPED when the run is cancelled or out of time.
+
+        Shared by the async step loop and the synchronous fallback so both
+        paths agree on what "never started" means: an in-flight step always
+        finishes (a render is not torn mid-call), and the wall clock is
+        consulted at every step boundary.
+        """
+        if self._cancelled:
+            step.status = StepStatus.SKIPPED
+            return True
+
+        if self._deadline is not None and time.monotonic() >= self._deadline:
+            step.status = StepStatus.SKIPPED
+            self._wall_clock_stopped = True
+            return True
+
+        return False
 
     @staticmethod
     def _execution_copy(plan: RenderPlan) -> RenderPlan:
@@ -744,7 +950,15 @@ class AutonomousDriver:
     # ------------------------------------------------------------------
 
     async def _present_for_approval(self, plan: RenderPlan) -> bool:
-        """Present a plan for artist approval.
+        """Present a plan for artist approval (async entry point).
+
+        The policy itself contains no await; it is shared with the synchronous
+        fallback through ``_decide_approval``.
+        """
+        return self._decide_approval(plan)
+
+    def _decide_approval(self, plan: RenderPlan) -> bool:
+        """The gate policy, with no I/O in it.
 
         Uses the registered approval callback if available. Otherwise:
         - REVIEW plans are auto-approved (artist trusts the system)
