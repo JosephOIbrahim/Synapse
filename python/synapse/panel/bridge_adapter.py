@@ -194,6 +194,20 @@ _DISK_WRITING_TOOLS = frozenset({
     "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files
 })
 
+# ── Tools that always build inside a named LOP stage ─────────────
+# R-025: the compose-tier handlers resolve their stage from payload["stage"]
+# with a "/stage" default (handlers_solaris_compose). That key is not one of
+# R7's node/parent/path/source keys, so the Operation used to reach the
+# bridge with touches_stage=False: no composition validation, and the R1
+# scene hash measured /obj instead of the stage. Declaring the stage here —
+# the same default the handler resolves — anchors blast radius, the
+# composition anchor and the stage hash on the real stage in every mode,
+# including tests with no hou.
+_DECLARED_STAGE_TOOLS: dict[str, tuple[str, str]] = {
+    "synapse_solaris_shotsetup_karma_xpu": ("stage", "/stage"),
+    "synapse_matlib_bind": ("stage", "/stage"),
+}
+
 # ── Tool name → inferred AgentID ─────────────────────────────────
 _TOOL_AGENT_MAP: dict[str, str] = {
     "houdini_execute_python": "BRAINSTEM",
@@ -436,6 +450,23 @@ def execute_through_bridge(
             or payload.get("source", "")
         )
 
+    # R-025: a stage-keyed tool declares its LOP stage in the payload key its
+    # handler reads (defaulting exactly as the handler does). Carry that
+    # declaration onto the Operation so the bridge anchors composition
+    # validation and the stage hash on the stage the tool actually builds in,
+    # instead of inferring from a node path the payload never names.
+    touches_stage = False
+    stage_path = None
+    declared_stage = _DECLARED_STAGE_TOOLS.get(tool_name)
+    if declared_stage is not None:
+        stage_key, stage_default = declared_stage
+        declared_value = payload.get(stage_key) if isinstance(payload, dict) else None
+        stage_path = (
+            declared_value if isinstance(declared_value, str) and declared_value
+            else stage_default
+        )
+        touches_stage = True
+
     # Wrap handler.handle so the bridge can pass kwargs without
     # breaking the handler signature. kwargs carry bridge metadata
     # (node_path for blast radius inference), not handler params.
@@ -478,6 +509,8 @@ def execute_through_bridge(
         fn=_dispatch,
         args=(),
         kwargs=op_kwargs,
+        touches_stage=touches_stage,
+        stage_path=stage_path,
     )
 
     result = bridge.execute(op)
