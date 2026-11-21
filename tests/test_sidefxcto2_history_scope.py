@@ -247,7 +247,7 @@ def test_an_entry_moved_between_the_stacks_is_still_pre_session(env):
     with pytest.raises(mod.HistoryScopeRefused) as caught:
         handler._handle_redo({})
 
-    assert "before this SYNAPSE session started" in str(caught.value)
+    assert "SYNAPSE: old session build" in str(caught.value)  # refused (it was not undone by this session)
     assert undos.calls == []
 
 
@@ -294,6 +294,7 @@ def test_off_main_handle_captures_the_baseline_through_run_on_main(env, monkeypa
     worker.start()
     worker.join(10)
 
+    assert not worker.is_alive(), "handle() did not finish"
     assert "history:baseline" in hops, hops
     assert handler._undo_scope.needs_baseline is False
 
@@ -307,16 +308,19 @@ def test_the_judge_and_the_step_run_in_one_main_thread_call(env, monkeypatch):
     hops = []
 
     def _fake_run_on_main(fn, *args, **kwargs):
-        hops.append((kwargs.get("label"), list(undos.calls)))
-        out = fn()
-        hops.append(("after", list(undos.calls)))
-        return out
+        # The artist edits right before the main thread runs the payload: a check
+        # made before the hop would miss it, a check inside the hop refuses.
+        hops.append(kwargs.get("label"))
+        undos.undo.insert(0, "Artist edit")
+        return fn()
 
     monkeypatch.setattr(main_thread, "run_on_main", _fake_run_on_main)
-    handler._handle_undo({})
+    with pytest.raises(_mod.HistoryScopeRefused) as caught:
+        handler._handle_undo({})
 
-    assert hops == [("history:undo", []), ("after", ["undo"])], \
-        "the refusal check and the step must run inside one main-thread call"
+    assert hops == ["history:undo"]
+    assert "Artist edit" in str(caught.value)
+    assert undos.calls == [], "the check must run inside the main-thread call"
 
 
 def test_a_batch_refuses_history_commands(env):
@@ -364,3 +368,37 @@ def test_a_dropped_pre_session_redo_entry_refuses_conservatively(env):
     with pytest.raises(mod.HistoryScopeRefused):
         handler._handle_undo({})
     assert undos.calls == []
+
+
+# ---------------------------------------------------------------------------
+# Refinement round 3: artist-started panel groups, redo of what the agent undid
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("label", ["SYNAPSE insert saved network", "SYNAPSE Identify cleanup"])
+def test_a_panel_action_the_artist_started_is_never_undone_by_an_agent(env, label):
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = [label]                    # created after the baseline, by the artist's click
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_undo({})
+    assert label in str(caught.value)
+    assert undos.calls == []
+
+
+def test_redo_refuses_a_step_this_session_did_not_undo(env):
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.redo = ["SYNAPSE: build_graph"]   # rolled back by a failed build, or the artist's Ctrl+Z
+
+    with pytest.raises(mod.HistoryScopeRefused) as caught:
+        handler._handle_redo({})
+    assert "did not undo" in str(caught.value)
+    assert undos.calls == []
+
+
+def test_a_disabled_history_records_no_baseline(env):
+    handler, undos, _mod = env
+    undos.enabled = False
+    assert handler._undo_scope.note_session_start(undos) is False
+    assert handler._undo_scope.needs_baseline is True
