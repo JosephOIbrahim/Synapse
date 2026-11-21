@@ -142,6 +142,24 @@ def test_exposure_uses_rec709_weights():
         assert exposure(img, clip_threshold=2.0)["mean_luminance"] == pytest.approx(w, abs=1e-6)
 
 
+def test_channel_means_and_pixel_luminance_agree():
+    """The scalar (per-channel means) and array entry points are one formula.
+
+    OpenImageIO-only readers take the scalar path; the autonomy evaluator
+    takes the array path. They must never disagree about the same pixel.
+    """
+    img = np.zeros((1, 1, 3), dtype=np.float32)
+    img[0, 0, 2] = 0.2
+    scalar = scv.luminance_from_channel_means([0.0, 0.0, 0.2])
+    array = float(scv.luminance(img)[0, 0])
+    assert scalar == pytest.approx(array, abs=1e-6)
+    assert scalar == pytest.approx(0.01444, abs=1e-9)
+
+
+def test_channel_means_reads_one_channel_as_grey():
+    assert scv.luminance_from_channel_means([0.2]) == pytest.approx(0.2, abs=1e-9)
+
+
 def test_exposure_black_frame_has_no_offset():
     r = exposure(flat(value=0.0))
     assert r["black_pct"] == 100.0

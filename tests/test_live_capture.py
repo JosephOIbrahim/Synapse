@@ -96,12 +96,16 @@ if __name__ == "__main__":
     # -- Test 2: Create a test scene -------------------------------------------
 
     _TEST_GEO = "/obj/_synapse_test_cap"
+    _TEST_CAM = "/obj/_synapse_test_cam"
 
     try:
         # Clean up any previous failed run
         existing = hou.node(_TEST_GEO)
         if existing:
             existing.destroy()
+        existing_cam = hou.node(_TEST_CAM)
+        if existing_cam:
+            existing_cam.destroy()
 
         obj = hou.node("/obj")
         geo = obj.createNode("geo", "_synapse_test_cap")
@@ -117,6 +121,9 @@ if __name__ == "__main__":
         color.setRenderFlag(True)
         geo.layoutChildren()
 
+        # Pin a named camera so the capture has a camera path to report
+        cam = obj.createNode("cam", "_synapse_test_cam")
+
         # Point the viewport at our test geo
         desktop = hou.ui.curDesktop()
         sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
@@ -126,10 +133,12 @@ if __name__ == "__main__":
 
         # Frame the object on the main thread (viewport ops need main thread)
         def _frame():
-            sv.curViewport().frameAll()
+            viewport = sv.curViewport()
+            viewport.setCamera(cam)
+            viewport.frameAll()
         hdefereval.executeInMainThreadWithResult(_frame)
 
-        _report(2, TOTAL, True, f"Scene setup (box at {color.path()})")
+        _report(2, TOTAL, True, f"Scene setup (box at {color.path()}, camera at {_TEST_CAM})")
     except Exception as e:
         _report(2, TOTAL, False, f"Scene setup — {e}")
 
@@ -146,9 +155,34 @@ if __name__ == "__main__":
         assert size_kb > 1, f"File too small ({size_kb:.0f}KB) — capture likely failed"
         assert data["format"] == "jpeg"
 
+        # R-021: the result must prove what it saw, not just that a file exists.
+        assert isinstance(data["frame"], int), f"frame missing: {data.get('frame')!r}"
+        assert data["camera"] == _TEST_CAM, (
+            f"capture should name the pinned camera {_TEST_CAM}: {data.get('camera')!r}"
+        )
+        viewport = data["viewport"]
+        assert viewport["desktop"], f"desktop identity missing: {viewport!r}"
+        assert viewport["pane"], f"pane identity missing: {viewport!r}"
+        check = data["pixel_check"]
+        assert check["checked"] is True, (
+            f"pixel check did not run (no reader?): {check}"
+        )
+        assert check["verdict"] == "ok", (
+            f"coloured box should not read as black: {check}"
+        )
+
+        # R-021: an over-size request is refused before the flipbook runs.
+        try:
+            handler._handle_capture_viewport({"width": 9000, "height": 600})
+        except ValueError as exc:
+            assert "8192" in str(exc), f"refusal should name the maximum: {exc}"
+        else:
+            raise AssertionError("8000+ px capture was attempted instead of refused")
+
         _report(3, TOTAL, True,
                 f"Viewport capture — {data['width']}x{data['height']} jpeg, "
-                f"{size_kb:.0f}KB, {elapsed_ms:.0f}ms")
+                f"{size_kb:.0f}KB, {elapsed_ms:.0f}ms, camera={data['camera']}, "
+                f"frame={data['frame']}, verdict={check['verdict']}")
 
         # Clean up temp file
         os.remove(path)
@@ -183,7 +217,11 @@ if __name__ == "__main__":
         test_node = hou.node(_TEST_GEO)
         if test_node:
             test_node.destroy()
+        test_cam = hou.node(_TEST_CAM)
+        if test_cam:
+            test_cam.destroy()
         assert hou.node(_TEST_GEO) is None, "Test node still exists after destroy"
+        assert hou.node(_TEST_CAM) is None, "Test camera still exists after destroy"
         _report(5, TOTAL, True, "Cleanup")
     except Exception as e:
         _report(5, TOTAL, False, f"Cleanup — {e}")

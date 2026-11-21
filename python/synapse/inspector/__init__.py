@@ -22,9 +22,13 @@ Quick start
 
 Sprint roadmap
 --------------
-- Sprint 2 Week 1 (this release): flat /stage traversal
-- Sprint 2 Week 2: recursive subnet descent (sopcreate, materiallibrary)
-- Sprint 3: USD provenance (synapse:* attributes)
+- Sprint 2 Week 1: flat /stage traversal
+- Sprint 2 Week 2: recursive subnet descent — shipped; ``children`` is
+  populated within the walk's depth cap and node ceiling, and a bounded
+  walk is stamped ``truncated`` with the level reached
+- Sprint 3: USD provenance — shipped; ``provenance`` reads the creator
+  node, Houdini user data and ``synapse:*`` attributes on the prims the
+  node last modified
 - Sprint 4: session-start handshake
 """
 
@@ -55,6 +59,10 @@ from synapse.inspector.models import (
 # Tool function
 from synapse.inspector.tool_inspect_stage import (
     DEFAULT_TIMEOUT_SECONDS,
+    INSPECT_STAGE_TOOL_DESCRIPTION,
+    MAX_KEY_PARMS,
+    MAX_WALK_DEPTH,
+    MAX_WALK_NODES,
     synapse_inspect_stage,
 )
 
@@ -77,6 +85,10 @@ __all__ = [
     # Tool function
     "synapse_inspect_stage",
     "DEFAULT_TIMEOUT_SECONDS",
+    "INSPECT_STAGE_TOOL_DESCRIPTION",
+    "MAX_WALK_DEPTH",
+    "MAX_WALK_NODES",
+    "MAX_KEY_PARMS",
     # Models
     "ASTNode",
     "InputConnection",

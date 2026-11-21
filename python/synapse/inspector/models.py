@@ -22,9 +22,20 @@ nodes sorted by hou_path for stable iteration. to_json() emits with
 ``sort_keys=True`` so byte-identical inputs produce byte-identical
 outputs — matches SYNAPSE's existing determinism principles.
 
-Sprint 2 Week 1: Flat topology. children/key_parms/provenance reserved.
-Sprint 2 Week 2: Subnet recursion populates children + key_parms.
-Sprint 3: USD provenance attributes populate provenance.
+Walk honesty
+------------
+The extraction walk is bounded (depth cap + node ceiling). StageAST
+carries the resulting ``walk_meta`` envelope untouched — ``truncated``,
+``truncation_reasons``, ``max_depth``, ``depth_reached``,
+``truncated_paths`` — and re-emits it from ``to_payload()``, so a
+partial tree is never presented as a complete one.
+
+Node detail
+-----------
+``children`` is populated by recursive descent within the walk caps;
+``key_parms`` carries the node's non-default scalar parms (bounded);
+``provenance`` carries creator / user-data / ``synapse:*`` USD
+attribute reads. None of the three is a hardcoded empty placeholder.
 """
 
 from __future__ import annotations
@@ -104,10 +115,12 @@ class ASTNode(BaseModel):
       - error_state: cascades downstream; a single error node breaks its chain
       - error_message: short (<=500 chars) detail when error_state != "clean"
 
-    Reserved fields:
-      - children: Week 2 recursive descent into subnet-style LOPs
-      - key_parms: Week 2 curated per-node-type authoring parms
-      - provenance: Sprint 3 synapse:* USD attributes from prior sessions
+    Reserved field history:
+      - children: recursive descent into subnet-style / network nodes,
+        populated within the extraction walk's depth and node caps
+      - key_parms: the node's non-default scalar parms, bounded per node
+      - provenance: creator node, Houdini user data, and ``synapse:*``
+        USD attributes on the prims this node last modified
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -173,6 +186,8 @@ class StageAST:
       - ``ast.error_nodes()``, ``ast.warning_nodes()`` — state-filtered queries
       - ``ast.orphans()``, ``ast.roots()``, ``ast.leaves()`` — topology queries
       - ``ast.authoring_nodes()``, ``ast.prims_at(path)`` — USD queries
+      - ``ast.truncated``, ``ast.depth_reached``, ``ast.max_depth`` —
+        walk-honesty fields from the bounded extraction walk
       - ``ast.to_json()`` — deterministic JSON serialization
       - ``len(ast)``, iteration, ``in``
 
@@ -182,7 +197,13 @@ class StageAST:
     threads without locking.
     """
 
-    __slots__ = ("_nodes", "_by_name", "_schema_version", "_target_path")
+    __slots__ = (
+        "_nodes",
+        "_by_name",
+        "_schema_version",
+        "_target_path",
+        "_walk_meta",
+    )
 
     def __init__(
         self,
@@ -190,11 +211,13 @@ class StageAST:
         *,
         schema_version: str = SCHEMA_VERSION,
         target_path: str = "/stage",
+        walk_meta: Optional[Dict[str, Any]] = None,
     ):
         self._nodes: Tuple[ASTNode, ...] = tuple(nodes)
         self._by_name: Dict[str, ASTNode] = {n.node_name: n for n in self._nodes}
         self._schema_version = schema_version
         self._target_path = target_path
+        self._walk_meta: Dict[str, Any] = dict(walk_meta) if walk_meta else {}
 
     # --- Container protocol ---------------------------------------------------
 
@@ -249,6 +272,28 @@ class StageAST:
     def target_path(self) -> str:
         """The Houdini context this AST was extracted from."""
         return self._target_path
+
+    # --- Walk honesty ---------------------------------------------------------
+
+    @property
+    def walk_meta(self) -> Dict[str, Any]:
+        """Copy of the bounded-walk envelope (truncated, depth fields, ...)."""
+        return dict(self._walk_meta)
+
+    @property
+    def truncated(self) -> bool:
+        """True when a walk bound (depth cap / node ceiling) stopped descent."""
+        return bool(self._walk_meta.get("truncated", False))
+
+    @property
+    def depth_reached(self) -> int:
+        """Deepest level walked (direct children of target_path = level 1)."""
+        return int(self._walk_meta.get("depth_reached", 0) or 0)
+
+    @property
+    def max_depth(self) -> int:
+        """The depth cap the walk was given (0 when the payload omits it)."""
+        return int(self._walk_meta.get("max_depth", 0) or 0)
 
     # --- Identity queries -----------------------------------------------------
 
@@ -316,12 +361,21 @@ class StageAST:
         return [n.model_dump() for n in self._nodes]
 
     def to_payload(self) -> Dict[str, Any]:
-        """Serialize to the full on-the-wire payload dict with envelope."""
-        return {
+        """Serialize to the full on-the-wire payload dict with envelope.
+
+        Walk-honesty fields carried by the response (``truncated``,
+        ``truncation_reasons``, ``max_depth``, ``depth_reached``,
+        ``truncated_paths``, ...) are re-emitted here so consumers see the
+        same bounds the extraction walk applied. Payloads that predate the
+        walk fields (mock transports) serialize exactly as before.
+        """
+        payload = {
             "schema_version": self._schema_version,
             "target_path": self._target_path,
             "nodes": self.to_dict_list(),
         }
+        payload.update(self._walk_meta)
+        return payload
 
     def to_json(self, *, indent: Optional[int] = None) -> str:
         """Serialize to deterministic JSON string.

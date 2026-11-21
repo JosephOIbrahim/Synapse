@@ -174,6 +174,49 @@ class TestPerFrameEvaluation:
         assert ev_bad.metrics["quality_score"] < 1.0
 
 
+class TestMeanLuminanceRec709:
+    """Per-pixel Rec.709 luminance, not an unweighted channel average.
+
+    Weights: R 0.2126, G 0.7152, B 0.0722. A blue-dominant frame averages
+    0.0667 per channel but has Rec.709 luminance 0.01444.
+    """
+
+    def test_blue_dominant_frame_reports_rec709_luminance(self, evaluator):
+        frame = np.zeros((4, 4, 3), dtype=np.float32)
+        frame[..., 2] = 0.2
+        ev = evaluator.evaluate_frame(frame=1, output_path="/tmp/f1.exr",
+                                      image_data=frame)
+        assert ev.metrics["mean_luminance"] == pytest.approx(0.01444, abs=1e-6)
+
+    def test_red_and_grey_luminance(self, evaluator):
+        red = np.zeros((4, 4, 3), dtype=np.float32)
+        red[..., 0] = 0.2
+        assert evaluator._mean_luminance(red) == pytest.approx(0.04252, abs=1e-6)
+        grey = np.full((4, 4, 3), 0.2, dtype=np.float32)
+        assert evaluator._mean_luminance(grey) == pytest.approx(0.2, abs=1e-6)
+
+    def test_black_ratio_uses_rec709_luminance(self, evaluator):
+        """A dark red-only frame is black by luminance though its mean is not.
+
+        Channel mean 0.004/3 = 0.00133 clears the 0.001 near-black threshold;
+        Rec.709 luminance 0.2126 * 0.004 = 0.00085 does not.
+        """
+        frame = np.zeros((10, 10, 3), dtype=np.float32)
+        frame[..., 0] = 0.004
+        ev = evaluator.evaluate_frame(frame=1, output_path="/tmp/f1.exr",
+                                      image_data=frame)
+        assert ev.metrics["black_ratio"] == pytest.approx(1.0)
+        assert any("black" in issue.lower() for issue in ev.issues)
+
+    def test_evaluator_imports_the_shared_helper(self):
+        import importlib
+
+        from synapse.cv import exposure_stats
+
+        evaluator_mod = importlib.import_module("synapse.autonomy.evaluator")
+        assert evaluator_mod.luminance is exposure_stats.luminance
+
+
 # =============================================================================
 # SEQUENCE EVALUATION TESTS
 # =============================================================================

@@ -6,7 +6,9 @@ returns every channel of a part and no origin; ``synapse.cv.read_frame``
 returns both but lives host-side, which the worker venv does not carry. This
 module is the worker's own reader (owner ruling QC-Q1): it mirrors
 ``python/synapse/cv/reader.py`` (origin = ``[x - full_x, y - full_y]``,
-R, G, B picked by name) without importing ``synapse`` or ``cv2``.
+R, G, B picked by name) without importing ``synapse`` or ``cv2``. The mirror
+is pinned, not trusted: ``tests/test_cv_reader_parity.py`` reads the same spec
+fixtures through both readers and fails on any disagreement.
 
 The logic that needs no OpenImageIO is in plain functions so it is testable on
 stock Python: :func:`origin_from_spec` and :func:`window_from_spec` read any

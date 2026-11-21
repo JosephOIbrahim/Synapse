@@ -37,6 +37,29 @@ def luminance(img):
     return (arr * w).sum(axis=2, dtype=np.float32)
 
 
+def luminance_from_channel_means(channel_means):
+    """Rec.709 relative luminance from a frame's mean R, G, B values.
+
+    Luminance is linear in the channels, so applying the weights to the
+    per-channel means of a frame is that frame's mean luminance. This is the
+    scalar entry point for readers that hold only per-channel statistics
+    (OpenImageIO's ``computePixelStats().avg``) and never load pixels;
+    :func:`luminance` is the per-pixel entry point. Both apply
+    :data:`REC709_WEIGHTS`, so the two can never disagree.
+
+    A single value is read as a grey frame (the same value in R, G and B):
+    the Rec.709 weights sum to 1, so its luminance is the value itself.
+    """
+    means = [float(m) for m in channel_means]
+    if len(means) == 1:
+        means = means * 3
+    if len(means) < 3:
+        raise CVInputError(
+            f"expected 3 channel means (R, G, B), got {len(means)}"
+        )
+    return float(sum(w * m for w, m in zip(REC709_WEIGHTS, means[:3])))
+
+
 def _r(x):
     return None if x is None else round(float(x), 6)
 

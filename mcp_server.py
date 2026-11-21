@@ -724,9 +724,14 @@ from synapse.cognitive.tools.inspect_stage import inspect_stage as _inspect_stag
 
 _INSPECTOR_TOOL_NAME = "synapse_inspect_stage"
 _INSPECTOR_TOOL_DESC = (
-    "Extracts the AST of the Houdini Solaris /stage context. Returns USD "
-    "prim paths, topology, error states, and flags for every node. Enables "
-    "scene-aware responses across sessions."
+    "Extracts the AST of a Houdini context, recursively. Starting at "
+    "target_path (default '/stage'), walks direct children and their nested "
+    "children up to a fixed depth cap and node ceiling. Returns each node's "
+    "USD prim paths, topology, error state, flags, non-default key "
+    "parameters and provenance. When the walk stops early it says so: "
+    "truncated:true, truncation_reasons, max_depth and depth_reached name "
+    "the level reached, and truncated_paths name where the walk stopped. "
+    "Enables scene-aware responses across sessions."
 )
 _INSPECTOR_TOOL_SCHEMA = {
     "type": "object",
@@ -1308,6 +1313,75 @@ _GROUP_INFO_TOOLS = {
 }
 
 
+# Image delivery for image-producing tools (R-023). The panel's vision
+# attachment path already owns ONE byte ceiling and ONE display-media map; the
+# stdio bridge reuses them so a file the panel would refuse is refused here
+# too. The file on disk is the authority for the media type -- the handler's
+# `format` label is not (an EXR used to ship labelled image/png, read whole).
+from synapse.panel.vision_attach import (  # noqa: E402  (after the sys.path setup above)
+    _MAX_RAW_BYTES as _IMAGE_MAX_RAW_BYTES,
+    _MEDIA as _IMAGE_MEDIA,
+)
+
+
+def _image_result_blocks(data: dict):
+    """MCP content blocks for an image-producing tool result (R-023).
+
+    Only a real display media type inside the shared byte ceiling becomes
+    ImageContent. An over-budget file is refused in text with its size named;
+    a format the API cannot display (EXR, TIFF, ...) returns the result text,
+    which carries the output path. A missing file stays the tool failure it
+    already was.
+    """
+    meta = {
+        "width": data.get("width"),
+        "height": data.get("height"),
+        "format": data.get("format"),
+    }
+    # Include render-specific metadata
+    if "engine" in data:
+        meta["rop"] = data.get("rop")
+        meta["rop_type"] = data.get("rop_type")
+        meta["engine"] = data.get("engine")
+    image_path = data.get("image_path") or ""
+    if not image_path or not os.path.isfile(image_path):
+        return _failure(_outcome_dict("tool.failed", (
+            f"The capture ran but the image file wasn't found at {image_path} — "
+            "it may have been cleaned up or the path changed")))
+    size = os.path.getsize(image_path)
+    ext = os.path.splitext(image_path)[1].lower()
+    media = _IMAGE_MEDIA.get(ext)
+    if media is None:
+        # The path may be extensionless while the result declares a format.
+        declared = str(data.get("format") or "").lower()
+        media = _IMAGE_MEDIA.get("." + ("jpeg" if declared == "jpg" else declared))
+    if size > _IMAGE_MAX_RAW_BYTES:
+        return [TextContent(type="text", text=_dumps_str(dict(
+            meta,
+            image_omitted=(
+                f"{image_path} is {size / 1e6:.1f} MB, over the "
+                f"{_IMAGE_MAX_RAW_BYTES / 1e6:.1f} MB limit for an attached "
+                "image; the file was not attached"))))]
+    if size == 0:
+        return [TextContent(type="text", text=_dumps_str(dict(
+            meta,
+            image_omitted=f"{image_path} is empty; the file was not attached")))]
+    if media is None:
+        return [TextContent(type="text", text=_dumps_str(dict(
+            meta,
+            image_omitted=(
+                f"{image_path} is {ext or 'an unknown type'}, which the API "
+                "cannot display; the file was not attached -- the output "
+                "path above is where it lives"))))]
+    import base64
+    with open(image_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+    return [
+        ImageContent(type="image", data=b64, mimeType=media),
+        TextContent(type="text", text=_dumps_str(meta)),
+    ]
+
+
 @server.call_tool()
 async def call_tool(name: str, arguments: dict):
     """Dispatch MCP tool call to Synapse via WebSocket."""
@@ -1346,32 +1420,9 @@ async def call_tool(name: str, arguments: dict):
         payload = build_payload(arguments)
         data = await send_command(cmd_type, payload)
 
-        # Image-producing tools: read file and return as ImageContent
+        # Image-producing tools: the file decides what may be sent (R-023).
         if name in ("houdini_capture_viewport", "houdini_render"):
-            import base64
-            image_path = data.get("image_path", "")
-            try:
-                with open(image_path, "rb") as f:
-                    b64 = base64.b64encode(f.read()).decode("utf-8")
-                mime = "image/jpeg" if data.get("format") == "jpeg" else "image/png"
-                meta = {
-                    "width": data.get("width"),
-                    "height": data.get("height"),
-                    "format": data.get("format"),
-                }
-                # Include render-specific metadata
-                if "engine" in data:
-                    meta["rop"] = data.get("rop")
-                    meta["rop_type"] = data.get("rop_type")
-                    meta["engine"] = data.get("engine")
-                return [
-                    ImageContent(type="image", data=b64, mimeType=mime),
-                    TextContent(type="text", text=_dumps_str(meta)),
-                ]
-            except FileNotFoundError:
-                return _failure(_outcome_dict("tool.failed", (
-                    f"The capture ran but the image file wasn't found at {image_path} \u2014 "
-                    "it may have been cleaned up or the path changed")))
+            return _image_result_blocks(data)
 
         return [TextContent(type="text", text=_dumps_str(data))]
     except (ConnectionError, RuntimeError) as e:

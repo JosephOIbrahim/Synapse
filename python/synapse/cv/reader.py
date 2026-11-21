@@ -5,6 +5,11 @@
 windows, so positions found in the array can be put back in the frame.
 ``to_cv_bgr`` is the only conversion to OpenCV's B, G, R layout.
 
+The RETINA worker carries its own copy of the reading rules
+(``retina/frame_reader.py``) because the worker venv has neither ``synapse``
+nor ``cv2``; ``tests/test_cv_reader_parity.py`` reads the same spec fixtures
+through both and fails on any disagreement.
+
 Linear means the file's own values. EXR and other float formats store linear
 light and are returned untouched. Integer formats (8/16-bit PNG, TIFF, JPEG)
 are refused with :class:`CVInputError` rather than guessed at, because their

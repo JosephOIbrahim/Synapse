@@ -72,6 +72,7 @@ from ..core.render_presets import (
     preset_parm_overrides,
     XPU_FLUSH_DELAY_NOTE,
 )
+from ..cv.exposure_stats import luminance_from_channel_means
 from .handler_helpers import (
     _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens, _path_warnings,
     _convert_preview, undo_receipt,
@@ -165,6 +166,22 @@ _RENDER_MAIN_TIMEOUT_S = 3600.0
 # is 30.0s, so every client already gives up at 30s. Preserving that exact
 # budget here means the marshal can never outlive the caller waiting on it.
 _CAPTURE_MAIN_TIMEOUT_S = 30.0
+
+# Largest side a houdini_capture_viewport flipbook may be asked for. Above
+# this the handler refuses before touching the flipbook: a 16k-wide GL
+# readback stalls the Houdini UI for minutes and can exhaust GPU memory, and
+# the caller's 30s budget means it would "succeed" only as a timeout. The
+# same ceiling is published on the tool schema (mcp/_tool_registry.py), so a
+# client sees the limit before it calls.
+_CAPTURE_MAX_DIMENSION = 8192
+
+# Mean Rec.709 luminance at or below this reads as a near-black capture --
+# the viewport was occluded, minimized, or showing nothing. The capture is an
+# 8-bit sRGB JPEG/PNG, so the value is measured on the stored (sRGB-encoded)
+# channels: black is black in both encodings, which is all a near-black
+# verdict needs. The exact, color-managed measurement is validate_frame on
+# the render's float EXR, not this check.
+_CAPTURE_BLACK_MEAN_LUMINANCE = 0.01
 
 # Last-ditch GL flipbook fallback inside _handle_render, taken only when the
 # renderer wrote nothing. Was unbounded. A one-frame viewport grab that has not
@@ -288,6 +305,187 @@ def _detect_karma_engine(node, node_type: str) -> str:
     return "karma"
 
 
+def _validate_capture_size(width, height):
+    """Refuse a houdini_capture_viewport resolution outside 1..MAX.
+
+    Runs BEFORE the flipbook is asked for anything (and again inside the
+    main-thread leg once show-config may have supplied a default), so an
+    over-size request is refused rather than attempted.
+    """
+    for name, value in (("width", width), ("height", height)):
+        if value is None:
+            continue
+        try:
+            pixels = int(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"Viewport capture {name} must be a whole number of pixels, got {value!r}"
+            )
+        if pixels < 1:
+            raise ValueError(
+                f"Viewport capture {name} must be at least 1 pixel, got {pixels}"
+            )
+        if pixels > _CAPTURE_MAX_DIMENSION:
+            raise ValueError(
+                f"Viewport capture {name} {pixels}px exceeds the "
+                f"{_CAPTURE_MAX_DIMENSION}px maximum (houdini_capture_viewport) -- "
+                "refusing instead of attempting a flipbook that would stall the "
+                "Houdini UI"
+            )
+
+
+def _capture_viewport_identity(desktop, sv, vp):
+    """Names of the desktop, Scene Viewer pane and 3D viewport that was captured.
+
+    Each lookup is independent; a HOM surface that cannot answer yields None
+    for that field instead of failing the whole capture.
+    """
+    def _name(obj):
+        try:
+            return str(obj.name())
+        except Exception:
+            logger.debug("capture field name unavailable", exc_info=True)
+            return None
+
+    return {
+        "desktop": _name(desktop),
+        "pane": _name(sv),
+        "viewport": _name(vp),
+    }
+
+
+def _capture_camera_path(vp):
+    """Node path of the camera the viewport looked through, or None."""
+    try:
+        camera = vp.cameraPath()
+    except Exception:
+        logger.debug("viewport camera path unavailable", exc_info=True)
+        return None
+    return str(camera) if camera is not None else None
+
+
+def _capture_channel_means(path):
+    """Per-channel means (R, G, B) of a captured JPEG/PNG, or None.
+
+    The capture is an 8-bit sRGB image, unlike the float EXRs
+    ``synapse.cv.read_frame`` accepts, so it is decoded here rather than
+    through the linear-frame reader. OpenImageIO ships with Houdini; Pillow
+    is the same fallback ``synapse.autonomy.evaluator`` already uses. Means
+    are taken on the stored (sRGB-encoded) values -- black is black in both
+    encodings, which is all a near-black verdict needs.
+
+    ``None`` means no reader was available or the file could not be decoded.
+    The caller reports that honestly as "unchecked"; nothing here invents a
+    measurement.
+    """
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+
+    pixels = None
+    try:
+        import OpenImageIO as oiio  # type: ignore[import-untyped]
+    except ImportError:
+        try:
+            import oiio  # type: ignore[import-untyped,no-redef]
+        except ImportError:
+            oiio = None  # type: ignore[assignment]
+
+    if oiio is not None:
+        try:
+            inp = oiio.ImageInput.open(str(path))
+            if inp is not None:
+                try:
+                    spec = inp.spec()
+                    # read_image returns the pixels (probed on H22's binding);
+                    # the out-parameter form is the C++ API and raises.
+                    buf = inp.read_image(0, 0, 0, spec.nchannels, oiio.FLOAT)
+                finally:
+                    inp.close()
+                if buf is not None:
+                    pixels = np.asarray(buf, dtype=np.float32).reshape(
+                        -1, int(spec.nchannels)
+                    )
+        except Exception as exc:
+            logger.debug("Capture pixel read via OIIO failed for %s: %s", path, exc)
+            pixels = None
+
+    if pixels is None:
+        try:
+            from PIL import Image  # type: ignore[import-untyped]
+        except ImportError:
+            return None
+        try:
+            with Image.open(str(path)) as img:
+                arr = np.asarray(img, dtype=np.float32)
+        except Exception as exc:
+            logger.debug("Capture pixel read via Pillow failed for %s: %s", path, exc)
+            return None
+        if arr.ndim == 2:
+            arr = arr[:, :, np.newaxis]
+        if arr.size and float(arr.max()) > 1.0:
+            # 16-bit if the sample tops 255, otherwise 8-bit.
+            arr = arr / (65535.0 if float(arr.max()) > 255.0 else 255.0)
+        pixels = np.asarray(arr, dtype=np.float32).reshape(-1, arr.shape[2])
+
+    channels = int(pixels.shape[1])
+    if channels == 1:
+        grey = float(pixels[:, 0].mean())
+        return [grey, grey, grey]
+    if channels == 2:
+        # Luminance + alpha (Pillow "LA"): the single colour channel is grey.
+        grey = float(pixels[:, 0].mean())
+        return [grey, grey, grey]
+    return [float(v) for v in pixels[:, :3].mean(axis=0)]
+
+
+def _capture_pixel_check(path):
+    """Evidence that the capture actually drew something.
+
+    Returns ``checked``, ``verdict`` (``ok`` | ``possible_black_frame`` |
+    ``unchecked``), ``mean_luminance`` and the black ``threshold`` whenever a
+    reader was available, plus the file size. Never raises: a capture that
+    cannot be decoded is reported as unchecked, not as passed. "The file
+    exists" is no longer the whole proof.
+    """
+    try:
+        size_bytes = os.path.getsize(path)
+    except OSError:
+        size_bytes = 0
+
+    means = _capture_channel_means(path)
+    if means is None:
+        return {
+            "checked": False,
+            "verdict": "unchecked",
+            "reason": (
+                "No image reader (OpenImageIO or Pillow) could decode the "
+                "capture, so the black-frame check did not run -- treat the "
+                "image as unverified"
+            ),
+            "threshold": _CAPTURE_BLACK_MEAN_LUMINANCE,
+            "file_size_bytes": size_bytes,
+        }
+
+    mean_luminance = luminance_from_channel_means(means)
+    black = mean_luminance <= _CAPTURE_BLACK_MEAN_LUMINANCE
+    check = {
+        "checked": True,
+        "verdict": "possible_black_frame" if black else "ok",
+        "mean_luminance": round(mean_luminance, 6),
+        "threshold": _CAPTURE_BLACK_MEAN_LUMINANCE,
+        "file_size_bytes": size_bytes,
+    }
+    if black:
+        check["reason"] = (
+            "The captured pixels are at or below the near-black threshold -- "
+            "the viewport may have been occluded, minimized, or showing an "
+            "empty scene"
+        )
+    return check
+
+
 class RenderHandlerMixin:
     """Mixin providing viewport capture, render, keyframe, render settings,
     frame validation, and render farm handlers."""
@@ -300,6 +498,13 @@ class RenderHandlerMixin:
         Must run on Houdini's main thread — marshalled via run_on_main, which
         runs it directly when the caller is already the main thread (the /mcp
         read-only dispatch and the panel) and defers it otherwise.
+
+        The result proves what was captured, not just that a file appeared:
+        ``camera``, ``frame`` and the ``viewport`` identity that produced the
+        image, plus ``pixel_check`` (mean luminance and an explicit
+        ``possible_black_frame`` verdict for an occluded or empty capture).
+        A width/height above ``_CAPTURE_MAX_DIMENSION`` is refused before the
+        flipbook is attempted.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -309,6 +514,8 @@ class RenderHandlerMixin:
         fmt = resolve_param_with_default(payload, "format", "jpeg")
         width = resolve_param_with_default(payload, "width", None)
         height = resolve_param_with_default(payload, "height", None)
+        # Explicit overrides are checked before anything is marshalled.
+        _validate_capture_size(width, height)
 
         ext = "jpg" if fmt == "jpeg" else "png"
         timestamp = int(time.time() * 1000)
@@ -332,6 +539,8 @@ class RenderHandlerMixin:
                         "default_used": [],
                         "source_files": dict(cfg.source_files),
                     }
+            # A show-config default is subject to the same ceiling.
+            _validate_capture_size(width, height)
             # hou.text.expandString must run on main thread (thread safety)
             temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
             out_pattern = str(temp_dir / f"synapse_cap_{timestamp}.$F4.{ext}")
@@ -352,6 +561,13 @@ class RenderHandlerMixin:
                 )
             settings = sv.flipbookSettings()
             cur = int(hou.frame())
+            # Read the identity BEFORE the flipbook so it names what was asked
+            # for, even if the grab itself comes back empty.
+            identity = {
+                "frame": cur,
+                "camera": _capture_camera_path(vp),
+                "viewport": _capture_viewport_identity(desktop, sv, vp),
+            }
             settings.frameRange((cur, cur))
             settings.output(out_pattern)
             settings.useResolution(True)
@@ -360,7 +576,7 @@ class RenderHandlerMixin:
 
             # Resolve the actual output filename (frame tokens -> frame number)
             actual = _expand_frame_tokens(out_pattern, cur)
-            return actual
+            return actual, identity
 
         # CONFIRMED self-deadlock before this migration, and reachable in
         # normal use: houdini_capture_viewport carries readOnlyHint=True
@@ -371,7 +587,7 @@ class RenderHandlerMixin:
         # directly on that caller. Off-main (WS) callers keep the identical
         # deferred-execution behaviour, now with the caller's own 30s budget.
         from .main_thread import run_on_main
-        actual_path = run_on_main(
+        actual_path, capture_identity = run_on_main(
             _flipbook_on_main_thread, timeout=_CAPTURE_MAIN_TIMEOUT_S
         , label="render:_handle_capture_viewport")
 
@@ -386,6 +602,10 @@ class RenderHandlerMixin:
             "width": int(width),
             "height": int(height),
             "format": fmt,
+            "frame": capture_identity["frame"],
+            "camera": capture_identity["camera"],
+            "viewport": capture_identity["viewport"],
+            "pixel_check": _capture_pixel_check(actual_path),
         }
         result.update(_show_advisory)
         return result
@@ -1402,6 +1622,7 @@ class RenderHandlerMixin:
                     "resolution": None,
                     "channels": None,
                     "format": None,
+                    "mean_luminance": None,
                     "checks": dict(sorted(checks_result.items())),
                     "summary": f"Frame has 1 issue(s): file_integrity",
                     "oiio_available": False,
@@ -1425,6 +1646,7 @@ class RenderHandlerMixin:
                 "resolution": None,
                 "channels": None,
                 "format": None,
+                "mean_luminance": None,
                 "checks": dict(sorted(checks_result.items())),
                 "summary": "OIIO unavailable -- only file integrity checked",
                 "oiio_available": False,
@@ -1445,6 +1667,7 @@ class RenderHandlerMixin:
                 "resolution": None,
                 "channels": None,
                 "format": None,
+                "mean_luminance": None,
                 "checks": dict(sorted(checks_result.items())),
                 "summary": "Frame has 1 issue(s): file_integrity",
                 "oiio_available": True,
@@ -1476,17 +1699,26 @@ class RenderHandlerMixin:
                 pixel_count = total_pixels
 
         # --- Mean luminance (used by multiple checks) ---
-        # Average across RGB channels (first 3); ignore alpha
+        # Rec.709 relative luminance from the per-channel means (first 3
+        # channels; alpha ignored), through the same helper the autonomy
+        # evaluator uses. An unweighted channel average calls a saturated
+        # red frame as bright as its grey equivalent: (0, 0, 0.2) averages
+        # 0.067 and passes the 0.05 underexposure floor, while its Rec.709
+        # luminance is 0.0144 and must fail.
         rgb_channels = min(channels, 3)
-        mean_lum = sum(stats.avg[i] for i in range(rgb_channels)) / rgb_channels
+        rgb_means = [stats.avg[i] for i in range(rgb_channels)]
+        if rgb_channels == 2:
+            # Two channels are not RGB; the missing channel contributes no light.
+            rgb_means.append(0.0)
+        mean_luminance = luminance_from_channel_means(rgb_means)
 
         # --- Run requested checks ---
         if "black_frame" in check_set:
             thresh = thresholds["black_frame_mean"]
-            passed = mean_lum >= thresh
+            passed = mean_luminance >= thresh
             checks_result["black_frame"] = {
                 "passed": passed,
-                "value": round(mean_lum, 6),
+                "value": round(mean_luminance, 6),
                 "threshold": thresh,
                 "detail": "Mean luminance is adequate" if passed else "Frame appears black or near-black",
             }
@@ -1526,10 +1758,10 @@ class RenderHandlerMixin:
 
         if "underexposure" in check_set:
             thresh = thresholds["underexposure_mean"]
-            passed = mean_lum >= thresh
+            passed = mean_luminance >= thresh
             checks_result["underexposure"] = {
                 "passed": passed,
-                "value": round(mean_lum, 6),
+                "value": round(mean_luminance, 6),
                 "threshold": thresh,
                 "detail": "Exposure looks adequate" if passed else "Frame appears underexposed",
             }
@@ -1541,7 +1773,7 @@ class RenderHandlerMixin:
             thresh_pct = thresholds["saturation_pct"]
             multiplier = thresholds["saturation_multiplier"]
             rgb = pixels[:, :, :rgb_channels]
-            firefly_threshold = mean_lum * multiplier
+            firefly_threshold = mean_luminance * multiplier
             if firefly_threshold > 0:
                 hot_pixels = int(np.sum(rgb > firefly_threshold))
                 total_vals = rgb.size
@@ -1571,6 +1803,7 @@ class RenderHandlerMixin:
             "resolution": [width, height],
             "channels": channels,
             "format": fmt_str,
+            "mean_luminance": round(mean_luminance, 6),
             "checks": dict(sorted(checks_result.items())),
             "summary": summary,
             "oiio_available": True,

@@ -4,6 +4,13 @@ Extracts the Abstract Syntax Tree (AST) of a Houdini Solaris context
 via the WebSocket transport. Returns a validated ``StageAST`` with
 query helpers.
 
+The walk is recursive: direct children of ``target_path`` and their
+nested children are extracted up to a fixed depth cap and node ceiling.
+When either cap stops the walk the payload says so — ``truncated``,
+``truncation_reasons``, ``max_depth``/``depth_reached`` and
+``truncated_paths`` — instead of silently returning a partial tree that
+looks complete.
+
 Architecture
 ------------
 
@@ -96,6 +103,34 @@ _ENV_TRANSPORT_MODULE = "SYNAPSE_INSPECTOR_TRANSPORT_MODULE"
 DEFAULT_TIMEOUT_SECONDS: float = 30.0
 """Default transport timeout. Tunable per-call via ``timeout`` kwarg."""
 
+# Walk limits. The extraction script compiles these as literals
+# (_MAX_DEPTH / _MAX_NODES / _MAX_KEY_PARMS); a test pins that the values
+# here match the template so the two cannot drift. Exposed here so callers
+# and tests can reason about the bounds without parsing the script.
+MAX_WALK_DEPTH: int = 8
+"""Levels below target_path the walk descends (direct children = level 1)."""
+
+MAX_WALK_NODES: int = 2000
+"""Hard ceiling on nodes extracted across the whole walk."""
+
+MAX_KEY_PARMS: int = 12
+"""Maximum non-default scalar parms reported per node."""
+
+# Keep the user-facing description in sync with
+# ``synapse.cognitive.tools.inspect_stage.INSPECT_STAGE_SCHEMA`` and
+# ``mcp_server._INSPECTOR_TOOL_DESC``; tests/test_inspect_stage_recursion.py
+# pins all three to this text.
+INSPECT_STAGE_TOOL_DESCRIPTION = (
+    "Extracts the AST of a Houdini context, recursively. Starting at "
+    "target_path (default '/stage'), walks direct children and their nested "
+    "children up to a fixed depth cap and node ceiling. Returns each node's "
+    "USD prim paths, topology, error state, flags, non-default key "
+    "parameters and provenance. When the walk stops early it says so: "
+    "truncated:true, truncation_reasons, max_depth and depth_reached name "
+    "the level reached, and truncated_paths name where the walk stopped. "
+    "Enables scene-aware responses across sessions."
+)
+
 # Valid Houdini context paths: absolute, slash-separated, alphanumeric
 # + underscores + forward slashes only. Rejects quotes, semicolons,
 # newlines, unicode, etc. — anything that could escape the repr() in
@@ -123,10 +158,150 @@ import traceback
 
 SCHEMA_VERSION = "%(schema_version)s"
 _MAX_ERR_LEN = 500
+# Walk limits, compiled into this script. The Python-side MAX_WALK_DEPTH /
+# MAX_WALK_NODES / MAX_KEY_PARMS constants mirror these literals and a test
+# pins the equality so the two can never drift.
+_MAX_DEPTH = 8
+_MAX_NODES = 2000
+_MAX_KEY_PARMS = 12
+_MAX_KEY_PARM_CHARS = 200
+_MAX_TRUNCATED_PATHS = 25
+_MAX_PROVENANCE_ENTRIES = 16
 
 
-def _synapse_extract_node(n):
-    """Extract a single node, catching per-field failures gracefully."""
+def _synapse_record_truncation(state, path, reason):
+    """Record that the walk stopped short, and where/why."""
+    state["truncated"] = True
+    if reason not in state["truncation_reasons"]:
+        state["truncation_reasons"].append(reason)
+    if path is not None:
+        if len(state["truncated_paths"]) < _MAX_TRUNCATED_PATHS:
+            state["truncated_paths"].append(path)
+        else:
+            state["truncated_paths_omitted"] += 1
+
+
+def _synapse_simple_parm_types():
+    """Scalar parm-template types worth reporting.
+
+    Returns None when the host has no hou.parmTemplateType (test doubles
+    that stub only hou.node); key_parms is then left empty rather than
+    crashing the extraction.
+    """
+    try:
+        ptt = hou.parmTemplateType
+        return (ptt.Int, ptt.Float, ptt.String, ptt.Toggle, ptt.Menu)
+    except Exception:
+        return None
+
+
+def _synapse_extract_key_parms(n):
+    """Non-default scalar parms, bounded — the authoring choices that matter.
+
+    A read of what the artist (or a prior tool) actually set, never the
+    full template dump. Returns {} only when the node has no non-default
+    scalar parms — not as a permanent placeholder.
+    """
+    out = {}
+    simple_types = _synapse_simple_parm_types()
+    if simple_types is None:
+        return out
+    try:
+        parms = n.parms()
+    except Exception:
+        return out
+    try:
+        for parm in parms:
+            if len(out) >= _MAX_KEY_PARMS:
+                break
+            try:
+                if parm.isAtDefault():
+                    continue
+                name = parm.name()
+                if not name or name.startswith("_"):
+                    continue
+                if parm.parmTemplate().type() not in simple_types:
+                    continue
+                value = parm.eval()
+                if isinstance(value, str):
+                    out[name] = value[:_MAX_KEY_PARM_CHARS]
+                elif isinstance(value, bool) or isinstance(value, (int, float)):
+                    out[name] = value
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return out
+
+
+def _synapse_extract_provenance(n, prim_paths):
+    """Per-node provenance: creator node, Houdini user data, and any
+    synapse:* USD attributes on the prims this node last modified.
+
+    A real read of three sources. None means none of them carry data for
+    this node — not a hardcoded placeholder.
+    """
+    prov = {}
+    try:
+        creator = n.creator()
+    except Exception:
+        creator = None
+    if creator is not None:
+        try:
+            prov["creator"] = str(creator.path())[:_MAX_KEY_PARM_CHARS]
+        except Exception:
+            pass
+    try:
+        user_data = n.userDataDict()
+    except Exception:
+        user_data = None
+    if user_data:
+        entries = {}
+        try:
+            items = list(user_data.items())[:_MAX_PROVENANCE_ENTRIES]
+        except Exception:
+            items = []
+        for key, value in items:
+            try:
+                entries[str(key)[:_MAX_KEY_PARM_CHARS]] = (
+                    str(value)[:_MAX_KEY_PARM_CHARS])
+            except Exception:
+                continue
+        if entries:
+            prov["user_data"] = entries
+    if prim_paths:
+        try:
+            stage = n.stage()
+            attrs = {}
+            for path in prim_paths:
+                prim = stage.GetPrimAtPath(path)
+                try:
+                    valid = prim is not None and prim.IsValid()
+                except Exception:
+                    valid = False
+                if not valid:
+                    continue
+                for attr in prim.GetAttributes():
+                    try:
+                        name = attr.GetName()
+                        if not name.startswith("synapse:"):
+                            continue
+                        attrs[str(name)[:_MAX_KEY_PARM_CHARS]] = (
+                            str(attr.Get())[:_MAX_KEY_PARM_CHARS])
+                    except Exception:
+                        continue
+            if attrs:
+                prov["usd_attributes"] = attrs
+        except Exception:
+            pass
+    return prov or None
+
+
+def _synapse_extract_node(n, depth, max_depth, state):
+    """Extract a single node and, within the caps, its children."""
+    state["count"] += 1
+    if depth > state["depth_reached"]:
+        state["depth_reached"] = depth
     data = {
         "node_name": n.name(),
         "node_type": n.type().name(),
@@ -142,6 +317,7 @@ def _synapse_extract_node(n):
         "key_parms": {},
         "provenance": None,
     }
+    prim_paths = []
     try:
         # --- Error / warning detection ---
         try:
@@ -169,8 +345,8 @@ def _synapse_extract_node(n):
         # --- USD prims (skip error / bypassed nodes) ---
         if data["error_state"] != "error" and not data["bypass_flag"]:
             try:
-                prims = n.lastModifiedPrims()
-                data["usd_prim_paths"] = sorted(str(p) for p in prims)
+                prim_paths = sorted(str(p) for p in n.lastModifiedPrims())
+                data["usd_prim_paths"] = prim_paths
             except Exception:
                 pass
 
@@ -189,6 +365,40 @@ def _synapse_extract_node(n):
         except Exception:
             pass
 
+        # --- Children: recurse with depth cap, node ceiling, visited set ---
+        try:
+            kids = list(n.children())
+            kids.sort(key=lambda c: c.path())
+        except Exception:
+            kids = []
+            _synapse_record_truncation(
+                state, n.path(), "children_enumeration_failed")
+        if kids and depth >= max_depth:
+            # Children exist below the cap — say so instead of leaving them
+            # silently absent.
+            _synapse_record_truncation(state, n.path(), "depth_cap")
+        else:
+            for child in kids:
+                if state["count"] >= _MAX_NODES:
+                    _synapse_record_truncation(
+                        state, n.path(), "node_ceiling")
+                    break
+                try:
+                    child_path = child.path()
+                except Exception:
+                    continue
+                if child_path in state["visited"]:
+                    state["cycle_guard_hits"] += 1
+                    continue
+                state["visited"].add(child_path)
+                data["children"].append(
+                    _synapse_extract_node(child, depth + 1, max_depth, state)
+                )
+
+        # --- Key parms / provenance: real reads, never empty placeholders ---
+        data["key_parms"] = _synapse_extract_key_parms(n)
+        data["provenance"] = _synapse_extract_provenance(n, prim_paths)
+
     except Exception as ex:
         # Last-resort per-node catch — record rather than abort
         data["error_state"] = "error"
@@ -198,7 +408,7 @@ def _synapse_extract_node(n):
 
 
 def _synapse_extract_flat_ast(target_path):
-    # hou / json / SCHEMA_VERSION / _synapse_extract_node all resolve via the
+    # hou / json / SCHEMA_VERSION / the helper functions all resolve via the
     # globals() re-publish before the top-level try (split globals/locals exec
     # would otherwise hide them inside this function). See that note for why.
     parent = hou.node(target_path)
@@ -217,10 +427,38 @@ def _synapse_extract_flat_ast(target_path):
         }, sort_keys=True)
     # Deterministic order: sort children by path
     children.sort(key=lambda c: c.path())
-    nodes = [_synapse_extract_node(c) for c in children]
+    state = {
+        "count": 0,
+        "truncated": False,
+        "truncation_reasons": [],
+        "truncated_paths": [],
+        "truncated_paths_omitted": 0,
+        "depth_reached": 0,
+        "cycle_guard_hits": 0,
+        "visited": set(),
+    }
+    nodes = []
+    for child in children:
+        if state["count"] >= _MAX_NODES:
+            _synapse_record_truncation(state, target_path, "node_ceiling")
+            break
+        try:
+            child_path = child.path()
+        except Exception:
+            continue
+        state["visited"].add(child_path)
+        nodes.append(_synapse_extract_node(child, 1, _MAX_DEPTH, state))
     return json.dumps({
         "schema_version": SCHEMA_VERSION,
         "target_path": target_path,
+        "max_depth": _MAX_DEPTH,
+        "depth_reached": state["depth_reached"],
+        "truncated": state["truncated"],
+        "truncation_reasons": state["truncation_reasons"],
+        "truncated_paths": state["truncated_paths"],
+        "truncated_paths_omitted": state["truncated_paths_omitted"],
+        "cycle_guard_hits": state["cycle_guard_hits"],
+        "node_count": state["count"],
         "nodes": nodes,
     }, sort_keys=True)
 
@@ -229,10 +467,10 @@ def _synapse_extract_flat_ast(target_path):
 # where G != L (see handlers.py _run_compiled / api_adapter _run_in_namespace).
 # Top-level defs, imports and constants bind into L, but functions resolve
 # names via their __globals__ (= G), so from INSIDE the functions the other
-# top-level function (_synapse_extract_node), the module constants
-# (SCHEMA_VERSION, _MAX_ERR_LEN) and the imports are all invisible -> NameError,
-# swallowed as extraction_script_crash. `globals()` here (module level) IS G,
-# so re-publish the names the functions need into G. Without this, a clean
+# top-level functions, the module constants (SCHEMA_VERSION, _MAX_ERR_LEN,
+# the walk limits) and the imports are all invisible -> NameError, swallowed
+# as extraction_script_crash. `globals()` here (module level) IS G, so
+# re-publish every name the functions resolve into G. Without this, a clean
 # scene crashes at the _synapse_extract_node call and any errored/warned node
 # double-faults on _MAX_ERR_LEN inside its own except handler.
 globals().update({
@@ -241,6 +479,16 @@ globals().update({
     "traceback": traceback,
     "SCHEMA_VERSION": SCHEMA_VERSION,
     "_MAX_ERR_LEN": _MAX_ERR_LEN,
+    "_MAX_DEPTH": _MAX_DEPTH,
+    "_MAX_NODES": _MAX_NODES,
+    "_MAX_KEY_PARMS": _MAX_KEY_PARMS,
+    "_MAX_KEY_PARM_CHARS": _MAX_KEY_PARM_CHARS,
+    "_MAX_TRUNCATED_PATHS": _MAX_TRUNCATED_PATHS,
+    "_MAX_PROVENANCE_ENTRIES": _MAX_PROVENANCE_ENTRIES,
+    "_synapse_record_truncation": _synapse_record_truncation,
+    "_synapse_simple_parm_types": _synapse_simple_parm_types,
+    "_synapse_extract_key_parms": _synapse_extract_key_parms,
+    "_synapse_extract_provenance": _synapse_extract_provenance,
     "_synapse_extract_node": _synapse_extract_node,
     "_synapse_extract_flat_ast": _synapse_extract_flat_ast,
 })
@@ -381,6 +629,52 @@ def _check_schema_version(payload: Dict[str, Any]) -> str:
     return version
 
 
+def _as_int(value: Any, default: int = 0) -> int:
+    """Coerce an int field, rejecting bools and non-ints."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return default
+    return value
+
+
+def _as_str_list(value: Any, cap: int = 50) -> list:
+    """Coerce a list of strings (bounded) from an untrusted payload field."""
+    if not isinstance(value, list):
+        return []
+    out = []
+    for item in value[:cap]:
+        if isinstance(item, str):
+            out.append(item[:512])
+    return out
+
+
+def _normalize_walk_meta(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract the walk-honesty envelope fields from a response payload.
+
+    Only fields the payload actually carries are forwarded, so older
+    responses (and mocked transports) stay byte-compatible. The extraction
+    script always sends these fields; mocked tests may not.
+    """
+    meta: Dict[str, Any] = {}
+    if "truncated" in payload:
+        meta["truncated"] = bool(payload["truncated"])
+    if "truncation_reasons" in payload:
+        meta["truncation_reasons"] = _as_str_list(payload["truncation_reasons"])
+    if "truncated_paths" in payload:
+        meta["truncated_paths"] = _as_str_list(payload["truncated_paths"])
+    if "truncated_paths_omitted" in payload:
+        meta["truncated_paths_omitted"] = _as_int(
+            payload["truncated_paths_omitted"])
+    if "max_depth" in payload:
+        meta["max_depth"] = _as_int(payload["max_depth"])
+    if "depth_reached" in payload:
+        meta["depth_reached"] = _as_int(payload["depth_reached"])
+    if "cycle_guard_hits" in payload:
+        meta["cycle_guard_hits"] = _as_int(payload["cycle_guard_hits"])
+    if "node_count" in payload:
+        meta["node_count"] = _as_int(payload["node_count"])
+    return meta
+
+
 def _build_stage_ast(payload: Dict[str, Any]) -> StageAST:
     """Build the validated StageAST from a parsed payload.
 
@@ -405,6 +699,7 @@ def _build_stage_ast(payload: Dict[str, Any]) -> StageAST:
         nodes,
         schema_version=payload["schema_version"],
         target_path=target_path,
+        walk_meta=_normalize_walk_meta(payload),
     )
 
 
@@ -491,7 +786,14 @@ def synapse_inspect_stage(
     execute_python_fn: Optional[TransportFn] = None,
     timeout: Optional[float] = None,
 ) -> StageAST:
-    """Extract the flat AST of a Houdini context from a live session.
+    """Extract the AST of a Houdini context from a live session.
+
+    The walk is recursive from ``target_path`` (direct children and their
+    nested children) and bounded by ``MAX_WALK_DEPTH`` / ``MAX_WALK_NODES``.
+    When a bound stops the walk, the returned ``StageAST`` records it —
+    ``.truncated``, ``.depth_reached`` and the envelope's
+    ``truncation_reasons`` / ``truncated_paths`` — so a partial tree is
+    never mistaken for a complete one.
 
     This is the MCP tool's core implementation. The MCP wrapper in
     ``mcp_server.py`` serializes the returned StageAST to JSON for
@@ -510,7 +812,9 @@ def synapse_inspect_stage(
 
     Returns:
         StageAST with query helpers (``.by_name()``, ``.display_node()``,
-        ``.error_nodes()``, etc.)
+        ``.error_nodes()``, etc.) and walk-honesty fields (``.truncated``,
+        ``.depth_reached``, ``.max_depth``). Nested nodes hang off
+        ``ASTNode.children``.
 
     Raises:
         InvalidTargetPathError: target_path failed validation

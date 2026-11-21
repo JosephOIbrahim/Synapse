@@ -25,7 +25,12 @@ it (Phase 2) decide where it runs.
 """
 
 from synapse.cv.deps import CVDependencyError, CVInputError
-from synapse.cv.exposure_stats import REC709_WEIGHTS, exposure, luminance
+from synapse.cv.exposure_stats import (
+    REC709_WEIGHTS,
+    exposure,
+    luminance,
+    luminance_from_channel_means,
+)
 from synapse.cv.reader import read_frame, read_linear_rgb, to_cv_bgr
 
 __all__ = [
@@ -34,6 +39,7 @@ __all__ = [
     "REC709_WEIGHTS",
     "exposure",
     "luminance",
+    "luminance_from_channel_means",
     "read_frame",
     "read_linear_rgb",
     "to_cv_bgr",

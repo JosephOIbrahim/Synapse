@@ -15,11 +15,12 @@ Truth contract pins: color_managed=True ONLY on the verified OCIO leg;
 every fallback records its actual transform; GL flipbook previews are
 marked 'viewport_display (unverified)'.
 
-NOTE (spec deviation, deliberate): _handle_capture_viewport does NOT gain
-the static viewport keys -- test_capture.py pins its exact no-config
-result shape ({image_path, width, height, format}, an M2-I pin) and is
-outside this WP's touch list. The render flipbook-fallback leg carries
-them instead.
+NOTE (spec deviation, deliberate at M2-G; superseded by R-021): the M2-G
+work left _handle_capture_viewport without the static viewport keys because
+test_capture.py pinned its exact no-config result shape. R-021 later added
+camera/frame/viewport/pixel_check to capture (and updated that pin), so
+capture now carries its own identity fields; the render flipbook-fallback
+leg keeps the M2-G keys as before.
 
 Headless. Handler-module globals are patched directly (sys.modules
 residency is order-fragile -- docs/HARDENING_RUN_2026-06-10.md Mile 3

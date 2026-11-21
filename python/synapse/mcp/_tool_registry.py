@@ -402,10 +402,14 @@ TOOL_DEFS: list[tuple] = [
 
     # -- Viewport / Render --
     ("houdini_capture_viewport", "capture_viewport", _identity,
-     "Capture the Houdini viewport as an image.",
+     "Capture the Houdini viewport as an image. Returns the image plus what "
+     "was captured (camera, frame, viewport) and a pixel_check verdict; a "
+     "resolution above 8192 px per side is refused before the flipbook runs.",
      {"type": "object", "properties": {
-         "width": {"type": "integer", "description": "Width in pixels"},
-         "height": {"type": "integer", "description": "Height in pixels"},
+         "width": {"type": "integer", "minimum": 1, "maximum": 8192,
+                   "description": "Width in pixels (max 8192)"},
+         "height": {"type": "integer", "minimum": 1, "maximum": 8192,
+                    "description": "Height in pixels (max 8192)"},
          "format": {"type": "string", "enum": ["jpeg", "png"], "description": "Image format"},
      }, "required": []},
      True, False, True),

@@ -334,6 +334,66 @@ class TestUnderexposure:
 
 
 # ---------------------------------------------------------------------------
+# Tests: Mean Luminance (Rec.709)
+# ---------------------------------------------------------------------------
+
+class TestMeanLuminanceRec709:
+    """The validator must weight RGB channels, not average them.
+
+    An unweighted channel average calls a saturated frame as bright as its
+    grey equivalent. A blue-dominant frame averages 0.0667 and passes the
+    default 0.05 underexposure floor; its Rec.709 luminance is 0.01444 and
+    must fail. Weights: R 0.2126, G 0.7152, B 0.0722.
+    """
+
+    @staticmethod
+    def _validate(handler, valid_image, avg, checks):
+        oiio_mock = _make_oiio_mock(avg=avg)
+        with patch.dict(sys.modules, {"OpenImageIO": oiio_mock}):
+            return handler._handle_validate_frame({
+                "image_path": valid_image,
+                "checks": checks,
+            })
+
+    def test_blue_dominant_frame_is_underexposed(self, handler, valid_image):
+        """(0, 0, 0.2): channel mean 0.0667 used to pass; Rec.709 is 0.01444."""
+        result = self._validate(handler, valid_image, [0.0, 0.0, 0.2],
+                                ["underexposure"])
+        assert result["mean_luminance"] == pytest.approx(0.01444, abs=1e-6)
+        assert result["checks"]["underexposure"]["passed"] is False
+        assert result["checks"]["underexposure"]["value"] == pytest.approx(
+            0.01444, abs=1e-6)
+
+    def test_red_dominant_frame_is_underexposed(self, handler, valid_image):
+        """The predicate's literal (0.2, 0, 0): red weighs 0.2126, not 1/3."""
+        result = self._validate(handler, valid_image, [0.2, 0.0, 0.0],
+                                ["underexposure"])
+        assert result["mean_luminance"] == pytest.approx(0.04252, abs=1e-6)
+        assert result["checks"]["underexposure"]["passed"] is False
+
+    def test_green_dominant_frame_passes_underexposure(self, handler, valid_image):
+        """(0, 0.2, 0): green weighs 0.7152, so this frame is bright."""
+        result = self._validate(handler, valid_image, [0.0, 0.2, 0.0],
+                                ["underexposure"])
+        assert result["mean_luminance"] == pytest.approx(0.14304, abs=1e-6)
+        assert result["checks"]["underexposure"]["passed"] is True
+
+    def test_neutral_grey_weights_sum_to_one(self, handler, valid_image):
+        result = self._validate(handler, valid_image, [0.2, 0.2, 0.2],
+                                ["underexposure"])
+        assert result["mean_luminance"] == pytest.approx(0.2, abs=1e-6)
+
+    def test_validator_imports_the_shared_helper(self):
+        import importlib
+
+        from synapse.cv import exposure_stats
+
+        handlers_render = importlib.import_module("synapse.server.handlers_render")
+        assert (handlers_render.luminance_from_channel_means
+                is exposure_stats.luminance_from_channel_means)
+
+
+# ---------------------------------------------------------------------------
 # Tests: Saturation (Fireflies)
 # ---------------------------------------------------------------------------
 
@@ -449,7 +509,8 @@ class TestIntegration:
                 "image_path": valid_image,
             })
         expected_keys = {"valid", "image_path", "resolution", "channels",
-                         "format", "checks", "summary", "oiio_available"}
+                         "format", "mean_luminance", "checks", "summary",
+                         "oiio_available"}
         assert set(result.keys()) == expected_keys
 
     def test_sorted_check_keys_he2025(self, handler, valid_image):

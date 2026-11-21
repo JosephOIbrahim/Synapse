@@ -13,6 +13,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Union
 
+from synapse.cv.exposure_stats import REC709_WEIGHTS, luminance
+
 from .models import FrameEvaluation, SequenceEvaluation
 
 logger = logging.getLogger("synapse.autonomy.evaluator")
@@ -48,6 +50,25 @@ try:
     _PIL_AVAILABLE = True
 except ImportError:
     _PILImage = None  # type: ignore[assignment]
+
+
+def _frame_luminance(arr):
+    """Per-pixel Rec.709 luminance of a loaded frame array.
+
+    RGB frames go through :func:`synapse.cv.exposure_stats.luminance` — the
+    same helper ``validate_frame`` uses — and drop alpha. A 2-D array is
+    already one value per pixel; a single channel is a grey frame, whose
+    luminance is the value itself.
+    """
+    if arr.ndim != 3:
+        return arr
+    channels = arr.shape[2]
+    if channels >= 3:
+        return luminance(arr[..., :3])
+    if channels == 1:
+        return arr[..., 0]
+    # Two channels are not RGB; the missing channel contributes no light.
+    return arr[..., 0] * REC709_WEIGHTS[0] + arr[..., 1] * REC709_WEIGHTS[1]
 
 
 class RenderEvaluator:
@@ -514,20 +535,21 @@ class RenderEvaluator:
         return None
 
     def _mean_luminance(self, arr: Any) -> float:
-        """Mean pixel value of a frame, ignoring NaN. 0.0 when unmeasurable."""
+        """Mean Rec.709 luminance of a frame, ignoring NaN. 0.0 when unmeasurable.
+
+        Rec.709 weights, not a channel average: a saturated blue frame is
+        dark (0.0722 of its blue value) and must not read as bright.
+        """
         if not NUMPY_AVAILABLE:
             return 0.0
         with np.errstate(invalid="ignore"):
-            value = float(np.nanmean(arr))
+            value = float(np.nanmean(_frame_luminance(arr)))
         return value if np.isfinite(value) else 0.0
 
     def _compute_black_ratio(self, arr: Any) -> float:
-        """Compute fraction of near-black pixels."""
-        if arr.ndim == 3:
-            luminance = np.mean(arr, axis=-1)
-        else:
-            luminance = arr
-        return float(np.mean(luminance < self._black_threshold))
+        """Compute fraction of near-black pixels (Rec.709 luminance)."""
+        lum = _frame_luminance(arr)
+        return float(np.mean(lum < self._black_threshold))
 
     def _check_nan_inf(self, arr: Any) -> Optional[str]:
         """Detect NaN or Inf values in pixel data."""
@@ -547,20 +569,17 @@ class RenderEvaluator:
 
     def _check_fireflies(self, arr: Any) -> Optional[str]:
         """Detect outlier pixels >10 std devs from mean (fireflies)."""
-        if arr.ndim == 3:
-            luminance = np.mean(arr, axis=-1)
-        else:
-            luminance = arr
+        lum = _frame_luminance(arr)
 
-        mean_val = np.mean(luminance)
-        std_val = np.std(luminance)
+        mean_val = np.mean(lum)
+        std_val = np.std(lum)
 
         if std_val < 1e-10:
             return None  # Flat image, no fireflies possible
 
-        outlier_mask = np.abs(luminance - mean_val) > (self._firefly_std_devs * std_val)
+        outlier_mask = np.abs(lum - mean_val) > (self._firefly_std_devs * std_val)
         outlier_count = int(outlier_mask.sum())
-        total_pixels = luminance.size
+        total_pixels = lum.size
 
         if outlier_count > 0:
             ratio = outlier_count / total_pixels
@@ -573,14 +592,11 @@ class RenderEvaluator:
 
     def _check_clipping(self, arr: Any) -> Optional[str]:
         """Detect if >5% of pixels are pure white or pure black."""
-        if arr.ndim == 3:
-            luminance = np.mean(arr, axis=-1)
-        else:
-            luminance = arr
+        lum = _frame_luminance(arr)
 
-        total = luminance.size
-        pure_black = float(np.sum(luminance <= 0.0)) / total
-        pure_white = float(np.sum(luminance >= 1.0)) / total
+        total = lum.size
+        pure_black = float(np.sum(lum <= 0.0)) / total
+        pure_white = float(np.sum(lum >= 1.0)) / total
 
         issues = []
         if pure_black > self._clipping_ratio:
