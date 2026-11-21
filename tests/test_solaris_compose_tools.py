@@ -10,6 +10,7 @@ doesn't ImportError under CI (no Houdini). Monkeypatch rebinds auto-restore.
 
 import sys
 import types
+from pathlib import Path
 
 import pytest
 
@@ -278,3 +279,163 @@ def test_recipe_assessor_explicit_empty_path_is_not_legacy_mode(tmp_path):
     report = t._assess_stage(_recipe_ready_stage(tmp_path), render_settings_path="",
                              render_input_branch=_recipe_branch())
     assert report["clauses"]["rendersettings"] == "fail"
+
+
+# -- R-027: failed parm writes are reported, and 'created' means the layer
+#    stack + engine actually landed ------------------------------------------
+#
+# The defect: build_karma_xpu_shot discarded every _set() return except
+# engine_set, so a locked/absent num_files left the sublayer LOP on its default
+# count while the receipt still reported all five department layers wired and
+# status 'created'. These fakes make each write land or fail per parm.
+
+class _FakeType:
+    def __init__(self, name):
+        self._name = name
+
+    def name(self):
+        return self._name
+
+
+class _FakeParm:
+    def __init__(self, name):
+        self.name = name
+        self.locked = False
+        self.reject = False
+        self.sets = []
+
+    def isLocked(self):
+        return self.locked
+
+    def set(self, value):
+        if self.reject:
+            raise RuntimeError("parm rejected: %s" % self.name)
+        self.sets.append(value)
+
+
+class _FakeNode:
+    def __init__(self, type_name, name):
+        self._type = _FakeType(type_name)
+        self._name = name
+        self._parms = {}
+
+    def path(self):
+        return "/stage/" + self._name
+
+    def type(self):
+        return self._type
+
+    def parm(self, name):
+        if name not in self._parms:
+            self._parms[name] = _FakeParm(name)
+        return self._parms[name]
+
+    def setGenericFlag(self, *args):
+        pass
+
+    def layoutChildren(self):
+        pass
+
+
+def _compose_env(monkeypatch, tmp_path, locked=(), rejected=()):
+    """Plant the compose tier's headless deps; return {node name: fake node}.
+
+    ``locked``/``rejected`` hold (node type, parm name) pairs -- matching nodes
+    are born with that parm locked or raising on set().
+    """
+    class _FakeSdfLayer:
+        @staticmethod
+        def CreateNew(fp):
+            Path(fp).write_text("#usda 1.0\n")
+            return types.SimpleNamespace(Save=lambda: None)
+
+    fake_pxr = types.ModuleType("pxr")
+    fake_pxr.Sdf = types.SimpleNamespace(Layer=_FakeSdfLayer)
+    monkeypatch.setitem(sys.modules, "pxr", fake_pxr)
+
+    nodes = {}
+
+    def _mk(type_name, name):
+        node = _FakeNode(type_name, name)
+        for tn, pn in locked:
+            if tn == type_name:
+                node.parm(pn).locked = True
+        for tn, pn in rejected:
+            if tn == type_name:
+                node.parm(pn).reject = True
+        nodes[name] = node
+        return node
+
+    monkeypatch.setattr(t, "sc", types.SimpleNamespace(
+        create_lop=lambda stage, type_name, name: _mk(type_name, name),
+        make_pythonscript_lop=lambda stage, name, code: _mk("pythonscript", name),
+        wire=lambda node, src, input_index=0: None,
+        read_stage=lambda node: None,
+        composition_errors=lambda stage: [],
+        ComposeError=sc.ComposeError,
+    ))
+    monkeypatch.setattr(t, "HOU_AVAILABLE", True, raising=False)
+    monkeypatch.setattr(
+        t, "hou",
+        types.SimpleNamespace(expandString=lambda s: s.replace("$HIP", str(tmp_path))),
+    )
+    return nodes
+
+
+def _run_build(monkeypatch, tmp_path, **env):
+    _compose_env(monkeypatch, tmp_path, **env)
+    stage = types.SimpleNamespace(layoutChildren=lambda: None)
+    return t.build_karma_xpu_shot(
+        stage, shot="r027", layer_dir=str(tmp_path), verify=False
+    )
+
+
+def test_locked_num_files_is_reported_and_downgrades_status(tmp_path, monkeypatch):
+    """The finding's probe: a locked num_files must not read as 'created'."""
+    result = _run_build(monkeypatch, tmp_path, locked={("sublayer", "num_files")})
+    assert result["status"] == "partial"
+    assert "sublayer.num_files" in result["parms_missed"]
+    assert "num_files" in result["critical_parms_missed"]
+    # The build still attempted the whole stack -- it reported, it did not abort.
+    assert len(result["department_parm_paths"]) == 5
+
+
+def test_locked_filepath_is_reported_and_downgrades_status(tmp_path, monkeypatch):
+    result = _run_build(monkeypatch, tmp_path, locked={("sublayer", "filepath3")})
+    assert result["status"] == "partial"
+    assert "sublayer.filepath3" in result["parms_missed"]
+    assert "filepath3" in result["critical_parms_missed"]
+
+
+def test_locked_engine_is_reported_and_downgrades_status(tmp_path, monkeypatch):
+    result = _run_build(monkeypatch, tmp_path, locked={("karmarendersettings", "engine")})
+    assert result["status"] == "partial"
+    assert result["engine_set"] is False
+    assert "karmarendersettings.engine" in result["parms_missed"]
+    assert "engine" in result["critical_parms_missed"]
+
+
+def test_rejected_critical_set_is_reported(tmp_path, monkeypatch):
+    """A parm that exists and is unlocked but raises on set() is a miss too."""
+    result = _run_build(monkeypatch, tmp_path, rejected={("sublayer", "filepath1")})
+    assert result["status"] == "partial"
+    assert "sublayer.filepath1" in result["parms_missed"]
+    assert "filepath1" in result["critical_parms_missed"]
+
+
+def test_noncritical_miss_is_reported_but_keeps_created(tmp_path, monkeypatch):
+    """Every failed write is named; only num_files/filepathN/engine gate status."""
+    result = _run_build(
+        monkeypatch, tmp_path, locked={("karmarendersettings", "productName")}
+    )
+    assert result["status"] == "created"
+    assert result["parms_missed"] == ["karmarendersettings.productName"]
+    assert result["critical_parms_missed"] == []
+
+
+def test_all_parms_landing_claims_created_with_empty_misses(tmp_path, monkeypatch):
+    """Positive control: an empty parms_missed is the claim every write landed."""
+    result = _run_build(monkeypatch, tmp_path)
+    assert result["status"] == "created"
+    assert result["parms_missed"] == []
+    assert result["critical_parms_missed"] == []

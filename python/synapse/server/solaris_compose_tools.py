@@ -29,6 +29,7 @@ except ImportError:
 
 from synapse.server import solaris_compose as sc
 from synapse.core.mtlx_types import MTLX_STANDARD_SURFACE
+from synapse.core.parm_report import note_missing
 from synapse.server.handler_helpers import _is_resolver_uri, _path_warnings
 
 _log = logging.getLogger(__name__)
@@ -172,21 +173,31 @@ def _resolve_layer_base(shot: str, layer_dir: Optional[str]) -> Tuple[str, str]:
     return base_raw, base
 
 
-def _set(node, parm_name: str, value) -> bool:
+def _set(node, parm_name: str, value, missed: Optional[List[str]] = None) -> bool:
     """Set a parm if present and unlocked. Returns True on success (used to
-    detect missing/locked parms so we can fall back -- e.g. productName->picture)."""
+    detect missing/locked parms so we can fall back -- e.g. productName->picture).
+
+    A failed write is also recorded in ``missed`` (``<node type>.<parm>``, the
+    core/parm_report.py convention) when a list is given: a caller that discards
+    the False return otherwise reports 'created' for a parm that never landed."""
     p = node.parm(parm_name)
     if p is None:
         _log.debug("parm %r absent on %s", parm_name, node.path())
+        if missed is not None:
+            note_missing(missed, node, parm_name)
         return False
     if p.isLocked():
         _log.debug("parm %r locked on %s", parm_name, node.path())
+        if missed is not None:
+            note_missing(missed, node, parm_name)
         return False
     try:
         p.set(value)
         return True
     except Exception as e:
         _log.warning("parm %r set failed on %s: %s", parm_name, node.path(), e)
+        if missed is not None:
+            note_missing(missed, node, parm_name)
         return False
 
 
@@ -210,6 +221,12 @@ def build_karma_xpu_shot(
     handler owns the undo group + main-thread marshal. Department .usd files
     created on disk are reported in ``disk_writes`` and are NOT undoable --
     rollback never deletes artist files.
+
+    Every guarded parm write that does not land is named in ``parms_missed``
+    (empty list = every write landed). ``status`` is 'created' only when the
+    write-critical parms landed: ``num_files`` and every ``filepathN`` (without
+    them the composed layer stack is not the one this receipt claims) and
+    ``engine`` (without it the render delegate is not the requested one).
     """
     if not HOU_AVAILABLE:
         raise sc.ComposeError("hou unavailable -- build_karma_xpu_shot needs the live bridge")
@@ -218,6 +235,8 @@ def build_karma_xpu_shot(
     from pxr import Sdf
     depts = list(DEPARTMENT_LAYERS_STRONGEST_FIRST)   # render..layout (conceptual strongest-first)
     created = []
+    parms_missed: List[str] = []      # guarded writes that did not land (B1)
+    critical_missed: List[str] = []   # subset that makes 'created' a lie
 
     # 1. Department sublayer stack via a `sublayer` LOP.
     # VERIFIED on 21.0.671: the sublayer LOP composes filepathN as STRONGEST
@@ -245,38 +264,47 @@ def build_karma_xpu_shot(
         dept_files_raw.append(base_raw + "/" + d + ".usd")
     dept = sc.create_lop(stage_node, "sublayer", shot + "_dept_stack")
     created.append(dept)
-    _set(dept, "num_files", len(dept_files))  # guarded (locked/missing -> logged, not crash)
+    # R-027: num_files + every filepathN are write-critical -- if the count does
+    # not land the sublayer LOP keeps its default (the strongest layer may be
+    # absent), and if a filepath does not land the stack is silently wrong.
+    if not _set(dept, "num_files", len(dept_files), parms_missed):
+        critical_missed.append("num_files")
     # M2-D: PARMS keep the unexpanded tokens (the sublayer LOP expands $HIP
     # natively at cook) -- a pre-expanded absolute broke on any $HIP move.
     for i, fp_raw in enumerate(dept_files_raw, start=1):
-        _set(dept, "filepath%d" % i, fp_raw)
+        if not _set(dept, "filepath%d" % i, fp_raw, parms_missed):
+            critical_missed.append("filepath%d" % i)
 
     # 2. Camera (render camera).
     cam = sc.create_lop(stage_node, "camera", shot + "_cam")
     created.append(cam)
     sc.wire(cam, dept)
     cam_prim = "/cameras/" + shot + "_cam"
-    _set(cam, "primpath", cam_prim)
-    _set(cam, "tz", 6.0)
-    _set(cam, "ty", 1.0)
-    _set(cam, "focalLength", 50.0)
-    if _set(cam, "lookatenable", True):
-        _set(cam, "lookatpositiony", 1.0)
+    _set(cam, "primpath", cam_prim, parms_missed)
+    _set(cam, "tz", 6.0, parms_missed)
+    _set(cam, "ty", 1.0, parms_missed)
+    _set(cam, "focalLength", 50.0, parms_missed)
+    if _set(cam, "lookatenable", True, parms_missed):
+        _set(cam, "lookatpositiony", 1.0, parms_missed)
 
     # 3. Karma XPU render settings (self-contained: engine/camera/resolution/product).
     krs = sc.create_lop(stage_node, "karmarendersettings", shot + "_karma_xpu")
     created.append(krs)
     sc.wire(krs, cam)
     rs_prim = "/Render/rendersettings"
-    _set(krs, "primpath", rs_prim)
-    engine_set = _set(krs, "engine", engine)
-    _set(krs, "camera", cam_prim)
-    _set(krs, "resolutionx", int(resolution[0]))
-    _set(krs, "resolutiony", int(resolution[1]))
+    _set(krs, "primpath", rs_prim, parms_missed)
+    # R-027: engine is write-critical -- a missed engine write leaves the
+    # default delegate in place while the receipt claims the requested one.
+    engine_set = _set(krs, "engine", engine, parms_missed)
+    if not engine_set:
+        critical_missed.append("engine")
+    _set(krs, "camera", cam_prim, parms_missed)
+    _set(krs, "resolutionx", int(resolution[0]), parms_missed)
+    _set(krs, "resolutiony", int(resolution[1]), parms_missed)
     # M2-D: keep $HIP unexpanded + add $F4 -- a pre-expanded token-free
     # productName wrote EVERY sequence frame to one file, overwriting itself.
     exr_raw = "$HIP/render/" + shot + ".$F4.exr"
-    _set(krs, "productName", exr_raw)  # best-effort parm (does NOT author the prim attr)
+    _set(krs, "productName", exr_raw, parms_missed)  # best-effort parm (does NOT author the prim attr)
     # Author productName onto the RenderProduct prim (the parm alone doesn't -> BL-007).
     prodname = sc.make_pythonscript_lop(stage_node, shot + "_productname",
                                         _PRODUCT_NAME_CODE % {"exr": exr_raw})
@@ -318,7 +346,9 @@ def build_karma_xpu_shot(
         errs = None
 
     result = {
-        "status": "created",
+        "status": "partial" if critical_missed else "created",
+        "parms_missed": parms_missed,
+        "critical_parms_missed": critical_missed,
         "nodes": [n.path() for n in created],
         "output": out.path(),
         "engine": engine,
