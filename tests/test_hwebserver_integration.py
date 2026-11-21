@@ -135,8 +135,13 @@ def test_websocket_roundtrip():
             assert "hip_file" in response["data"]
             print(f"PASS: get_scene_info via hwebserver — HIP: {response['data']['hip_file']}")
 
-    asyncio.run(_test())
-    stop_hwebserver()
+    try:
+        asyncio.run(_test())
+    finally:
+        # Always stop it: a server left running inside a hython test process
+        # keeps its metrics aggregator and freeze chain live, and later tests
+        # (tests/test_m3_logs_doctor.py) then read that state.
+        stop_hwebserver()
     return True
 
 
