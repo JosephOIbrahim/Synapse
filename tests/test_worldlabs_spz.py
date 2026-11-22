@@ -27,6 +27,39 @@ fx = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(fx)
 
 
+def test_spz_import_reads_scale_beside_the_artists_file_not_the_cache(tmp_path, monkeypatch):
+    """An SPZ converts to a cached PLY; the '<world>.world.json' beside the .spz must still set the scale."""
+    from synapse.server import main_thread
+    from synapse.worldlabs import importer
+    scans = tmp_path / 'scans'
+    scans.mkdir()
+    source = scans / 'room.spz'
+    source.write_bytes(fx.legacy_spz(fx.sample_splats(12, sh_degree=0), version=2, sh_degree=0))
+    (scans / 'room.world.json').write_text(json.dumps({'metric_scale_factor': 2.5,
+                                                      'scale_source': 'known dimension: test doorway'}))
+    prepared = importer.prepare_local_asset(source, tmp_path / 'cache')
+    assert Path(prepared['path']).parent != scans  # the PLY really is elsewhere
+    assert Path(prepared['metadata']['source_path']) == source.resolve()
+    seen = {}
+    monkeypatch.setattr(main_thread, 'run_on_main', lambda fn, **kw: fn())
+    monkeypatch.setattr(importer, '_import_native', lambda info, md: seen.update(md) or {})
+    importer.import_local_asset(prepared['path'], prepared['metadata'])
+    assert seen['scale_source'] == 'known dimension: test doorway'
+    assert seen['semantics_metadata']['metric_scale_factor'] == 2.5
+    assert importer._beside_path({'path': prepared['path']}, prepared['metadata']) == str(source.resolve())
+
+
+def test_downloaded_operation_folder_is_recorded_as_a_download(tmp_path):
+    from synapse.worldlabs import importer
+    folder = tmp_path / 'dl'
+    folder.mkdir()
+    (folder / 'refinedSplats_12.spz').write_bytes(fx.legacy_spz(fx.sample_splats(12, sh_degree=0), version=2, sh_degree=0))
+    (folder / 'operation.json').write_text(json.dumps({'id': 'op123abc', 'metadata': {'task': 'posedImages2Splats'}}))
+    md = importer.prepare_local_asset(folder, tmp_path / 'cache')['metadata']
+    assert md['source'] == 'atlas_operation_download'
+    assert md['operation_id'] == 'op123abc' and md['task'] == 'posedImages2Splats'
+
+
 def _has_stdlib_zstd():
     try:
         from compression import zstd  # noqa: F401
@@ -132,6 +165,32 @@ def test_v4_without_any_zstd_decoder_is_refused_plainly(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", no_zstd)
     with pytest.raises(spz.SPZFormatError, match="zstd"):
         spz.decode(raw)
+
+
+def test_v4_never_uses_an_unbounded_third_party_decoder(monkeypatch):
+    """Without Python 3.14's zstd, an installed zstandard or pyzstd is NOT used: neither bounds its output."""
+    import builtins
+    import sys
+    import types
+    real_import = builtins.__import__
+
+    def no_stdlib_zstd(name, *args, **kwargs):
+        if name == "compression" or name.startswith("compression."):
+            raise ImportError(name)
+        return real_import(name, *args, **kwargs)
+
+    def boom(*args, **kwargs):
+        raise AssertionError("a third-party zstd decoder was called")
+
+    fake_zstandard = types.SimpleNamespace(ZstdDecompressor=boom)
+    fake_pyzstd = types.SimpleNamespace(decompress=boom, ZstdDecompressor=boom)
+    monkeypatch.setitem(sys.modules, "zstandard", fake_zstandard)
+    monkeypatch.setitem(sys.modules, "pyzstd", fake_pyzstd)
+    header = struct.pack('<IIIBBBBI12x', 0x5053474E, 4, 1, 0, 12, 0, 5, 32)
+    toc = b''.join(struct.pack('<QQ', 1, s) for s in [9, 1, 3, 3, 4])
+    monkeypatch.setattr(builtins, "__import__", no_stdlib_zstd)
+    with pytest.raises(spz.SPZFormatError, match="no zstd decoder"):
+        spz.decode(header + toc + bytes(5))
 
 
 @pytest.mark.parametrize("degree", [1, 2, 3, 4])

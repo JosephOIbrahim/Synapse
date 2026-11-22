@@ -153,6 +153,32 @@ class NativeChoiceTests(unittest.TestCase):
         self.assertEqual(row["method"], "replace")
         self.assertEqual(row["value"].split(";"), [(root / "dependencies/moneta/schema").as_posix(), retained])
 
+    def test_python_path_list_is_one_string_under_replace(self):
+        # A previous package that kept PYTHONPATH under "replace", native OFF:
+        # the merge keeps the method and builds a list, and H22 keeps only a
+        # replace list's last entry, which would drop <root>/python.
+        kept = (self.sandbox / "studio/python").as_posix()
+        previous = json.loads(self.seed([
+            {"var": "PYTHONPATH", "method": "replace",
+             "value": (self.sandbox / "old-source/python").as_posix() + ";" + kept},
+            {"var": "MONETA_NATIVE", "value": "0"}]))
+        root = self.sandbox / "new-runtime"
+        result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home, previous=previous)
+        row = next(r for r in result["env"] if r["var"] == "PYTHONPATH")
+        self.assertIsInstance(row["value"], str)
+        self.assertEqual(row["method"], "replace")
+        paths = row["value"].split(";")
+        self.assertEqual(paths[:3], [(root / "dependencies/moneta/src").as_posix(),
+                                     (root / "python").as_posix(), root.as_posix()])
+        self.assertIn(kept, paths)
+
+    def test_python_path_prepend_list_is_unchanged(self):
+        root = self.sandbox / "new-runtime"
+        result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home)
+        row = next(r for r in result["env"] if r["var"] == "PYTHONPATH")
+        self.assertEqual(row["method"], "prepend")
+        self.assertIsInstance(row["value"], list)
+
     def test_fresh_schema_registration_stays_one_path(self):
         root = self.sandbox / "new-runtime"
         result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home)

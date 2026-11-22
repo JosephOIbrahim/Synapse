@@ -7,7 +7,8 @@ Format source: nianticlabs/spz ``load-spz.cc``, ``splat-utils.h`` and ``splat-ty
 wins wherever its comments disagree:
   * v1-v3: one gzip stream holding a 16-byte header, then planar arrays: positions, alphas, colors, scales, rotations, SH.
   * v4: a plaintext 32-byte "NGSP" header, a table of contents, then one zstd frame per array. Python 3.14+ decodes
-    zstd natively. Older Pythons need ``zstandard`` or ``pyzstd``, otherwise the file is refused with a clear message.
+    zstd natively, bounded by each stream's declared size; on older Pythons (Houdini 22.0.400 runs 3.13) the file is
+    refused with a clear message. The header and table of contents follow load-spz.cc's NgspFileHeader.
   * positions: 24-bit signed fixed point / 2**fractionalBits. v1 stores float16.
   * alpha: sigmoid(opacity) * 255.   colors: f_dc * (0.15 * 255) + 127.5.   scales: (log_scale + 10) * 16.
   * rotations: v3+ "smallest three" in 4 bytes. v1-v2 store xyz offset-binary in 3 bytes, with w >= 0 rebuilt.
@@ -50,23 +51,19 @@ def _np():
 
 
 def _zstd_decompress(data: bytes, expected: int) -> bytes:
-    """One zstd frame -> exactly ``expected`` bytes, using whichever decoder this Python has."""
+    """One zstd frame -> exactly ``expected`` bytes. Python 3.14's own decoder, never more than ``expected`` out.
+
+    Third-party decoders are not tried: ``pyzstd.decompress`` has no output bound, and zstandard's one-shot
+    ``decompress`` allocates the size a frame declares, so a small crafted file could exhaust memory first.
+    """
     try:
         from compression import zstd as _std  # Python 3.14+
-        out = _std.ZstdDecompressor().decompress(data, max_length=expected)
     except ImportError:
-        try:
-            import zstandard
-            out = zstandard.ZstdDecompressor().decompress(data, max_output_size=expected)
-        except ImportError:
-            try:
-                import pyzstd
-                out = pyzstd.decompress(data)
-            except ImportError:
-                raise SPZFormatError(
-                    'This SPZ is version 4 (zstd-compressed), and this Python has no zstd decoder. '
-                    'Houdini 22.0.400 runs Python 3.13, which lacks one. Convert it to PLY with another tool, '
-                    'or install the zstandard package for Houdini.') from None
+        raise SPZFormatError(
+            'This SPZ is version 4 (zstd-compressed), and this Python has no zstd decoder. '
+            'Houdini 22.0.400 runs Python 3.13, which lacks one. Convert it to PLY with another tool.') from None
+    try:
+        out = _std.ZstdDecompressor().decompress(data, max_length=expected)
     except Exception:
         raise SPZFormatError('A compressed SPZ stream is damaged.') from None
     if len(out) != expected:

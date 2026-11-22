@@ -165,5 +165,11 @@ def installed_package(root: Path, manifest: dict, user_home=None, *, previous=No
     row = next((row for row in result["env"] if row["var"] == "PXR_PLUGINPATH_NAME"), None)
     if row is not None and isinstance(row["value"], list):
         row["value"] = ";".join(_paths(row))
+    # The same rule for PYTHONPATH. The merge copies the previous method, and a
+    # previous row with "replace" or no method would otherwise leave a list under
+    # "replace", and H22 would drop <root>/python. A "prepend" list is unchanged.
+    row = next((row for row in result["env"] if row["var"] == "PYTHONPATH"), None)
+    if row is not None and isinstance(row["value"], list) and row.get("method", "replace") == "replace":
+        row["value"] = ";".join(_paths(row))
     result["env"].append({"var": "MONETA_NATIVE", "value": native_value, "method": "replace"})
     return result

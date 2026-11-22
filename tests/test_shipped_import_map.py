@@ -64,8 +64,6 @@ UNSHIPPED = {
     "oiio": "optional",                  # alternate OpenImageIO module name
     "qtpy": "optional",                  # panel Qt shim fallback
     "PySide2": "optional",               # pre-PySide6 Houdini fallback
-    "zstandard": "optional",             # SPZ v4 (zstd) decode before Python 3.14, worldlabs/spz.py
-    "pyzstd": "optional",                # the second zstd decoder spz.py tries
     "sentence_transformers": "path:dense-retrieval",  # scout._load_embedder catches ImportError
     "hanish": "path:loop",               # loop worker subprocess, from the loop's source_root
     "src": "path:loop",                  # loop worker subprocess, from the loop's source_root

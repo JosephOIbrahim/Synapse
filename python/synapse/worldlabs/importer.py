@@ -120,8 +120,11 @@ def prepare_local_asset(path, cache_dir=None) -> dict:
         converted = spz.convert_to_ply(source, cache_dir or DEFAULT_CACHE)
         metadata = dict(converted['metadata'])
         metadata.update(extra)
+        # The PLY sits in the cache; a sidecar or collider sits beside the file the artist chose. Never recorded
+        # in provenance (the provenance keys are an allowlist).
+        metadata['source_path'] = str(source.resolve())
         if 'operation_id' in metadata:
-            metadata.setdefault('source', 'atlas_operation_download')
+            metadata['source'] = 'atlas_operation_download'
             metadata['display_name'] = 'atlas_' + metadata['operation_id'][:12]
         else:
             metadata['display_name'] = world_stem(source)
@@ -288,6 +291,11 @@ def _apply_sidecar(path, metadata):
         metadata['scale_source'] = sidecar['scale_source']
 
 
+def _beside_path(info, metadata):
+    """Where a sidecar or collider would sit: beside the artist's file, not beside a cached conversion."""
+    return metadata.get('source_path') or info['path']
+
+
 def _collider_faces(obj, path):
     """[(center_y, normal_y, area)] for a collider GLB, read through a temporary SOP network that is always removed."""
     temp = obj.createNode('geo', 'synapse_collider_probe')
@@ -320,7 +328,7 @@ def import_local_asset(path, metadata=None) -> dict:
     """Import on Houdini's main thread; never replace an existing node or scene."""
     info = inspect_ply(path)
     metadata = dict(metadata or {})
-    _apply_sidecar(info['path'], metadata)
+    _apply_sidecar(_beside_path(info, metadata), metadata)
     from synapse.server.main_thread import run_on_main
     return run_on_main(lambda: _import_native(info, metadata), timeout=120.0, label='worldlabs.import_local_asset')
 
@@ -374,7 +382,7 @@ def _import_native(info, metadata):
             # D1 grounding: one parent Transform LOP carries the scale, the Y-down flip and the floor lift.
             y_down = str(metadata.get('axis') or 'y_down') != 'y_up'
             ys = geometry.pointFloatAttribValues('P')[1::3]
-            collider = collider_sibling(info['path'])
+            collider = collider_sibling(_beside_path(info, metadata))
             floor_raw, offset_source = None, None
             if collider is not None:
                 floor_raw = collider_floor(_collider_faces(obj, collider), y_down)
