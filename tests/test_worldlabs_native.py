@@ -128,3 +128,30 @@ def test_import_grounds_under_one_xform_with_sidecar_scale(tmp_path):
         assert 'Landed at metric scale x2.5' in result['warnings'][0]
     finally:
         _destroy_added(before)
+
+
+def test_atlas_spz_imports_natively_upright_with_no_flip(tmp_path):
+    """An Atlas SPZ (RUB, Y-up) goes .spz -> cached PLY -> native GSplats with NO 180-degree flip and unknown scale."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'spz_fixture_for_native', Path(__file__).resolve().parent / 'fixtures' / 'spz_fixture.py')
+    fx = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fx)
+    rows = fx.sample_splats(40, sh_degree=3)
+    source = tmp_path / 'scene.spz'
+    source.write_bytes(fx.legacy_spz(rows, version=3, sh_degree=3))
+    prepared = importer.prepare_local_asset(source, tmp_path / 'cache')
+    before = _children()
+    try:
+        result = importer.import_local_asset(prepared['path'], prepared['metadata'])
+        assert result['point_count'] == 40
+        ground = hou.node(result['node_path'])
+        assert tuple(ground.parmTuple('r').eval()) == (0.0, 0.0, 0.0)
+        assert result['ground']['axis'] == 'y_up' and result['ground']['scale_status'] == 'unknown'
+        record = json.loads(ground.userData('synapse.worldlabs'))
+        assert record['coordinate_normalization'] == 'preserved_export_coordinates'
+        assert record['spz_sha256'] == prepared['metadata']['spz_sha256']
+        prim = hou.node(result['import_path']).stage().GetPrimAtPath(result['prim_paths'][0])
+        assert prim.GetTypeName() == 'ParticleField3DGaussianSplat'
+    finally:
+        _destroy_added(before)

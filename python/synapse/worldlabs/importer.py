@@ -1,7 +1,10 @@
 """Validated PLY -> native H22 GSplats -> Solaris, with rollback on failure.
 
 File/bakegsplat/sopimport and the native USD type were verified in an isolated
-Houdini 22.0.400 process. Direct SPZ decoding and GLB-as-splats are unsupported.
+Houdini 22.0.400 process. Houdini cannot read SPZ (probe, 2026-11-22), so an .spz
+(World Labs Atlas's only splat format) is decoded to a cached PLY first by
+``prepare_local_asset`` -> ``spz.convert_to_ply``. Run that off the Qt thread.
+GLB is a mesh, not a splat, and is refused.
 """
 from __future__ import annotations
 
@@ -20,7 +23,7 @@ class ImportValidationError(WorldLabsError):
 def inspect_ply(path) -> dict:
     source = Path(path).expanduser().resolve()
     if source.suffix.lower() != '.ply':
-        raise ImportValidationError('Choose a Gaussian-splat PLY export. Direct SPZ import is not supported; GLB is a mesh, not a splat.')
+        raise ImportValidationError('Choose a Gaussian-splat PLY. An .spz is converted first (prepare_local_asset); GLB is a mesh, not a splat.')
     required = {'x', 'y', 'z', 'opacity'}
     required.update('f_dc_%d' % i for i in range(3))
     required.update('scale_%d' % i for i in range(3))
@@ -67,8 +70,70 @@ def inspect_ply(path) -> dict:
     return {'path': str(source), 'point_count': count, 'has_spherical_harmonics': bool(sh)}
 
 
+DEFAULT_CACHE = Path.home() / '.synapse' / 'worldlabs'
+
+
+def _operation_record(directory: Path) -> dict:
+    """Allowlisted facts from a ``worldlabs operations download`` folder's operation.json, or {}."""
+    target = directory / 'operation.json'
+    if not target.is_file():
+        return {}
+    try:
+        data = json.loads(target.read_text(encoding='utf-8'))
+    except (OSError, UnicodeError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    out = {}
+    op_id = data.get('operationId') or data.get('id')
+    if isinstance(op_id, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,127}', op_id):
+        out['operation_id'] = op_id
+    meta = data.get('metadata') if isinstance(data.get('metadata'), dict) else {}
+    task = data.get('task') or meta.get('task')
+    if isinstance(task, str):
+        out['task'] = task[:64]
+    return out
+
+
+def prepare_local_asset(path, cache_dir=None) -> dict:
+    """A local .ply, .spz, or downloaded Atlas operation folder -> {'path': <ply>, 'metadata': {...}}.
+
+    Off the Qt thread: an .spz is decoded and written to a cached PLY (``spz.convert_to_ply``), which can take a few
+    seconds for millions of splats. A folder from ``worldlabs operations download`` uses its largest .spz (or .ply)
+    and the operation id from its operation.json. An SPZ is Y-up (RUB), so its metadata says ``axis: 'y_up'``. A PLY
+    keeps the historical Y-down default.
+    """
+    from . import spz
+
+    source = Path(str(path).strip().strip('"')).expanduser()
+    extra = {}
+    if source.is_dir():
+        extra = _operation_record(source)
+        candidates = sorted(source.glob('*.spz'), key=lambda p: p.stat().st_size, reverse=True) or             sorted(source.glob('*.ply'), key=lambda p: p.stat().st_size, reverse=True)
+        if not candidates:
+            raise ImportValidationError('That folder has no .spz or .ply splat file.')
+        source = candidates[0]
+    if not source.is_file():
+        raise ImportValidationError('That local file could not be found. Check its full path.')
+    suffix = source.suffix.lower()
+    if suffix == '.spz':
+        converted = spz.convert_to_ply(source, cache_dir or DEFAULT_CACHE)
+        metadata = dict(converted['metadata'])
+        metadata.update(extra)
+        if 'operation_id' in metadata:
+            metadata.setdefault('source', 'atlas_operation_download')
+            metadata['display_name'] = 'atlas_' + metadata['operation_id'][:12]
+        else:
+            metadata['display_name'] = world_stem(source)
+        return {'path': converted['path'], 'metadata': metadata}
+    if suffix == '.ply':
+        inspect_ply(source)
+        return {'path': str(source.resolve()), 'metadata': dict(extra)}
+    raise ImportValidationError('Choose an .spz or .ply Gaussian splat. GLB is a mesh, not a splat.')
+
+
 # ---------------------------------------------------------------------------
-# Grounding (D1, 2026-09-30). A Marble export lands upright, on its floor, at a named scale. The whole
+# Grounding (D1, 2026-09-30). An imported splat lands upright, on its floor, at a named scale. The whole
 # correction lives on one parent Transform LOP (uniform scale, 180 degrees about X for Y-down exports, a Y lift);
 # the points and the raw file are never modified. Pure helpers here; `hou` only in _import_native.
 # ---------------------------------------------------------------------------
@@ -87,7 +152,7 @@ def world_stem(path) -> str:
 
 
 def collider_sibling(path):
-    """The Marble collider GLB exported beside a splat ('<world>_collider.glb'), or None."""
+    """A collider GLB exported beside a splat ('<world>_collider.glb', the Marble-era convention), or None."""
     source = Path(path)
     for stem in dict.fromkeys((world_stem(source), source.stem)):
         candidate = source.with_name(stem + '_collider.glb')
@@ -338,12 +403,13 @@ def _import_native(info, metadata):
                          'units': 'm' if scale_source else 'scene units',
                          'collider': collider.name if collider is not None else None}
             # Only explicitly allowed non-secret fields enter the HIP; no remote URLs.
-            provenance = {k: str(metadata[k])[:256] for k in ('world_id', 'display_name', 'model', 'resolution', 'api_version', 'source', 'sha256', 'scale_source') if k in metadata}
+            provenance = {k: str(metadata[k])[:256] for k in ('world_id', 'display_name', 'model', 'resolution', 'api_version', 'source', 'sha256', 'scale_source',
+                                                             'operation_id', 'task', 'splat_label', 'splat_count', 'spz_sha256', 'spz_version') if k in metadata}
             semantics = metadata.get('semantics_metadata')
             if isinstance(semantics, dict):
                 provenance['semantics_metadata'] = {k: v for k in ('metric_scale_factor', 'ground_plane_offset')
                     if isinstance((v := semantics.get(k)), (int, float)) and not isinstance(v, bool) and math.isfinite(v)}
-            provenance['coordinate_normalization'] = 'marble_y_down_to_y_up' if y_down else 'preserved_export_coordinates'
+            provenance['coordinate_normalization'] = 'y_down_to_y_up' if y_down else 'preserved_export_coordinates'
             provenance['scale_status'] = grounding['scale_status']
             provenance['grounding'] = grounding
             record = json.dumps(provenance, allow_nan=False, sort_keys=True)

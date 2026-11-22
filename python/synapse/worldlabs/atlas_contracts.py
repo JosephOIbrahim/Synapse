@@ -1,7 +1,8 @@
-"""Pure dormant Atlas data contracts. No I/O, registration or credential access.
+"""Pure Atlas v2 data contracts. No I/O, registration or credential access.
 
-Marble v1 PLY import remains in the existing client/importer. These contracts
-describe Atlas v2 camera bundles; they do not enable an Atlas API executor.
+These contracts describe Atlas v2 camera bundles (posed RGB-D frames) and the
+metric unprojection the HD1 physical-frame track builds on. They do not call
+the API: the read-only client is worldlabs/client.py.
 """
 from __future__ import annotations
 
@@ -153,7 +154,7 @@ class SpatialOperation:
         if not self.operation_id.startswith("SYNTHETIC-") or self.evidence_tier != "SYNTHETIC":
             raise ContractError("no real operation identity is claimed by dormant fixtures")
         if self.api_family != API_FAMILY or self.task != TASK:
-            raise ContractError("Atlas v2 pose operation required; Marble v1 is separate")
+            raise ContractError("Atlas v2 pose operation required")
         if self.phase not in {"PENDING", "SUCCEEDED", "FAILED"}:
             raise ContractError("unknown operation phase")
         if self.phase == "SUCCEEDED":
