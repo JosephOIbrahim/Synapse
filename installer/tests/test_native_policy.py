@@ -184,6 +184,7 @@ class NativeChoiceTests(unittest.TestCase):
         self.assertIsInstance(row["value"], str)
         self.assertEqual(row["method"], "replace")
         self.assertIn((root / "python").as_posix(), row["value"].split(";"))
+        self.assertIn(kept, row["value"].split(";"))
 
     def test_python_path_prepend_list_is_unchanged(self):
         root = self.sandbox / "new-runtime"

@@ -297,13 +297,17 @@ def _beside_path(info, metadata):
 
 
 def _collider_faces(obj, path):
-    """[(center_y, normal_y, area)] for a collider GLB, read through a temporary SOP network that is always removed."""
+    """[(center_y, normal_y, area)] for a collider GLB, read through a temporary SOP network that is always removed.
+
+    None when the file cannot be read (the glTF SOP fails), so the caller skips it rather than recording it; [] for a
+    GLB that reads but holds no polygon.
+    """
     temp = obj.createNode('geo', 'synapse_collider_probe')
     try:
         gltf = temp.createNode('gltf', 'COLLIDER')
         parm = gltf.parm('gltffile') or gltf.parm('filename') or gltf.parm('file')
         if parm is None:
-            return []
+            return None
         parm.set(str(path))
         unpack = temp.createNode('unpack', 'UNPACK')
         unpack.setInput(0, gltf)
@@ -312,9 +316,9 @@ def _collider_faces(obj, path):
             unpack.cook(force=True)
         except hou.OperationFailed:
             # An unreadable collider must not abort the import: the floor then comes from the splats.
-            return []
+            return None
         if gltf.errors() or unpack.errors():
-            return []
+            return None
         faces = []
         for prim in unpack.geometry().prims():
             vertices = prim.vertices()
@@ -387,10 +391,15 @@ def _import_native(info, metadata):
             y_down = str(metadata.get('axis') or 'y_down') != 'y_up'
             ys = geometry.pointFloatAttribValues('P')[1::3]
             collider = collider_sibling(_beside_path(info, metadata))
-            floor_raw, offset_source = None, None
+            floor_raw, offset_source, skipped = None, None, None
             if collider is not None:
-                floor_raw = collider_floor(_collider_faces(obj, collider), y_down)
-                offset_source = 'collider GLB floor faces (densest band in the bottom quarter)'
+                faces = _collider_faces(obj, collider)
+                if faces is None:
+                    # Unreadable: neither used for the floor nor recorded, so nothing later binds it (scatter).
+                    skipped, collider = collider.name, None
+                else:
+                    floor_raw = collider_floor(faces, y_down)
+                    offset_source = 'collider GLB floor faces (densest band in the bottom quarter)'
             if floor_raw is None:
                 floor_raw = splat_floor_layer(ys, y_down)
                 offset_source = 'splat floor layer (densest band at the floor end)'
@@ -413,7 +422,8 @@ def _import_native(info, metadata):
                          'ground_height': round(grounded_height(splat_floor_layer(ys, y_down), uniform, floor_raw, y_down), 6),
                          'ground_height_source': 'splat floor layer after grounding',
                          'units': 'm' if scale_source else 'scene units',
-                         'collider': collider.name if collider is not None else None}
+                         'collider': collider.name if collider is not None else None,
+                         'collider_status': 'unreadable' if skipped else ('read' if collider is not None else None)}
             # Only explicitly allowed non-secret fields enter the HIP; no remote URLs.
             provenance = {k: str(metadata[k])[:256] for k in ('world_id', 'display_name', 'model', 'resolution', 'api_version', 'source', 'sha256', 'scale_source',
                                                              'operation_id', 'task', 'splat_label', 'splat_count', 'spz_sha256', 'spz_version') if k in metadata}
@@ -444,7 +454,9 @@ def _import_native(info, metadata):
             return {'node_path': ground.path(), 'import_path': lop.path(), 'sop_path': bake.path(), 'point_count': count,
                     'prim_paths': prim_paths, 'format': 'ply', 'native_type': 'ParticleField3DGaussianSplat',
                     'ground': grounding,
-                    'warnings': [landed, 'Native splat import is verified. Karma XPU appearance has not been rendered by this importer.']}
+                    'warnings': [landed] + (['The collider %s beside the file could not be read, so it was skipped; the '
+                                             'floor comes from the splats.' % skipped] if skipped else [])
+                                + ['Native splat import is verified. Karma XPU appearance has not been rendered by this importer.']}
         except Exception as exc:
             failed_cleanup = []
             for node in reversed(made):

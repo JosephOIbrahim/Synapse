@@ -149,7 +149,12 @@ def test_unreadable_collider_falls_back_to_the_splat_floor(tmp_path):
     try:
         result = importer.import_local_asset(prepared['path'], prepared['metadata'])
         assert result['point_count'] == 40
-        assert result['ground']['ground_offset_source'].startswith('splat floor layer')
+        g = result['ground']
+        assert g['ground_offset_source'].startswith('splat floor layer')
+        assert g['collider'] is None and g['collider_status'] == 'unreadable'
+        assert any('room_collider.glb' in w and 'skipped' in w for w in result['warnings'])
+        saved = json.loads(hou.node(result['node_path']).userData('synapse.worldlabs'))
+        assert saved['grounding']['collider'] is None
     finally:
         _destroy_added(before)
 
@@ -165,7 +170,7 @@ def test_atlas_spz_finds_its_collider_beside_the_source_not_the_cache(tmp_path):
     try:
         result = importer.import_local_asset(prepared['path'], prepared['metadata'])
         g = result['ground']
-        assert g['collider'] == 'room_collider.glb'
+        assert g['collider'] == 'room_collider.glb' and g['collider_status'] == 'read'
         assert g['ground_offset_source'].startswith('collider GLB')
         assert abs(g['floor_raw'] - 0.25) < 1e-4
         assert tuple(hou.node(result['node_path']).parmTuple('r').eval()) == (0.0, 0.0, 0.0)
