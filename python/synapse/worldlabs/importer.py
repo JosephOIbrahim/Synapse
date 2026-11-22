@@ -307,10 +307,14 @@ def _collider_faces(obj, path):
         parm.set(str(path))
         unpack = temp.createNode('unpack', 'UNPACK')
         unpack.setInput(0, gltf)
-        unpack.cook(force=True)
+        import hou
+        try:
+            unpack.cook(force=True)
+        except hou.OperationFailed:
+            # An unreadable collider must not abort the import: the floor then comes from the splats.
+            return []
         if gltf.errors() or unpack.errors():
             return []
-        import hou
         faces = []
         for prim in unpack.geometry().prims():
             vertices = prim.vertices()

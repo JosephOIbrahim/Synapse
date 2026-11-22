@@ -172,6 +172,19 @@ class NativeChoiceTests(unittest.TestCase):
                                      (root / "python").as_posix(), root.as_posix()])
         self.assertIn(kept, paths)
 
+    def test_python_path_with_no_method_is_one_string(self):
+        # A package row with no method means "replace" to the merge; same rule.
+        kept = (self.sandbox / "studio/python").as_posix()
+        previous = json.loads(self.seed([
+            {"var": "PYTHONPATH", "value": (self.sandbox / "old-source/python").as_posix() + ";" + kept},
+            {"var": "MONETA_NATIVE", "value": "0"}]))
+        root = self.sandbox / "new-runtime"
+        result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home, previous=previous)
+        row = next(r for r in result["env"] if r["var"] == "PYTHONPATH")
+        self.assertIsInstance(row["value"], str)
+        self.assertEqual(row["method"], "replace")
+        self.assertIn((root / "python").as_posix(), row["value"].split(";"))
+
     def test_python_path_prepend_list_is_unchanged(self):
         root = self.sandbox / "new-runtime"
         result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home)
