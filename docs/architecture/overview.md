@@ -52,7 +52,7 @@ release for the policy shown above; older tags and assets are preserved.
 | The panel worker's tools are capped | [Worker tool ceiling](#worker-tool-ceiling) |
 | JEV offers advice | [JEV assistance](#jev-assistance) |
 | Selected nodes are explained | [Identify](#identify) |
-| A Marble world enters Houdini | [World Labs import](#world-labs-import) |
+| An Atlas splat scene enters Houdini | [World Labs import](#world-labs-import) |
 | Scout searches SideFX help | [Library ingestion and lookup](../studio/SIDEFX_LIBRARY.md#ingestion-and-lookup) |
 | A project decision is remembered | [Memory](#project-and-scene-memory) |
 | A build becomes a release | [Publication](#release-process) |
@@ -310,15 +310,16 @@ Sources: [overlay](../../python/synapse/identify/overlay.py), [bubble](../../pyt
 
 ## World Labs import
 
-Open **World Labs** beside **Cloud relay**. This imports an existing world or a supported local Gaussian `.ply`; it does not generate a world.
+Open **World Labs** beside **Cloud relay**. It imports a finished World Labs **Atlas** splat scene, or a local Gaussian `.spz` or `.ply`. It never starts an Atlas task: every task costs credits, so tasks are run with the `worldlabs` CLI or the World Labs app. World Labs serves Atlas only; the Marble API path was removed (2026-11-22).
 
 ```mermaid
 flowchart TD
-    accTitle: Import an existing Marble world or a local Gaussian PLY
-    accDescr: A local Gaussian PLY needs no API key. An accessible API world requires a World Labs connection, export and download. Validated files enter a new Houdini branch on the main thread. The artist inspects the result.
-    L["Local Gaussian .ply<br/>No API key needed"] --> V["Validate supported PLY"]
-    A["API-accessible world<br/>World Labs key required"] --> D["Export PLY and download<br/>in a background worker"]
-    D --> V
+    accTitle: Import a finished Atlas splat scene or a local Gaussian splat
+    accDescr: A local .spz, .ply or downloaded operation folder needs no API key. A finished Atlas operation needs an Atlas key: SYNAPSE reads it, mints a read URL and downloads its SPZ in a background worker. SPZ is decoded to a PLY, validated, and imported on the main thread. The artist inspects the result.
+    L["Local .spz, .ply or download folder<br/>No API key needed"] --> C["Decode SPZ to a cached PLY<br/>in a background worker"]
+    A["Finished Atlas operation<br/>Atlas key required, reads only"] --> D["Read the operation, download its SPZ<br/>in a background worker"]
+    D --> C
+    C --> V["Validate supported PLY"]
     V --> H["Main-thread import<br/>New SOP and Solaris branch"]
     H --> I["Artist inspects the splat"]
     classDef default fill:#F6B26B,stroke:#D07020,color:#000000
@@ -329,17 +330,21 @@ flowchart TD
     linkStyle default stroke:#D07020
 ```
 
-For remote import, enter a key in the masked field, choose **Connect World Labs**, then supply a world ID/Marble URL or select an API world. Choose a resolution and **Import world**. The list does not represent all Marble-app history.
+**The key.** A key typed in the masked field wins, then `$WLT_API_KEY`, then the key `worldlabs auth login` saved for the Atlas origin. The saved key is read in place and never shown or copied. The key needs `operations.read` and `assets.read`.
+
+**Remote import.** Choose **Connect to Atlas** to list finished `posedImages2Splats` operations, or paste an operation ID. **Most splats** takes the largest refined output; **Fewest splats · layout** takes the smallest. Then **Import splats**. SYNAPSE calls only three read routes: list operations, get one operation, and create an asset read URL. Any other route, a task route above all, is refused before a request is built. The signed download carries no key.
+
+**SPZ.** Houdini 22.0.400 cannot read SPZ (probe, 2026-11-22), so SYNAPSE decodes it with numpy into a standard Gaussian PLY, cached by the SPZ's SHA-256 under `~/.synapse/worldlabs/spz/`. SPZ versions 1-3 (gzip) decode everywhere. Version 4 (zstd) needs a zstd decoder, which Python 3.14 has and Houdini's Python 3.13 does not; such a file is refused with a plain message. Degree 1-2 view-dependent color is padded to degree 3, and degree 4 is reduced to degree 3.
 
 The native route is File SOP → Bake GSplats → SOP Import LOP → a Transform LOP named after the import with `_ground` appended, which grounds it. It creates a separate branch and an undo group; it does not merge into existing stage wiring. On failure it attempts to remove its own new nodes and reports cleanup errors.
 
-**Grounding (v5.89.0).** The ground node carries a uniform scale, a 180-degree turn about X for Marble's Y-down export, and a lift that puts the floor at y = 0; the splat's points and the file are unchanged, and the display flag moves to the ground node. The scale comes from export metadata, or from a `<world>.world.json` sidecar beside a local file that gives `metric_scale_factor` and names its `scale_source`. Export metadata wins, and a factor of 1.0 with no named source counts as unknown. The floor comes from the export's `<world>_collider.glb` when it sits beside the file (the area-weighted densest band of near-horizontal faces in the bottom quarter of its height), otherwise from the densest layer of splats at the floor end. The record (scale and source, offset and source, measured ground height) is stored as provenance user data under `synapse.worldlabs` on the new nodes. Without a scale, the world is grounded and the import reports its metric scale as unknown.
+**Grounding (v5.89.0).** The ground node carries a uniform scale, an axis turn, and a lift that puts the floor at y = 0; the splat's points and the file are unchanged, and the display flag moves to the ground node. An SPZ is Y-up (RUB, Atlas's world frame), so it gets no turn. A local `.ply` keeps the historical Y-down default and gets a 180-degree turn about X. Atlas reports no metric scale, so the scale is unknown unless a `<world>.world.json` sidecar beside a local file gives `metric_scale_factor` and names its `scale_source`. The floor comes from a `<world>_collider.glb` beside the file when present (the area-weighted densest band of near-horizontal faces in the bottom quarter of its height), otherwise from the densest layer of splats at the floor end. The record (scale and source, offset and source, measured ground height, and the Atlas operation ID or SPZ hash) is stored as provenance user data under `synapse.worldlabs` on the new nodes.
 
-**Format limits:** Gaussian PLY supports constant color (DC-only) or a complete degree-3 spherical-harmonic layout. Partial harmonic layouts, ordinary point PLY, direct SPZ and mesh GLB are unsupported. The points keep the export's coordinates and units; the ground node holds the correction. Rendered appearance needs inspection.
+**Format limits:** Gaussian PLY supports constant color (DC-only) or a complete degree-3 spherical-harmonic layout. Partial harmonic layouts, ordinary point PLY and mesh GLB are unsupported. The points keep the file's coordinates and units; the ground node holds the correction. Rendered appearance needs inspection.
 
-Closing the dialog prevents a late scene import; it does not abort a download already running. Authenticated remote access was not established by the [v5.83.0 validation](../releases/v5.83.0.md#world-labs-import) and has not been since. [v5.89.0](../releases/v5.89.0.md#validation-and-limits) rendered a Karma XPU frame of a grounded local import through the render workspace.
+Closing the dialog prevents a late scene import; it does not abort a download already running. A live read of the Atlas API (list, get, read URL; 2026-11-22) passed. No real Atlas splat has been imported yet: making one costs credits, so the SPZ version and axes Atlas writes are still unobserved. [v5.89.0](../releases/v5.89.0.md#validation-and-limits) rendered a Karma XPU frame of a grounded local import through the render workspace.
 
-Sources: [dialog](../../python/synapse/panel/worldlabs_dialog.py), [API client](../../python/synapse/worldlabs/client.py), [native importer](../../python/synapse/worldlabs/importer.py).
+Sources: [dialog](../../python/synapse/panel/worldlabs_dialog.py), [Atlas client](../../python/synapse/worldlabs/client.py), [SPZ decoder](../../python/synapse/worldlabs/spz.py), [native importer](../../python/synapse/worldlabs/importer.py).
 
 ## Project and scene memory
 

@@ -1,8 +1,13 @@
-"""Artist-driven Marble import. Network work never runs on the Qt thread."""
+"""Artist-driven World Labs Atlas import. Network work and SPZ decoding never run on the Qt thread.
+
+SYNAPSE reads Atlas and never drives it: it lists finished splat operations, downloads one, decodes its SPZ, and
+imports it. Atlas tasks cost credits, so they are run with the ``worldlabs`` CLI or the World Labs app.
+"""
 from __future__ import annotations
 
 import os
 from pathlib import Path
+import time
 import weakref
 
 from .designsystem import components as c, submenus, tokens as t
@@ -43,8 +48,8 @@ def create_worldlabs_button(panel):
     if existing is not None:
         return existing
     button = c.Button("World Labs", variant="ghost")
-    button.setAccessibleName("World Labs — import a Marble world")
-    button.setToolTip("Import a Marble world or a local Gaussian splat export")
+    button.setAccessibleName("World Labs — import an Atlas splat scene")
+    button.setToolTip("Import a World Labs Atlas splat scene or a local .spz / .ply Gaussian splat")
     button.clicked.connect(lambda: open_worldlabs(panel))
     panel._worldlabs_btn = button
     return button
@@ -60,19 +65,27 @@ def open_worldlabs(panel):
     dialog.activateWindow()
 
 
+def _operation_title(row):
+    created = row.get("created")
+    when = time.strftime("%Y-%m-%d %H:%M", time.localtime(created)) if isinstance(created, int) else "recent"
+    return "Splats · %s · %s" % (str(row["id"])[:10], when)
+
+
 class WorldLabsDialog(QtWidgets.QDialog):
     """Session-only credentials and one explicit import per artist click."""
 
     _received = QtCore.Signal(object)
 
-    def __init__(self, parent=None, *, client_factory=None, importer=None,
-                 cache_dir=None, task_factory=None):
+    def __init__(self, parent=None, *, client_factory=None, importer=None, preparer=None,
+                 cache_dir=None, task_factory=None, key_resolver=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
         self.setWindowTitle("SYNAPSE · World Labs")
         self.setModal(False)
         self._client_factory = client_factory
         self._importer = importer
+        self._preparer = preparer
+        self._key_resolver = key_resolver
         self._task_factory = task_factory or _Call
         self._cache_dir = Path(cache_dir) if cache_dir else Path.home() / ".synapse" / "worldlabs"
         self._serial = 0
@@ -83,47 +96,50 @@ class WorldLabsDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(self)
         heading = c.label("World Labs", role="title", scale=scale)
         layout.addWidget(heading)
-        intro = c.label("Bring a Marble world into your scene.", role="body", scale=scale)
+        intro = c.label("Bring a World Labs Atlas splat scene into Houdini.", role="body", scale=scale)
         intro.setWordWrap(True)
         layout.addWidget(intro)
         layout.addSpacing(t.scaled(t.SPACE_SM, scale))
 
-        key_label = c.label("World API connection", role="label", scale=scale)
+        key_label = c.label("Atlas API connection", role="label", scale=scale)
         layout.addWidget(key_label)
         self.key = QtWidgets.QLineEdit()
         self.key.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.key.setPlaceholderText("World Labs API key · kept for this session")
-        self.key.setAccessibleName("World Labs API key")
+        self.key.setPlaceholderText("Atlas API key · kept for this session")
+        self.key.setAccessibleName("World Labs Atlas API key")
         self.key.setText(os.environ.get("WLT_API_KEY", ""))
+        # A key saved by `worldlabs auth login` is used as is. It is never shown in the field.
+        saved_source = None if self.key.text() else self._resolve_key("")[1]
+        if saved_source:
+            self.key.setPlaceholderText("Using your %s · paste a key to override" % saved_source)
         key_label.setBuddy(self.key)
         layout.addWidget(self.key)
-        self.connect_button = c.Button("Connect World Labs", variant="secondary")
+        self.connect_button = c.Button("Connect to Atlas", variant="secondary")
         self.connect_button.clicked.connect(self._connect)
         layout.addWidget(self.connect_button)
 
         self.recent = QtWidgets.QComboBox()
-        self.recent.setAccessibleName("Recent World API worlds")
-        self.recent.addItem("Recent API worlds", None)
+        self.recent.setAccessibleName("Recent Atlas splat scenes")
+        self.recent.addItem("Recent splat scenes", None)
         self.recent.activated.connect(self._pick_recent)
         self.recent.hide()
         layout.addWidget(self.recent)
         layout.addSpacing(t.scaled(t.SPACE_SM, scale))
-        source_label = c.label("World or local export", role="label", scale=scale)
+        source_label = c.label("Atlas operation or local splat", role="label", scale=scale)
         layout.addWidget(source_label)
         self.source = QtWidgets.QLineEdit()
-        self.source.setPlaceholderText("Marble URL, world ID, or local .ply path")
-        self.source.setAccessibleName("Marble world URL, ID, or local Gaussian splat path")
+        self.source.setPlaceholderText("Atlas operation ID, a downloaded folder, or a local .spz / .ply path")
+        self.source.setAccessibleName("Atlas operation ID, downloaded folder, or local Gaussian splat path")
         source_label.setBuddy(self.source)
         layout.addWidget(self.source)
-        self.resolution = QtWidgets.QComboBox()
-        self.resolution.setAccessibleName("Splat resolution")
-        for title, value in (("Layout · 100k", "100k"), ("Balanced · 500k", "500k"),
-                             ("Full resolution", "full_res")):
-            self.resolution.addItem(title, value)
-        self.resolution.setCurrentIndex(1)
-        layout.addWidget(self.resolution)
-        self.status = c.label("Gaussian-splat PLY exports work without an API key. Connect to browse your API worlds.",
-                              role="body", scale=scale)
+        self.detail = QtWidgets.QComboBox()
+        self.detail.setAccessibleName("Splat detail")
+        for title, value in (("Most splats", "most"), ("Fewest splats · layout", "fewest")):
+            self.detail.addItem(title, value)
+        layout.addWidget(self.detail)
+        self.status = c.label(("Using your %s. " % saved_source if saved_source else
+                               "Local .spz and .ply splats work without an API key. ")
+                              + "Connect to list your finished Atlas splat scenes.", role="body", scale=scale)
         self.status.setTextFormat(QtCore.Qt.PlainText)
         self.status.setWordWrap(True)
         self.status.setAccessibleName("World Labs import status")
@@ -132,7 +148,7 @@ class WorldLabsDialog(QtWidgets.QDialog):
         row = QtWidgets.QHBoxLayout()
         self.close_button = c.Button("Close", variant="secondary")
         self.close_button.clicked.connect(self.close)
-        self.import_button = c.Button("Import world", variant="primary")
+        self.import_button = c.Button("Import splats", variant="primary")
         self.import_button.clicked.connect(self._import)
         row.addWidget(self.close_button)
         row.addWidget(self.import_button)
@@ -143,13 +159,30 @@ class WorldLabsDialog(QtWidgets.QDialog):
     def _client(self):
         factory = self._client_factory
         if factory is None:
-            from synapse.worldlabs.client import WorldLabsClient
-            factory = WorldLabsClient
+            from synapse.worldlabs.client import AtlasClient
+            factory = AtlasClient
         return factory(self.key.text().strip())
+
+    def _resolve_key(self, typed):
+        resolver = self._key_resolver
+        if resolver is None:
+            from synapse.worldlabs.client import resolve_key
+            resolver = resolve_key
+        return resolver(typed)
+
+    def _has_key(self):
+        return bool(self._resolve_key(self.key.text())[0])
+
+    def _prepare_local(self, path):
+        preparer = self._preparer
+        if preparer is None:
+            from synapse.worldlabs.importer import prepare_local_asset
+            preparer = prepare_local_asset
+        return preparer(path, self._cache_dir)
 
     def _set_busy(self, on):
         self._busy = on
-        for control in (self.key, self.source, self.recent, self.resolution,
+        for control in (self.key, self.source, self.recent, self.detail,
                         self.connect_button, self.import_button):
             control.setEnabled(not on)
 
@@ -172,18 +205,13 @@ class WorldLabsDialog(QtWidgets.QDialog):
         worker.start()
 
     def _connect(self):
-        if not self.key.text().strip():
-            self.status.setText("Add your World Labs API key to connect. Local files can still be imported.")
+        if not self._has_key():
+            self.status.setText("Add your Atlas API key, or run `worldlabs auth login`, to connect. "
+                                "Local files can still be imported.")
             return
         client = self._client()
-        self.status.setText("Checking your World API connection…")
-
-        def connect():
-            facts = client.check_connection()
-            worlds = client.list_worlds()
-            return {"connection": facts, "worlds": worlds}
-
-        self._start("connect", connect)
+        self.status.setText("Checking your Atlas connection…")
+        self._start("connect", lambda: {"connection": client.check_connection()})
 
     def _pick_recent(self, index):
         identifier = self.recent.itemData(index)
@@ -195,24 +223,25 @@ class WorldLabsDialog(QtWidgets.QDialog):
             return
         source = self.source.text().strip().strip('"')
         if not source:
-            self.status.setText("Paste a Marble world URL or ID, or the path to a local splat export.")
+            self.status.setText("Paste an Atlas operation ID, or the path to a downloaded folder or local splat.")
             return
         local = Path(source).expanduser()
-        if local.is_file():
+        if local.is_file() or local.is_dir():
             self.status.setText("Preparing the local splat…")
-            self._start("import", lambda: {"path": str(local), "metadata": {}})
+            self._start("import", lambda: self._prepare_local(local))
             return
         if local.is_absolute() or source.lower().endswith((".ply", ".spz")):
             self.status.setText("That local file could not be found. Check its full path.")
             return
-        if not self.key.text().strip():
-            self.status.setText("Connect with your World Labs API key to import this world, or use a local export.")
+        if not self._has_key():
+            self.status.setText("An Atlas API key is needed to import this operation. Add one, run "
+                                "`worldlabs auth login`, or use a local file.")
             return
         client = self._client()
-        resolution = self.resolution.currentData()
+        choice = self.detail.currentData()
         cache_dir = self._cache_dir
-        self.status.setText("Resolving the world and downloading its splat…")
-        self._start("import", lambda: client.prepare_import(source, resolution, cache_dir))
+        self.status.setText("Reading the Atlas operation and downloading its splats…")
+        self._start("import", lambda: client.prepare_import(source, cache_dir, choice))
 
     def _receive(self, envelope):
         serial, kind, result = envelope
@@ -228,14 +257,18 @@ class WorldLabsDialog(QtWidgets.QDialog):
             return
         value = result["value"]
         if kind == "connect":
+            operations = value["connection"].get("operations") or []
             self.recent.clear()
-            self.recent.addItem("Choose an API world…", None)
-            for world in value["worlds"]:
-                self.recent.addItem(world.get("title") or world["id"], world["id"])
-            self.recent.setVisible(bool(value["worlds"]))
-            balance = value["connection"].get("remaining_credits")
-            summary = "Connected" if balance is None else "Connected · %s API credits" % balance
-            self.status.setText(summary + ". Choose an API world or paste its URL. For Marble app worlds, a local export is also available.")
+            self.recent.addItem("Choose a splat scene…", None)
+            for row in operations:
+                self.recent.addItem(_operation_title(row), row["id"])
+            self.recent.setVisible(bool(operations))
+            if operations:
+                self.status.setText("Connected · %d recent splat scene%s. Choose one or paste an operation ID."
+                                    % (len(operations), "" if len(operations) == 1 else "s"))
+            else:
+                self.status.setText("Connected. No finished splat scenes yet: run posedImages2Splats with the "
+                                    "worldlabs CLI or the World Labs app, then connect again.")
             return
         try:
             importer = self._importer
@@ -250,8 +283,8 @@ class WorldLabsDialog(QtWidgets.QDialog):
             self.status.setText(str(exc))
         else:
             node = imported.get("node_path", imported.get("path", "the scene"))
-            warnings = " ".join(str(item) for item in imported.get("warnings", []))
-            self.status.setText(("Imported into %s. " % node + warnings).strip())
+            notes = list(value.get("metadata", {}).get("notes") or []) + list(imported.get("warnings", []))
+            self.status.setText(("Imported into %s. " % node + " ".join(str(item) for item in notes)).strip())
 
     def hideEvent(self, event):
         # Escape/reject(), close(), and hiding a parent all dismiss the view.

@@ -4,7 +4,7 @@ These additive interfaces do not activate a provider, install a substrate, chang
 
 ## Existing integrations
 
-`synapse.worldlabs.client.WorldLabsClient` remains the connection owner for the existing Marble v1 read/list/PLY-export path. The existing importer and panel remain unchanged. The neutral spatial path/trail tools retain their existing registration; the three import-only spatial queries retain their existing status.
+`synapse.worldlabs.client.AtlasClient` (alias `WorldLabsClient`) is the connection owner: a read-only Atlas v2 client that lists and reads finished operations and downloads their SPZ splats. It cannot start a task. The Marble v1 path and the dormant `atlas.py` executor scaffold were removed on 2026-11-22, when World Labs became Atlas-only. See [World Labs import](architecture/overview.md#world-labs-import). The neutral spatial path/trail tools retain their existing registration; the three import-only spatial queries retain their existing status.
 
 The observational LOOP already uses StagePort, LedgerPort, PortResult and LoopCoordinator for composition, a narrow forecast, settlement and feedback delivery. Its fixed Boolean handler observation is not a six-component RC+ξ gate. See [the existing LOOP documentation](MEMORY_LOOP_REPAIR.md).
 
@@ -12,13 +12,7 @@ The observational LOOP already uses StagePort, LedgerPort, PortResult and LoopCo
 
 `atlas_contracts.py` provides typed camera, posed-frame, asset, operation and provenance records. Camera intrinsics are pixel quantities; poses are camera-to-world with XYZW quaternions and explicit RUB/RDF axes. Successful bundles require unique ordered frame identities and one shared world frame; individual camera axes may differ. Metric unprojection requires an explicit positive scale. That scale is a synthetic caller assertion, not proof of calibration; unknown scale refuses metric output. Invalid source depths are masked, while nonfinite camera, rotation, translation or scaled output is rejected. Decoder row order is explicit instead of assuming that every EXR decoder behaves like Three.js. These choices follow the [camera guide](https://atlas-beta.worldlabs.ai/docs/cameras-and-posed-images).
 
-`atlas.py` plans ordered synthetic pose requests and normalizes documented operation/camera fields from injected fixtures. Atlas v2 is kept distinct from the existing Marble v1 schema. A terminal result requires an explicit `done` value and exactly one response or error. See [operation semantics](https://atlas-beta.worldlabs.ai/docs/operations) and [the pose task](https://atlas-beta.worldlabs.ai/docs/images-to-posed-images).
-
-Live submit, upload, resume and asset-read methods always raise `AtlasNotEnabled`. No HTTP executor, CLI dependency, auth probe or provider registration is added. Setting `SYNAPSE_ATLAS_LANE` does not activate this module or register tools. Proposed Atlas status/pose tools remain absent from dispatch. An existing connection does not establish beta task entitlement; that is distinct from credential validity in the [authentication documentation](https://atlas-beta.worldlabs.ai/docs/authentication).
-
-The only runnable transport is explicit in-memory SYNTHETIC data. `SyntheticFixtureBinding` is created with the fixture, before parsing. It records the original request hash, ordered source frame identities, ordered output asset identities/content hashes, operation identity and shared world frame separately from the provider-shaped dictionary. Pending and terminal results must match that binding. Plain provider dictionaries are refused; the parser never manufactures a source request identity from the newly supplied plan. This is not an authenticated boundary against malicious Python fixture authors. A future live implementation needs a trusted persisted request-record owner, not an invented provider wire field.
-
-Fixture asset hashes identify synthetic test tokens, not validated PNG/EXR files. The scaffold does not decode real media. Provenance contains ordered content hashes, frame identities, schema, task, API family and evidence tier, plus a canonical digest of all sanitized typed output frames. That digest covers camera intrinsics/pose/world frame, depth encoding, decoder rows and caller-asserted or unknown scale as well as asset references. It carries neither URLs nor credentials. Request binding establishes consistency, never owner approval. Real media dimensions, resource/magnitude limits and scale-calibration evidence remain prerequisites for any future activation.
+The executor scaffold that sat beside these contracts (`atlas.py`: synthetic pose planning, fixture binding, a disabled adapter) was retired on 2026-11-22. The contracts stay because the HD1 physical-frame track builds on them; their tests are in `tests/test_atlas_contracts.py`.
 
 ## Substrate and future RC+ξ boundary
 
@@ -28,4 +22,4 @@ The borrowed result must have a recognized string status, a dictionary-or-absent
 
 SixMetrics and TelemetryObservation define a finite, identity-bound observation shape. Missing or mismatched observations cannot become success. Successful observation is data only and explicitly carries `authorizes_action: false`. The evaluator remains UNAVAILABLE: this scaffold implements no covariance calibration, tension decision, fuel enforcement, convergence seal or rollback. A real bounded gate must supply and test those mechanisms separately.
 
-Tests use deterministic synthetic cameras and a hand-computed plane, exercise pending/success/error separation and disabled behavior, and demonstrate red failures when order or request binding is broken. None of these checks claims live Atlas, substrate installation or interactive Houdini acceptance.
+Tests use deterministic synthetic cameras and a hand-computed plane. None of these checks claims live Atlas, substrate installation or interactive Houdini acceptance.

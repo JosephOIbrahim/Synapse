@@ -1,4 +1,4 @@
-"""Native UI checks: delayed responses may never import after dismissal."""
+"""Native UI checks: delayed responses may never import after dismissal; Atlas only, never Marble."""
 import pytest
 
 QtWidgets = pytest.importorskip("PySide6.QtWidgets")
@@ -42,7 +42,10 @@ def dialog(app):
     def importer(path, metadata):
         imports.append((path, metadata))
         return {"node_path": "/stage/worldlabs", "warnings": ["Scale is uncalibrated."]}
-    widget = WorldLabsDialog(importer=importer, task_factory=PendingCall)
+    # Never read the real worldlabs CLI sign-in from a test: only a typed key counts here.
+    widget = WorldLabsDialog(importer=importer, task_factory=PendingCall,
+                             preparer=lambda path, cache: {"path": str(path), "metadata": {}},
+                             key_resolver=lambda typed: (typed, "typed") if typed else ("", None))
     widget.show()
     app.processEvents()
     yield widget, imports
@@ -60,7 +63,7 @@ def test_missing_key_cannot_start_network_work(dialog):
     widget, imports = dialog
     widget.key.clear()
     widget.connect_button.click()
-    widget.source.setText("sample-world")
+    widget.source.setText("op123abc")
     widget.import_button.click()
     assert PendingCall.calls == []
     assert imports == []
@@ -128,7 +131,7 @@ def test_escape_discards_pending_import_and_reopens_ready(dialog, tmp_path, app,
     assert len(imports) == 1
 
 
-def test_connection_lists_worlds_without_importing_or_generating(dialog, app):
+def test_connection_lists_atlas_splat_operations_without_importing_or_generating(dialog, app):
     widget, imports = dialog
     requests = []
     class Client:
@@ -136,23 +139,53 @@ def test_connection_lists_worlds_without_importing_or_generating(dialog, app):
             assert key == "private-session-key"
         def check_connection(self):
             requests.append("check")
-            return {"remaining_credits": 42}
-        def list_worlds(self):
-            requests.append("list")
-            return [{"id": "world-123", "title": "Harbour"}]
+            return {"connected": True, "operations": [
+                {"id": "op123abc", "task": "posedImages2Splats", "created": 1795371733}]}
+        def prepare_import(self, *args):  # pragma: no cover - must not be reached by Connect
+            requests.append("import")
     widget._client_factory = Client
     widget.key.setText("private-session-key")
     widget.connect_button.click()
     assert requests == []
     PendingCall.calls[-1].complete()
     app.processEvents()
-    assert requests == ["check", "list"]
-    assert "42 API credits" in widget.status.text()
+    assert requests == ["check"]
+    assert "1 recent splat scene" in widget.status.text()
     widget.recent.setCurrentIndex(1)
     widget._pick_recent(1)
-    assert widget.source.text() == "world-123"
+    assert widget.source.text() == "op123abc"
     assert imports == []
     assert widget.key.echoMode() == QtWidgets.QLineEdit.Password
+
+
+def test_dialog_never_asks_for_marble(dialog):
+    widget, _ = dialog
+    texts = [widget.windowTitle(), widget.source.placeholderText(), widget.source.accessibleName(),
+             widget.key.placeholderText(), widget.status.text(), widget.import_button.text(),
+             widget.connect_button.text()]
+    texts += [label.text() for label in widget.findChildren(QtWidgets.QLabel)]
+    assert not [t for t in texts if "marble" in t.lower()]
+    assert "Atlas" in widget.source.placeholderText()
+
+
+def test_operation_import_passes_the_detail_choice_to_the_client(dialog, app, tmp_path):
+    widget, imports = dialog
+    calls = []
+    class Client:
+        def __init__(self, key):
+            pass
+        def prepare_import(self, ref, cache_dir, choice):
+            calls.append((ref, choice))
+            return {"path": str(tmp_path / "x.ply"), "metadata": {"notes": ["Degree-4 view-dependent color was reduced."]}}
+    widget._client_factory = Client
+    widget.key.setText("k")
+    widget.detail.setCurrentIndex(1)
+    widget.source.setText("op123abc")
+    widget.import_button.click()
+    PendingCall.calls[-1].complete()
+    app.processEvents()
+    assert calls == [("op123abc", "fewest")]
+    assert imports and "reduced" in widget.status.text()
 
 
 @pytest.mark.parametrize("width", [330, 640, 1100])

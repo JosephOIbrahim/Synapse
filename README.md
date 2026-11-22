@@ -289,7 +289,7 @@ flowchart LR
 | See what selected nodes do | Identify at the bottom of the panel, or send `/identify`. |
 | Read how the shot's camera moves | Spatial at the bottom of the panel, or send `/spatial`. It draws the path in one undo step, with no model call. |
 | Ask what SYNAPSE remembers about this scene | Ask in plain words. It reads this scene's saved notes first, and it says the answer is recalled, not measured again. |
-| Import a Marble world or Gaussian `.ply` | World Labs beside Cloud relay. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
+| Import a World Labs Atlas splat scene, or a Gaussian `.spz` / `.ply` | World Labs beside Cloud relay. [Import flow and limits](docs/architecture/overview.md#world-labs-import). |
 | Connect the SideFX help library | Follow [Build and connect](docs/studio/SIDEFX_LIBRARY.md#build-and-connect); Scout searches the published local index. |
 | Check a connection | Connect, then Doctor. |
 
