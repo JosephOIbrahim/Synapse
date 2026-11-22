@@ -134,6 +134,32 @@ class NativeChoiceTests(unittest.TestCase):
         order = list(reversed(row["value"])) if isinstance(row["value"], list) else row["value"].split(";")
         self.assertLess(order.index(new_native), order.index(old_native))
 
+    def test_schema_path_survives_houdini_list_replace(self):
+        # The 22.0.400 seat, 2026-11-22: the previous package carried a retained
+        # plugin path plus the old Moneta schema as one string under "replace".
+        # v5.104.0 rewrote it as a two-entry LIST under "replace", and H22 kept
+        # only the last entry, so MonetaMemory never registered.
+        old = self.sandbox / "old-source"
+        retained = (self.sandbox / "old-runtime/usd/synapseRenderEvidence/resources").as_posix()
+        previous = json.loads(self.seed([
+            {"var": "MONETA_SRC", "value": (old / "dependencies/moneta/src").as_posix()},
+            {"var": "PXR_PLUGINPATH_NAME", "method": "replace",
+             "value": retained + ";" + (old / "dependencies/moneta/schema").as_posix()},
+            {"var": "MONETA_NATIVE", "value": "0"}]))
+        root = self.sandbox / "new-runtime"
+        result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home, previous=previous)
+        row = next(r for r in result["env"] if r["var"] == "PXR_PLUGINPATH_NAME")
+        self.assertIsInstance(row["value"], str)
+        self.assertEqual(row["method"], "replace")
+        self.assertEqual(row["value"].split(";"), [(root / "dependencies/moneta/schema").as_posix(), retained])
+
+    def test_fresh_schema_registration_stays_one_path(self):
+        root = self.sandbox / "new-runtime"
+        result = registration.installed_package(root, {"moneta": {"name": "moneta"}}, self.home)
+        row = next(r for r in result["env"] if r["var"] == "PXR_PLUGINPATH_NAME")
+        self.assertEqual(row["value"], (root / "dependencies/moneta/schema").as_posix())
+        self.assertEqual(row["method"], "prepend")
+
     def test_off_edit_during_native_check_is_preserved_and_activation_refused(self):
         original = json.loads(self.seed([{"var": "MONETA_NATIVE", "value": "1"}]))
         edited = {**original, "env": [{**r, "value": "0"} if r["var"] == "MONETA_NATIVE" else r for r in original["env"]]}

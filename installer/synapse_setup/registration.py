@@ -157,5 +157,13 @@ def installed_package(root: Path, manifest: dict, user_home=None, *, previous=No
         # local paths while preserving every additional user path.
         row = next(row for row in result["env"] if row["var"] == "PYTHONPATH")
         row["value"] = ";".join(_paths(row))
+    # H22 keeps only the LAST entry of a list under "replace" (measured on the
+    # 22.0.400 seat, 2026-11-22: a two-path list registered only the retained
+    # path, so the Moneta schema never loaded). The merge above keeps the
+    # previous method, and S1-C seats carry "replace". One path string keeps
+    # every path under either method, with the bundled schema first.
+    row = next((row for row in result["env"] if row["var"] == "PXR_PLUGINPATH_NAME"), None)
+    if row is not None and isinstance(row["value"], list):
+        row["value"] = ";".join(_paths(row))
     result["env"].append({"var": "MONETA_NATIVE", "value": native_value, "method": "replace"})
     return result
