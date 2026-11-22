@@ -57,7 +57,7 @@ from ..core.outcomes import info as _outcome_info, for_exception as _for_excepti
 from .handlers_node import NodeHandlerMixin
 from .handlers_network_layout import NetworkLayoutMixin
 from .handlers_usd import UsdHandlerMixin
-from .undo_scope import UndoScope, history as undo_history
+from .undo_scope import UndoScope, history as undo_history, note_history_may_change
 # R-034 (CONDUCTOR-7): per-step receipts + the applied-step guard for
 # batch_commands. Pure Python (no hou), importable standalone.
 from .batch_receipts import (
@@ -689,7 +689,16 @@ class CommandHandlerRegistry:
         handler = self.get(command_type)
         if handler is None:
             raise KeyError(f"No handler registered for {command_type!r}")
-        return self._floor_gate.wrap(command_type, payload, handler, ctx=ctx)
+        if command_type in ("undo", "redo") or command_type in _READ_ONLY_COMMANDS:
+            return self._floor_gate.wrap(command_type, payload, handler, ctx=ctx)
+        # R-012: this may add to Houdini's history, so it ends every handler's
+        # redo run -- before (its entries may land at any point) and after
+        # (a run recorded while it was in flight).
+        note_history_may_change()
+        try:
+            return self._floor_gate.wrap(command_type, payload, handler, ctx=ctx)
+        finally:
+            note_history_may_change()
 
     @property
     def registered_types(self):
@@ -864,9 +873,16 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
             # call instead (_history_step), before they judge.
             # Read-only commands (the kill switches among them) and farm
             # controls author no scene step, so they never wait on a capture.
+            # Render and hands-off-render polls read a registry, never the
+            # scene, and must not wait on a busy main thread.
+            _poll_payload = command.payload if isinstance(command.payload, dict) else {}
+            _is_poll = ((cmd_type == "render" and bool(_poll_payload.get("poll")))
+                        or (cmd_type == "autonomous_render"
+                            and bool(_poll_payload.get("task_id"))))
             if (cmd_type not in ("undo", "redo")
                     and cmd_type not in _READ_ONLY_COMMANDS
-                    and cmd_type not in FARM_CONTROL_COMMANDS):
+                    and cmd_type not in FARM_CONTROL_COMMANDS
+                    and not _is_poll):
                 scope = getattr(self, "_undo_scope", None)
                 if scope is not None and scope.needs_baseline and HOU_AVAILABLE:
                     if threading.current_thread() is threading.main_thread():

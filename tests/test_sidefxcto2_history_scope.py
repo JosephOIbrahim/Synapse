@@ -459,12 +459,21 @@ def test_redo_stops_at_the_entries_this_handler_undid(env):
 
 
 def test_redo_refuses_a_failed_builds_rollback_after_an_agent_undo(env):
+    """Round 5 BUG-1: the rebuild leaves exactly the labels the agent's undo left."""
     handler, undos, mod = env
     _capture_baseline(handler, _Undos())
-    undos.undo = ["synapse_node_create"]
-    handler._handle_undo({})
-    # A later build opens a group, which drops the redo stack, fails and is rolled back.
-    undos.undo, undos.redo = [], ["SYNAPSE: build_graph"]
+    undos.undo = ["SYNAPSE: build_graph"]
+    handler._handle_undo({})                       # left: undo [], redo [build_graph]
+
+    def failing_rebuild(payload):
+        undos.undo, undos.redo = ["SYNAPSE: build_graph"], []   # the group drops redo
+        undos.redo.insert(0, undos.undo.pop(0))                  # the rollback undoes it
+        raise RuntimeError("build failed")
+
+    handler._registry.register("fake_rebuild", failing_rebuild)
+    with pytest.raises(RuntimeError):
+        handler._registry.invoke("fake_rebuild", {})
+    assert (undos.undo, undos.redo) == ([], ["SYNAPSE: build_graph"]), "same labels"
 
     with pytest.raises(mod.HistoryScopeRefused):
         handler._handle_redo({})
@@ -491,13 +500,109 @@ def test_the_refused_trail_label_is_the_one_the_tool_writes():
 
 def test_redo_of_a_pre_session_entry_is_refused_even_with_a_redo_run():
     """Defense in depth (round 4 TEST-3): the undo-stack count still guards redo."""
-    from synapse.server.undo_scope import UndoScope, history
+    from synapse.server.undo_scope import UndoScope, history, history_generation
 
     undos = _Undos(undo=["synapse_node_create"])
     scope = UndoScope()
     assert scope.note_session_start(undos)
     undos.undo, undos.redo = [], ["synapse_node_create"]       # the old entry, now on redo
     scope._left_history, scope._redoable = history(undos), 1   # as if the run were ours
+    scope._left_generation = history_generation()
 
     refusal = scope.refusal(undos, "redo")
     assert refusal and "before this SYNAPSE session started" in refusal
+
+
+# ---------------------------------------------------------------------------
+# Refinement round 5: same labels after a new action; steps that did not move
+# ---------------------------------------------------------------------------
+
+def test_redo_refuses_a_fresh_create_the_artist_undid(env):
+    """Round 5 BUG-1 scenario B: create, agent undo, create again, artist Ctrl+Z."""
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["synapse_node_create"]
+    handler._handle_undo({})
+
+    def create(payload):
+        undos.undo, undos.redo = ["synapse_node_create"], []
+        return {"ok": True}
+
+    handler._registry.register("fake_create", create)
+    handler._registry.invoke("fake_create", {})
+    _artist_ctrl_z(undos)                     # the same labels the agent's undo left
+
+    with pytest.raises(mod.HistoryScopeRefused):
+        handler._handle_redo({})
+    assert undos.calls == ["undo"]
+
+
+def test_a_read_only_dispatch_keeps_the_redo_run(env):
+    handler, undos, _mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = ["synapse_node_create"]
+    handler._handle_undo({})
+
+    import synapse.server.handlers as handlers_mod
+    read_only = sorted(handlers_mod._READ_ONLY_COMMANDS)[0]
+    handler._registry.register(read_only, lambda payload: {"ok": True})
+    handler._registry.invoke(read_only, {})
+
+    assert handler._handle_redo({})["status"] == "ok"
+
+
+class _StuckUndos(_Undos):
+    """performUndo returns without stepping (a refused or no-op step)."""
+
+    def performUndo(self):
+        self.calls.append("undo")
+
+
+def test_an_undo_that_did_not_move_the_stacks_earns_no_redo(monkeypatch):
+    """Round 5 RISK-3: the redo top was the artist's Ctrl+Z, not this handler's."""
+    import synapse.server.handlers as handlers_mod
+
+    undos = _StuckUndos(undo=["synapse_node_create"], redo=["synapse_node_create"])
+    monkeypatch.setattr(handlers_mod, "hou", SimpleNamespace(undos=undos), raising=False)
+    monkeypatch.setattr(handlers_mod, "HOU_AVAILABLE", True)
+    monkeypatch.setenv("SYNAPSE_LIVE_ENVELOPE", "0")
+    handler = handlers_mod.SynapseHandler()
+    _capture_baseline(handler, _Undos())
+
+    handler._handle_undo({})
+    with pytest.raises(handlers_mod.HistoryScopeRefused):
+        handler._handle_redo({})
+
+
+@pytest.mark.parametrize("label", [
+    "SYNAPSE: tops_cancel_cook: {'node': '/tasks/topnet1/ropfetch1'}",
+    "SYNAPSE: synapse_emergency_halt: {'reason': 'Artist triggered emergency halt from the panel'}",
+])
+def test_the_panel_cancel_and_halt_buttons_are_the_artists(env, label):
+    """Round 5 RISK-5: both buttons run a tool through the bridge with no model turn."""
+    handler, undos, mod = env
+    _capture_baseline(handler, _Undos())
+    undos.undo = [label]
+
+    with pytest.raises(mod.HistoryScopeRefused):
+        handler._handle_undo({})
+    assert undos.calls == []
+
+
+@pytest.mark.parametrize("payload, captures", [
+    ({"poll": True}, False),
+    ({}, True),
+])
+def test_a_render_poll_never_waits_on_the_baseline(monkeypatch, payload, captures):
+    """Round 5 RISK-4: a poll skips the capture (it may wait 2 s on a busy main thread)."""
+    import synapse.server.handlers as handlers_mod
+
+    undos = _Undos()
+    monkeypatch.setattr(handlers_mod, "hou", SimpleNamespace(undos=undos), raising=False)
+    monkeypatch.setattr(handlers_mod, "HOU_AVAILABLE", True)
+    monkeypatch.setenv("SYNAPSE_LIVE_ENVELOPE", "0")
+    handler = handlers_mod.SynapseHandler()
+    handler._registry.register("render", lambda p: {"ok": True})
+
+    handler.handle(SynapseCommand(type="render", id="r1", payload=payload))
+    assert handler._undo_scope.needs_baseline is (not captures)

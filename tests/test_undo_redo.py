@@ -45,8 +45,16 @@ def _make_hou_stub():
     undos.areEnabled = MagicMock(return_value=True)
     undos.undoLabels = MagicMock(return_value=["SYNAPSE: create_node"])
     undos.redoLabels = MagicMock(return_value=["SYNAPSE: create_node"])
-    undos.performUndo = MagicMock()
-    undos.performRedo = MagicMock()
+    # The stacks move like Houdini's: undo shifts the top entry onto redo, and
+    # back (R-012 only counts a step that moved exactly one entry).
+    def _shift(src, dst):
+        s, d = list(src.return_value), list(dst.return_value)
+        if s:
+            d.insert(0, s.pop(0))
+        src.return_value, dst.return_value = s, d
+
+    undos.performUndo = MagicMock(side_effect=lambda: _shift(undos.undoLabels, undos.redoLabels))
+    undos.performRedo = MagicMock(side_effect=lambda: _shift(undos.redoLabels, undos.undoLabels))
     hou.undos = undos
     return hou
 

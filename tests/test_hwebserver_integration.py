@@ -71,16 +71,17 @@ def test_server_lifecycle():
 
     # Start
     start_hwebserver(port=9876)
-    assert is_running(), "Server should be running after start"
+    try:
+        assert is_running(), "Server should be running after start"
 
-    # Health
-    health = get_health()
-    assert health["backend"] == "hwebserver"
-    assert health["running"] is True
-    print(f"PASS: server started, health: {health}")
-
-    # Stop
-    stop_hwebserver()
+        # Health
+        health = get_health()
+        assert health["backend"] == "hwebserver"
+        assert health["running"] is True
+        print(f"PASS: server started, health: {health}")
+    finally:
+        # Stop (always: a server left running leaks into later tests)
+        stop_hwebserver()
     assert not is_running(), "Server should be stopped after stop"
     print("PASS: server stopped cleanly")
     return True

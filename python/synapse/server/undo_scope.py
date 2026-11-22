@@ -37,7 +37,13 @@ after each of its own undo/redo steps, and how many entries at the top of the
 redo stack its own undos put there. A redo is allowed only while the history is
 exactly as the handler left it: anything in between (the artist's Ctrl+Z or
 Ctrl+Y, a new edit, a failed build's rollback) changes the stacks and ends the
-run. So a group a failed build rolled back, or one the artist undid, is never
+run. Because a new action can leave the same labels behind (an agent rebuild
+that fails and is rolled back, or a fresh create the artist then undoes), every
+SYNAPSE dispatch that may change the history also advances a process-wide
+generation (``note_history_may_change``, called around each non-history,
+non-read-only ``CommandRegistry.invoke``), and a changed generation ends the
+run too. A step that did not move the stacks exactly one entry also ends it.
+So a group a failed build rolled back, or one the artist undid, is never
 re-applied by an agent.
 
 A session is one handler's lifetime. Every client of the same route shares it
@@ -56,6 +62,7 @@ no ``hou``.
 from __future__ import annotations
 
 import logging
+import threading
 from collections import Counter
 from typing import Optional, Tuple
 
@@ -75,9 +82,42 @@ AGENT_PREFIXES = ("SYNAPSE: ", "synapse_")
 ARTIST_STARTED_LABELS = frozenset({"SYNAPSE: Draw camera path"})
 
 
+#: Bridge groups for panel buttons that run a tool with no model turn: Cancel
+#: cook and Emergency halt (``synapse_panel._run_direct_tool``). Their handlers
+#: author no undo step, so any entry with this label is the artist's click.
+ARTIST_STARTED_PREFIXES = ("SYNAPSE: tops_cancel_cook:",
+                           "SYNAPSE: synapse_emergency_halt:")
+
+
 def is_agent_label(label) -> bool:
     return (isinstance(label, str) and label.startswith(AGENT_PREFIXES)
-            and label not in ARTIST_STARTED_LABELS)
+            and label not in ARTIST_STARTED_LABELS
+            and not label.startswith(ARTIST_STARTED_PREFIXES))
+
+
+_GENERATION_LOCK = threading.Lock()
+_generation = 0
+
+
+def note_history_may_change() -> None:
+    """A SYNAPSE dispatch may change the history: end every handler's redo run."""
+    global _generation
+    with _GENERATION_LOCK:
+        _generation += 1
+
+
+def history_generation() -> int:
+    return _generation
+
+
+def _moved_one(direction: str, before, after) -> bool:
+    """The step moved exactly the top entry from one stack to the other."""
+    if before is None or after is None:
+        return False
+    (b_undo, b_redo), (a_undo, a_redo) = before, after
+    if direction == "undo":
+        return bool(b_undo) and a_undo == b_undo[1:] and a_redo == b_undo[:1] + b_redo
+    return bool(b_redo) and a_redo == b_redo[1:] and a_undo == b_redo[:1] + b_undo
 
 
 def _as_labels(value) -> Optional[Tuple[str, ...]]:
@@ -139,6 +179,7 @@ class UndoScope:
         # The history right after this handler's last undo/redo, and how many
         # entries at the top of the redo stack its own undos put there.
         self._left_history = None
+        self._left_generation = None
         self._redoable = 0
         self.capture_failures = 0
 
@@ -226,20 +267,26 @@ class UndoScope:
     def _redo_is_ours(self, undos) -> bool:
         """The redo top is one this handler undid and nothing happened since."""
         return (self._redoable > 0 and self._left_history is not None
+                and self._left_generation == history_generation()
                 and history(undos) == self._left_history)
 
     def note_agent_step(self, direction: str, before, after) -> None:
         """Record a step this handler took; ``before``/``after`` come from ``history()``.
 
-        An undo that starts from the history this handler last left extends its
-        run of redoable entries; any other undo starts a new run of one. A redo
-        uses one up. A history that cannot be read ends the run.
+        An undo that starts from the history this handler last left, with no
+        SYNAPSE dispatch since, extends its run of redoable entries; any other
+        undo starts a new run of one. A redo uses one up. A step that did not
+        move exactly the top entry, or a history that cannot be read, ends the
+        run.
         """
-        chained = before is not None and before == self._left_history
-        if direction == "undo":
+        moved = _moved_one(direction, before, after)
+        chained = (moved and before == self._left_history
+                   and self._left_generation == history_generation())
+        if not moved:
+            self._redoable = 0
+        elif direction == "undo":
             self._redoable = (self._redoable if chained else 0) + 1
         else:
             self._redoable = self._redoable - 1 if chained else 0
         self._left_history = after
-        if after is None:
-            self._redoable = 0
+        self._left_generation = history_generation()
