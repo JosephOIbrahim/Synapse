@@ -2,6 +2,28 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.104.0 - Loopback by default, and outcomes that tell the truth
+
+**Upgrade every seat.** The Houdini server binds 127.0.0.1 by default and refuses a wider bind
+without a key, and every Setup install creates `~/.synapse/auth.key` when no readable key exists.
+The release lands Waves 0 and 1 of the 2026-11-20 repair program: 35 fixes (node ids in the `fix(w0)` and
+`fix(w1)` commit messages). The full note, with
+its limits, is [docs/releases/v5.104.0.md](docs/releases/v5.104.0.md).
+
+- **Security.** Loopback bind and the install-time key; Doctor checks the bind; read-only mode
+  covers the command aliases; SECURITY.md, the studio deployment guide and the agent
+  instructions stop claiming roles are enforced, because no shipped endpoint checks them.
+- **The artist's scene.** A refused Solaris compose no longer undoes the artist's last edit;
+  the Solaris builder tools roll back only their own work; Undo and Redo touch only agent steps made since the session started and move to
+  the review gate; a wall-clock deadline stops pure-Python loops in executed code.
+- **PDG.** By default `tops_cook_node` no longer holds the main thread and returns a task id at
+  once; a single TOP node is reported cancelled only once no work item is still active.
+- **Hands-off render.** `synapse_autonomous_render` returns a task id and works around Houdini
+  22's patched asyncio with a loop the worker builds itself.
+- **Truthful outcomes.** Failing mutating live commands record failed integrity blocks (live envelope on); router stats, the breaker,
+  batch receipts, memory health, capture, stage totals, temporal analysis, the Karma scaffold and
+  APEX federation report what actually ran.
+
 ## v5.103.0 - The SIM plane: a problem-indexed ledger for harness changes
 
 **Additive and inert.** A new `harness/sim/` package records harness edits as

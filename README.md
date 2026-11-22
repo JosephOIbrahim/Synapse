@@ -9,7 +9,7 @@
 
 <p align="center">Connect a local or cloud model, describe the task in plain words, and SYNAPSE builds real nodes you can inspect and edit.</p>
 
-<p align="center"><sub>v5.103.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.103.0 is Latest</sub></p>
+<p align="center"><sub>v5.104.0 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.104.0 is Latest</sub></p>
 
 <p align="center">
   <a href="https://github.com/JosephOIbrahim/Synapse/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/JosephOIbrahim/Synapse?style=flat-square&amp;labelColor=0A0A0A&amp;color=2F5878"></a>
@@ -21,7 +21,7 @@
 
 **[01 Install](#01-install)** · **[02 What it does](#02-what-it-does)** · **[03 Controls](#03-controls)** · **[04 When you get stuck](#04-when-you-get-stuck)** · **[05 Reference](#05-reference)**
 
-[What's new](docs/releases/v5.103.0.md) · [Versions and tags](TAGS.md) · [Current limits](docs/status.md)
+[What's new](docs/releases/v5.104.0.md) · [Versions and tags](TAGS.md) · [Current limits](docs/status.md)
 
 </div>
 
@@ -35,30 +35,32 @@ SYNAPSE does the work inside your Houdini scene through tools you can inspect, a
 >
 > SYNAPSE acts without asking first. Start in a scratch scene.
 >
-> The default worker refuses more than it allows. It reads, creates nodes, sets parameters, connects wires and creates materials. It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning, batch PDG cooks and any tool it does not recognise.
+> The default worker is limited. It reads, creates nodes, sets parameters, connects wires, creates materials, writes memory notes and can cook a single TOP node, which may render. It refuses node deletion, the `execute_python` and `execute_vex` tools, ROP renders, the export-gated tools (farm prepare, HDA packaging, texture bake), memory pruning, batch PDG cooks and any tool it does not recognise. It can still create a wrangle or Python node and set its code, and `houdini_hda_create` can still write an `.hda` file.
 >
 > Undo covers a recorded operation. It does not reverse a whole conversation, or files written to disk.
 
 ## 01 Install
 
-1. Save your scene and close Houdini. Run the v5.102.0 [Windows Setup](docs/getting-started/installation.md#windows-installer), or follow [source installation](docs/getting-started/installation.md#source-installation) for v5.103.0.
+1. Save your scene and close Houdini. Run the [Windows Setup](docs/getting-started/installation.md#windows-installer), or follow [source installation](docs/getting-started/installation.md#source-installation) for v5.104.0.
 2. Restart Houdini. Open New Pane Tab, then Synapse.
 3. Open Connect models. Choose a provider and model, and add its key if it needs one.
 4. For node creation, select Build and edit networks. Choose Check connection, then Use this model.
 
 Using Ollama? Start its service first. Connect starts the separate Houdini bridge, and Doctor checks the setup without a model.
 
+**Setup creates a key, and in the default local mode SYNAPSE listens on this machine only.** If `~/.synapse/auth.key` holds no readable key line, Setup writes one; a file that holds a readable key line is left alone; any other `auth.key` is replaced. A source install creates no key: put one line of random text in `~/.synapse/auth.key` to turn authentication on. Restart Claude Code and any other MCP client after installing so they read it.
+
 ### Which build to get
 
 | You want | Get | Know this |
 |---|---|---|
-| An installer | [Windows Setup v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe) | The newest Setup. A 5.102.0 seat behaves exactly as a 5.103.0 seat does. Setup remains unsigned; its [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt) applies to that file and to nothing in 5.103.0. |
-| The source | `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.103.0` | 5.103.0 is a source release. It publishes no Setup, no source ZIP and no checksum file, because it changes no product behaviour: the `harness/sim` plane it adds is not imported by anything the product runs. |
-| To check the tag | `git rev-parse 'v5.103.0^{commit}'` | Resolves the annotated tag to its source commit. |
+| An installer | [Windows Setup v5.104.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.0/SYNAPSE-5.104.0-Setup.exe) | Setup remains unsigned. Check the file against the release's [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.0/SHA256SUMS.txt). |
+| The source | `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.104.0` | The annotated tag is the release's source. |
+| To check the tag | `git rev-parse 'v5.104.0^{commit}'` | Resolves the annotated tag to its source commit. |
 
 **Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update.
 
-<sub>What was checked: the [5.103.0 note](docs/releases/v5.103.0.md) carries the stock-suite line, what it does not cover, and every limit, and the v5.102.0 [tests and limits](docs/releases/v5.102.0.md#tests) still describe that Setup. Setup includes the panel as of v5.102.0, including Spatial, the Render footer row and the scene-reading Scatter recipe. The 5.101.1 tag and its assets remain unchanged.</sub>
+<sub>What was checked: the [5.104.0 note](docs/releases/v5.104.0.md) carries the test lines, what they do not cover, and every limit. Setup includes the panel as of v5.104.0, including Spatial, the Render footer row and the scene-reading Scatter recipe.</sub>
 
 ## 02 What it does
 
@@ -82,7 +84,7 @@ Five workflows on one pattern. The bold line says what it does, Try shows how to
 make a box
 ```
 
-Inspect the nodes, change a parameter, then try Undo.
+Inspect the nodes, change a parameter, then try Undo in Houdini.
 
 ```mermaid
 flowchart LR
@@ -106,7 +108,8 @@ flowchart LR
 
 - Undo covers a recorded operation. It does not reverse a whole conversation, and it does not reverse files written to disk.
 - A failed build can leave partial nodes until you deliberately undo them.
-- The default worker permits read-only tools and the inform-level edits (create a node, set a parameter, connect a wire, create a material), plus the artist's own Undo and Redo, which are inform-gated too. It refuses node deletion, arbitrary Python and VEX, renders, exports, memory pruning and batch PDG cooks, and it refuses any tool it does not recognise.
+- The default worker permits read-only tools and the inform-level edits (create a node, set a parameter, connect a wire, create a material). It refuses node deletion, the `execute_python` and `execute_vex` tools, ROP renders, the export-gated tools (farm prepare, HDA packaging, texture bake), memory pruning and batch PDG cooks, and it refuses any tool it does not recognise; it can still create a wrangle or Python node and set its code, and `houdini_hda_create` can still write an `.hda` file. Single TOP-node cooks (`tops_cook_node`, `houdini_wedge`) count as parameter edits, so it permits them, and they may render.
+- Since 5.104.0 SYNAPSE's Undo and Redo tools are review-gated, so the default worker refuses them; use Houdini's own Undo. Those tools take back only a step an agent tool recorded since the session started, never the artist's own work, and redo only a step they undid, while no SYNAPSE command that can change the scene has been dispatched since and the history lists are as their last Undo or Redo left them.
 - Three composite Solaris builders, listed in `_WORKER_BUILDER_ALLOWLIST` in `python/synapse/panel/worker_policy.py`, are the exception; each is one undo-wrapped call made only of inform-level primitives.
 
 <sub>[Tool policy and execution boundaries](docs/architecture/overview.md#permission-and-undo-boundaries)</sub>
@@ -233,16 +236,18 @@ flowchart LR
 
 ### 02.5 Hands-off render
 
-**`synapse_autonomous_render` takes an intent in plain words and runs the whole render loop:** plan, validate, render through TOPS, score the result, and re-plan when the score falls short.
+**`synapse_autonomous_render` takes an intent in plain words and runs the whole render loop:** plan, validate, render the frames through the render ROP (`render_sequence`), score the result, and re-plan when the score falls short.
+
+**It answers at once with a task id.** The loop runs on a worker thread. Call the tool again with that `task_id` to read the status and, once it finishes, the report. A second start with the same intent and settings joins the running task instead of starting another. The default panel worker refuses it (it is approve-gated); start it from Claude Code or another MCP client.
 
 ```mermaid
 flowchart LR
     accTitle: The autonomous render loop plans, validates, renders, scores and retries
-    accDescr: An intent becomes a render plan. Validation either stops and reports, or the plan renders through TOPS. The frames are scored against the quality threshold. A score below the threshold re-plans while iterations remain; otherwise the loop stops and reports. A score at or above the threshold produces the report.
+    accDescr: An intent becomes a render plan. Validation either stops and reports, or the plan renders through the render ROP. The frames are scored against the quality threshold. A score below the threshold re-plans while iterations remain; otherwise the loop stops and reports. A score at or above the threshold produces the report.
     I["Intent<br/>plain words"] --> P["Plan the<br/>render"]
     P --> V["Validate<br/>the scene"]
     V -->|"invalid"| X["Stop and<br/>report"]
-    V -->|"valid"| R["Render<br/>through TOPS"]
+    V -->|"valid"| R["Render<br/>through the ROP"]
     R --> E["Score the<br/>frames"]
     E -->|"below threshold"| L{"Iterations<br/>left?"}
     L -->|"yes"| P
@@ -260,9 +265,9 @@ flowchart LR
 
 - `max_iterations`: 3 by default, clamped to 10 on the server.
 - `quality_threshold`: 0.85 by default.
-- A per-run wall-clock bound of 600 seconds by default. It stops at the next iteration boundary and reports `stop_reason='wall_clock_exceeded'`.
+- A per-run wall-clock bound of 600 seconds by default. It stops at the next step boundary and reports `stop_reason='wall_clock_exceeded'`.
 
-<sub>Producer: the loop is `python/synapse/autonomy/driver.py`; the tool contract, defaults and server clamp are `python/synapse/mcp/_tool_registry.py`.</sub>
+<sub>Producer: the loop and the 10-iteration clamp are `python/synapse/autonomy/driver.py`; the 600-second default is `python/synapse/core/timeouts.py`; the tool contract is `python/synapse/mcp/_tool_registry.py`.</sub>
 
 ### Models and clients
 
@@ -271,7 +276,7 @@ flowchart LR
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) (reviewed for v5.99.0) · [Latest release notes](docs/releases/v5.103.0.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) (reviewed for v5.99.0) · [Latest release notes](docs/releases/v5.104.0.md) · [Changelog](CHANGELOG.md)
 
 ## 03 Controls
 
@@ -323,18 +328,20 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 Detail you can come back to. Each block opens in place.
 
 <details>
-<summary><strong>What's new in 5.103.0</strong></summary>
+<summary><strong>What's new in 5.104.0</strong></summary>
 
-**No product behaviour changes.** 5.103.0 adds a self-improvement memory plane under `harness/sim` — a place to record a harness edit, the failure it addresses, the delta it predicted and the delta it measured — which nothing on the runtime path imports. The panel, the Setup behaviour, Moneta 1.3.0, the native-artifact policy and 5.101.1's optional ceiling on the panel worker's tools are unchanged. [What changed in 5.103.0](docs/releases/v5.103.0.md) has the detail and every limit.
+**SYNAPSE listens on this machine only by default, with a key.** The Houdini server binds 127.0.0.1 in local mode and refuses a wider bind without a key, and Setup creates `~/.synapse/auth.key` when no readable key exists. 5.104.0 also lands the first two waves of the 2026-11-20 repair program: 35 fixes across security, scene safety and truthful results. [What changed in 5.104.0](docs/releases/v5.104.0.md) has the detail and every limit.
 
 anthropic 2.x is still unsupported.
 
 </details>
 
 <details>
-<summary><strong>Release history: what changed in 5.102.0</strong></summary>
+<summary><strong>Release history: 5.103.0 and 5.102.0</strong></summary>
 
-No shipped code changes. Five files that reach you change, and only their text: two that Setup installs no longer name folders on this project's machines, and three in the source ZIP name a redaction token instead of the account.
+**5.103.0** added a self-improvement memory plane under `harness/sim`, which nothing on the runtime path imports, and changed no product behaviour. [What changed in 5.103.0](docs/releases/v5.103.0.md).
+
+**5.102.0.** No shipped code changes. Five files that reach you change, and only their text: two that Setup installs no longer name folders on this project's machines, and three in the source ZIP name a redaction token instead of the account.
 
 The rest of the release is a test and the release audit, and neither reaches your seat.
 
@@ -431,7 +438,7 @@ The seat runs do not exercise Moneta, and those counts move between runs. They w
 
 The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs.
 
-Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.103.0.md) before relying on it.
+Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.104.0.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -447,7 +454,7 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 
 Native policy depends on the installation route. The [source package](packages/synapse.json) retains OFF. Windows Setup can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks.
 
-5.102.0 changes no file under `installer/` or `packages/` (`git diff --stat v5.101.1 1194373d -- installer/ packages/` is empty).
+5.104.0 changes `installer/` so Setup creates the local auth key when none exists. It changes no file under `packages/` (`git diff --stat v5.103.0 v5.104.0 -- packages/` is empty).
 
 Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host, artifact and execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 

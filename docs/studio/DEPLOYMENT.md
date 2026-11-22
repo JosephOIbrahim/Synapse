@@ -1,27 +1,34 @@
 ﻿# Synapse Studio Deployment Guide
 
-Deploy Synapse for multi-user studio environments with per-artist roles,
-session tracking, and optional TLS encryption.
+Deploy Synapse beyond a single seat. In this build every client uses the one
+server key: no shipped start path enforces per-artist roles, tracks per-artist sessions or
+reads `deploy.json` and `users.json` (see the note under Quick Start).
 
 ## Deployment Modes
 
 | Mode | Bind | Auth | RBAC | TLS | Use Case |
 |------|------|------|------|-----|----------|
 | `local` | 127.0.0.1 | Optional | Off | No | Single artist, same machine (default) |
-| `studio-lan` | 0.0.0.0 | Required | On | No | Multi-artist, trusted LAN |
-| `studio-vpn` | 0.0.0.0 | Required | On | Yes | Multi-artist, over VPN/internet |
+| `studio-lan` | 0.0.0.0 | Required | Not enforced | No | Multi-artist, trusted LAN |
+| `studio-vpn` | 0.0.0.0 | Required | Not enforced | No (`deploy.json` is not read) | Multi-artist, over VPN/internet |
 
 **The in-Houdini hwebserver reads `SYNAPSE_DEPLOY_MODE` from the environment.**
-`deploy.json` configures the fallback Python WebSocket server; the panel's
+No shipped start path reads `deploy.json`: nothing calls `load_deploy_config()`,
+and the fallback Python WebSocket server is started without one. The panel's
 `Connect` path starts the hwebserver transport, which decides its bind in
 `server/bind_posture.py` from `SYNAPSE_DEPLOY_MODE` (and `SYNAPSE_BIND_ADDRESS`
 when set). A LAN bind needs the environment variable set in the Houdini process
 — and an auth key; without a key the transport refuses to start and names the
-fix. A fresh Setup install mints `~/.synapse/auth.key`, so the key half is
-already in place. Local mode ignores `SYNAPSE_BIND_ADDRESS` beyond loopback
+fix. Setup mints `~/.synapse/auth.key` when no readable key exists, so the key half is
+already in place. Local mode refuses a non-loopback `SYNAPSE_BIND_ADDRESS`
 unless `SYNAPSE_ALLOW_LAN` opts in.
 
 ## Quick Start
+
+> **Not read in this build.** No shipped start path reads `deploy.json` or
+> `users.json`, so per-artist keys and roles do nothing: every client must use the
+> one server key (`SYNAPSE_API_KEY` or `~/.synapse/auth.key`). Steps 1-3 describe
+> the fallback server's configuration format.
 
 ### 1. Create deploy.json
 
@@ -74,7 +81,7 @@ Give each artist their raw key. Store only the hash in `users.json`.
 
 ### 4. Connect from Client
 
-Each artist sets their API key in the environment:
+Each client sets the server's one key in the environment:
 
 ```bash
 export SYNAPSE_API_KEY="alice-secret-key-here"
@@ -85,6 +92,8 @@ Or configure it in their Claude Code MCP settings.
 ## Configuration Reference
 
 ### deploy.json
+
+> Not read by any shipped start path in this build; see the note under Quick Start.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -121,7 +130,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_SIDEFX_CORPUS_ROOT` | Absolute local root of the built SideFX help library; overrides `.synapse/sidefx_library.json`. Lookups open the published generation read-only and never download or rebuild; empty, relative and network roots are rejected | unset (use the configuration file; no library if that file is absent) | `cognitive/tools/sidefx_library.py` | Both: provision a local library on each seat; see [SideFX library setup](SIDEFX_LIBRARY.md) |
 | `SYNAPSE_PARM_CATALOG_ROOT` | Root directory of the per-build parameter-name catalog the parm gate validates against | `python/synapse/validation/catalogs` | `python/synapse/validation/catalog.py` | Both: in-repo default; studio may point at a shared build catalog |
 | `SYNAPSE_PARM_CATALOG_BUILD` | Houdini build whose catalog the gate loads; must match the running build or the gate degrades to advisory | running build | `python/synapse/validation/catalog.py` | Both: leave unset to track the running build |
-| `SYNAPSE_API_KEY` | Shared API key for WS/MCP auth; env beats `~/.synapse/auth.key`. A fresh Setup install mints the key file, so auth is on out of the box | unset (auth off) | `server/auth.py`, `mcp_server.py`, `installer/synapse_setup/auth_key.py` (mint) | Studio: required for studio-lan/vpn; per-user keys in users.json preferred |
+| `SYNAPSE_API_KEY` | Shared API key for WS/MCP auth; env beats `~/.synapse/auth.key`. Setup mints the key file when no readable key exists, so auth is on out of the box | unset (auth off) | `server/auth.py`, `mcp_server.py`, `installer/synapse_setup/auth_key.py` (mint) | Studio: required for studio-lan/vpn; one shared key (`users.json` is not read) |
 | `SYNAPSE_ALLOW_LAN` | `1`/`true`/`yes`/`on` opts in to a non-loopback `SYNAPSE_BIND_ADDRESS` in local mode. The bind still requires an auth key — a non-loopback listen with no key is refused | unset (LAN bind refused) | `server/bind_posture.py` | Studio: prefer `SYNAPSE_DEPLOY_MODE=studio-lan`; this is the explicit local-mode escape hatch |
 | `SYNAPSE_AUTOSTART_HWEBSERVER` | `"1"` restores import-time start of the in-Houdini hwebserver endpoint | unset | `server/start_hwebserver.py` | Single-seat convenience |
 | `SYNAPSE_BIND_ADDRESS` | Listen address the in-Houdini hwebserver asks its `ADDRESS` setting to bind. Unset: `127.0.0.1` in local mode, the any-address in a studio mode. In local mode a non-loopback value is refused unless `SYNAPSE_ALLOW_LAN` opts in | unset (`127.0.0.1` local / `0.0.0.0` studio) | `server/bind_posture.py` | Both: leave unset for loopback; studio sets an explicit interface or relies on the mode default |
@@ -131,7 +140,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_AUTO_CONSOLIDATE` | `1`/`true`/`yes`/`on` arms the AUTOMATIC Moneta consolidation prune inside `add()`; unset means the prune never runs unasked. Disarmed 2026-09-17 after it was found live on the primary with 560 rows qualifying for deletion, 253 of which had no mirror copy. Even when armed it refuses unless every live record is provably mirrored. The APPROVE-gated `synapse_sleep_pass` tool remains the deliberate path | unset (disabled) | `memory/moneta_store.py` | Both: leave unset; an automatic destructive prune is not something the artist asked for |
 | `SYNAPSE_ALLOW_SLEEP_PASS` | Exactly `"1"` opts in to `synapse_sleep_pass`, the destructive Moneta consolidation/decay prune; anything else (unset, `"true"`, `"0"`) refuses it with a reason naming this variable. It is read from the environment of the process that runs the SYNAPSE server (for Houdini, the package env block or the system environment), not the MCP client's. No request payload can opt in. Since 5.97.3 (CTO ruling D4) | unset (refused) | `server/handlers_memory.py` | Both: leave unset unless you mean to prune |
 | `SYNAPSE_DEPLOY_CONFIG` | Path to deploy.json | `~/.synapse/deploy.json` | `server/sessions.py` | Studio |
-| `SYNAPSE_DEPLOY_MODE` | `local` / `studio-lan` / `studio-vpn`; != `local` enforces RBAC and makes the hwebserver a non-loopback bind (an auth key is then required); the WS server also WRITES this var at startup to propagate deploy.json's mode in-process | `local` | `server/sessions.py`, `server/rbac.py`, `server/bind_posture.py`, `server/hwebserver_adapter.py`, `mcp/server.py`, `server/websocket.py` (write) | Studio |
+| `SYNAPSE_DEPLOY_MODE` | `local` / `studio-lan` / `studio-vpn`; `studio-lan` and `studio-vpn` default the hwebserver bind to 0.0.0.0 (an auth key is then required) unless `SYNAPSE_BIND_ADDRESS` sets another address; any other value keeps loopback. It does not enforce roles on the shipped endpoints. The fallback WS server writes this var only when it is constructed with a non-local `DeployConfig`, which no shipped start path does | `local` | `server/sessions.py`, `server/rbac.py`, `server/bind_posture.py`, `server/hwebserver_adapter.py`, `server/doctor.py`, `mcp/server.py`, `server/websocket.py` (write) | Studio |
 | `SYNAPSE_ENCRYPTION_KEY` | Fernet key for memory-at-rest encryption; wrong key = degraded read-only load, save refused | unset (keyfile / auto-gen) | `core/crypto.py` | Studio: escrow it; must match on restore |
 | `SYNAPSE_ENVELOPE_CAPTURE_TIMEOUT` | Fixed bound (seconds, float > 0) on each live-envelope scene-hash hop; bad/<=0 values fall back to the default | `1.0` | `server/integrity_envelope.py` | Both: leave unset |
 | `SYNAPSE_EXEC_DEADLINE` | Guards the main-thread exec deadline for generated code: a line tracer raises at the deadline for the payload's own compiled unit; read at call time. `0`/`false`/`off`/`no` disables it. C calls cannot be interrupted and are checked at explicit points, never claimed stopped | `1` (ON; 0/false/off/no disable) | `server/deadline.py` | Both: leave on |
@@ -296,6 +305,8 @@ mutation â€” a real per-op cost floor on large production stages.
 
 ## Roles
 
+> Not enforced in this build. See "What execute code grants" below.
+
 | Role | Can Do | Cannot Do |
 |------|--------|-----------|
 | **viewer** | Read scene, inspect nodes, capture viewport, query knowledge | Create/edit/delete anything, execute code, render |
@@ -303,7 +314,7 @@ mutation â€” a real per-op cost floor on large production stages.
 | **lead** | Everything artist can + manage users, list sessions | Configure server |
 | **admin** | Unrestricted access | Nothing restricted |
 
-**What "execute code" grants.** `execute_python` and `execute_vex` are role-gated (`server/rbac.py:63,120`) — a viewer cannot call them. What the role check does *not* do is sandbox the payload: code that passes it runs in the Houdini process with full `__builtins__`, no import filter and no length cap. Granting `artist` is therefore granting arbitrary local code execution on the host, and should be scoped like that rather than like a scene-editing permission.
+**What "execute code" grants.** The role table above describes `server/rbac.py`; no shipped endpoint enforces it in this build, so every holder of the auth key can call `execute_python` and `execute_vex`. Nothing sandboxes the payload either: code runs in the Houdini process with full `__builtins__`, no import filter and no length cap. Handing out the key is therefore handing out arbitrary local code execution on the host.
 
 ## Firewall Rules
 
@@ -318,6 +329,9 @@ sudo ufw allow 9999/tcp
 ```
 
 ## TLS Setup (VPN Mode)
+
+> Not read in this build: the hwebserver transport starts without TLS settings and
+> `deploy.json` is not read, so clients connect with `ws://`.
 
 For `studio-vpn`, generate or obtain a TLS certificate:
 
@@ -395,8 +409,11 @@ See docs/studio/EGRESS.md for the complete what-leaves-the-building inventory.
 
 For studios with proprietary scenes, consider:
 - Using `studio-lan` mode (data stays on LAN, only tool results go to API)
-- Reviewing which tools are available to each role
-- Using the `viewer` role for team members who only need to inspect
+- Limiting tools with `SYNAPSE_MCP_READ_ONLY` (every client that reaches `/synapse` or `/mcp`; the
+  panel's in-process fallback is not covered) or `SYNAPSE_WORKER_TOOL_ALLOWLIST` (the panel
+  worker); there are no enforced roles
+- Not giving the key to team members who only need to inspect: this build has no enforced
+  read-only role (`SYNAPSE_MCP_READ_ONLY=1` limits a whole server to read-only tools)
 
 ## Autonomy & Cost Bounds
 
@@ -416,7 +433,7 @@ multi-seat use.
   default is 3.
 - Every run carries a **wall-clock bound** defaulting to the canonical
   600 s client budget (`synapse/core/timeouts.py::timeout_for("autonomous_render")`).
-  A run past the bound stops at the next iteration boundary and returns an
+  A run past the bound stops at the next step boundary and returns an
   honest partial report: `success=false`, `stop_reason="wall_clock_exceeded"`,
   with the iterations and evaluation completed so far.
 - Raising `max_wall_clock_seconds` in the payload requires raising the

@@ -7,26 +7,25 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**v5.103.0 is a source release and ships no Setup.** The newest Setup is
-**[Windows Setup v5.102.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SYNAPSE-5.102.0-Setup.exe)**.
+**[Windows Setup v5.104.0](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.0/SYNAPSE-5.104.0-Setup.exe)**
+packages the v5.104.0 source and the pinned Moneta 1.3.0 Python backend. It
+includes the panel as of v5.104.0 — Spatial, the Render footer row and the
+scene-reading Scatter recipe.
 
-That Setup packages the v5.102.0 source and the pinned Moneta 1.3.0 Python backend.
-It includes the panel as of v5.102.0 — Spatial, the Render footer row and the
-scene-reading Scatter recipe. It does not contain the v5.103.0 `harness/sim/` plane:
-nothing on the runtime path imports that plane, so a 5.102.0 seat and a 5.103.0
-source checkout run the same commands: the 5.103.0 source adds three helper
-functions and three keys to one calibration result, and no user-visible
-behaviour changes.
+**Setup creates the local key.** When `~/.synapse/auth.key` holds no readable key
+line, Setup writes one before the configuration changes; a file that holds a
+readable key line is left alone, and any other `auth.key` is replaced. In the default local mode SYNAPSE listens on this machine only (127.0.0.1). Restart
+Claude Code and any other MCP client after installing so they read the key.
 Setup includes a pinned native Rust artifact. Fresh supported Windows x64 / H22.0.400 / Python 3.13.10 setups receive ON only after actual isolated native execution and encrypted-mirror reopen checks. Explicit OFF and existing default-OFF registrations remain OFF. An existing ON setup must pass qualification; unsupported ON or failed checks refuse activation.
 
 **Already using native Rust or custom package settings?** Read the
 [existing-setup instructions](../../INSTRUCTIONS.md#existing-native-on-or-off-setups).
 Supported custom environment entries and extra paths are retained. Edited managed
 packages, multiple registrations, conditional settings and custom Houdini paths
-stop automatic migration. The previous 5.101.1 tag and downloads are preserved.
+stop automatic migration. Earlier tags and downloads are preserved.
 
-[Release notes and validation limits](../releases/v5.102.0.md) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/SHA256SUMS.txt)
+[Release notes and validation limits](../releases/v5.104.0.md) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.0/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -40,11 +39,11 @@ bundle; it needs no terminal, Git or system Python. Model credentials and option
 external services are separate.
 
 **Read the downloaded installer's own validation record.** The
-[5.102.0 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.102.0/installer-verification.json)
+[5.104.0 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.0/installer-verification.json)
 binds its checks to the actual Setup hash and source commit. Extraction and
 isolated execution of its embedded maintenance engine are distinct from the
 interactive Windows wizard, registry/shortcut integration and clean-machine
-qualification. See the [release limits](../releases/v5.102.0.md#limits).
+qualification. See the [release limits](../releases/v5.104.0.md#limits).
 
 The source installation steps below are an alternative route. Avoid running
 the source scripts over a registration managed by the Setup wizard.
@@ -52,6 +51,8 @@ the source scripts over a registration managed by the Setup wizard.
 ## Source installation
 
 Source scripts do not install or automatically enable the optional native Rust artifact.
+They create no auth key either: put one line of random text in `~/.synapse/auth.key`
+to turn authentication on.
 
 Use a terminal with Python available for these scripts. Installing a system
 Python does not replace Houdini's own runtime.
@@ -59,14 +60,14 @@ Python does not replace Houdini's own runtime.
 ### 1. Keep a copy of the repository
 
 Check out the
-[v5.103.0 tag](https://github.com/JosephOIbrahim/Synapse/tree/v5.103.0) into a
-permanent folder. No source ZIP is published for this release. Open a terminal in
+[v5.104.0 tag](https://github.com/JosephOIbrahim/Synapse/tree/v5.104.0) into a
+permanent folder. Open a terminal in
 the folder containing `install.py`.
 
 If you use Git instead:
 
 ```shell
-git clone --branch v5.103.0 https://github.com/JosephOIbrahim/Synapse.git
+git clone --branch v5.104.0 https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 ```
 

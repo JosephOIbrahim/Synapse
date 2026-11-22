@@ -12,10 +12,10 @@ the commands below reproduce a build.
 
 ## Current line
 
-v5.103.0 published no Setup: it changed no product behaviour and its release is
-source-only. The newest published Setup is v5.102.0. A build from this tree
-stamps the canonical root `VERSION`, and publishing a Setup remains a separate
-release action with its own qualification.
+v5.104.0 publishes a Setup: it changes product behaviour, including the loopback
+bind and the local auth key Setup now creates. A build from this tree stamps the
+canonical root `VERSION`, and publishing a Setup remains a separate release
+action with its own qualification.
 
 ## Inputs and build
 
@@ -153,8 +153,8 @@ The helper Python is isolated with a `_pth` file and needs no system packages.
 A completed install also mints the local API key at `~/.synapse/auth.key` when
 none exists ([synapse_setup/auth_key.py](synapse_setup/auth_key.py)); the
 transport's WebSocket handshake and the `/mcp` Bearer check read it, and it is
-never rotated, collected or removed by uninstall. An existing key is left
-byte-for-byte alone.
+never rotated, collected or removed by uninstall. A key file with a
+readable key line is left byte-for-byte alone; any other `auth.key` is replaced.
 
 Inno owns the wizard, maintenance files, Start menu shortcuts and per-user Windows
 uninstall registration. The engine owns runtime versions and the single

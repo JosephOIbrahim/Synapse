@@ -4,7 +4,8 @@ Keep this short. Short = cached = cheap. Conventions only, no history.
 
 ## What this is
 SYNAPSE is an agentic Houdini plugin: plain-English prompts → real Houdini work (COPs
-networks, Solaris/USD set-dressing, Karma renders), every action **reversible and recorded**.
+networks, Solaris/USD set-dressing, Karma renders), scene edits go through Houdini's undo history, **grouped where the handler wraps them**, and
+mutating commands leave a **receipt**.
 The differentiator vs. Houdini's native MCP is the receipts. Protect that.
 
 ## Survival rule (the one that fails silently)

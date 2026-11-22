@@ -74,7 +74,7 @@ from contextlib import contextmanager
 
 @contextmanager
 def agent_undo_group(description: str = "Synapse Agent Action"):
-    """Wrap agent actions in reversible undo groups."""
+    """Wrap agent actions in undo groups (grouping, not rollback)."""
     hou.undos.group(description).__enter__()
     try:
         yield
