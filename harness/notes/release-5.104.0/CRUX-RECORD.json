@@ -1,0 +1,28 @@
+{
+  "version": "5.104.0",
+  "review": "REL-5.104.0-REFINEMENT-6",
+  "reviewer": "Claude Code independent read-only review agents: five refinement rounds and one verification round, each a code reviewer and a release-text checker (2026-11-21)",
+  "reviewed_date": "2026-11-21",
+  "verdict": "PASS",
+  "passed": true,
+  "commit_range": "353395df..d56b774d",
+  "coverage": {
+    "code_reviewed_by_the_rounds": "a5a4fe18..1191fe48 (R-035, the R-012 undo scope, one test cleanup)",
+    "waves_0_and_1": "v5.103.0..a5a4fe18, verified per node in the 2026-11-20 repair program, each by an independent verifier with a fail-before control",
+    "release_text": "every release-text change against v5.103.0, checked six times"
+  },
+  "finding_summary": {
+    "code_findings_fixed": "every round's BUG and TEST findings; see RELEASE_v5.104.0.md, Review",
+    "text_findings_fixed": "all FALSE and OVERSTATED claims found in six rounds",
+    "last_round": "nothing material in the code; 5 OVERSTATED sentences, fixed",
+    "accepted_limits": [
+      "the artist's Ctrl+Y then Ctrl+Z on a step the agent undid restores the same history labels and is not detected",
+      "an off-main render worker's SYNAPSE: render step landing after an agent Undo and then undone is not detected; its group holds only parameter sets the render restores"
+    ]
+  },
+  "evidence_outside_this_review": {
+    "stock_suite": "13,418 passed, 0 failed, 732 skipped, 11 deselected, 10 xfailed on 1191fe48 + release edits (run r3)",
+    "seat_suite": "92 failed + 4 errors = 96 failing tests, all failing on v5.103.0 too (run r3, hython 22.0.400)",
+    "live_gui": "Houdini 22.0.400 GUI on 1191fe48: loopback bind, hands-off render, undo and redo receipts"
+  }
+}
