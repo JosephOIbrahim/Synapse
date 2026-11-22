@@ -166,7 +166,9 @@ def _carried(shipped):
         first_party |= _top_level_names(shipped, base)
     vendored = _top_level_names(shipped, VENDOR)
     vendored |= {wheel.split("-")[0].lower() for wheel in build_payload.WHEELS}
-    stdlib = set(sys.stdlib_module_names) | set(sys.builtin_module_names)
+    # Standard library from Python 3.14 on, named here so Houdini's 3.13 counts it the same way. spz.py imports
+    # compression.zstd inside try/except ImportError, so a 3.13 seat runs without it.
+    stdlib = set(sys.stdlib_module_names) | set(sys.builtin_module_names) | {"compression"}
     return stdlib | first_party | vendored | PAYLOAD_DEPENDENCIES | HOUDINI_PROVIDED
 
 

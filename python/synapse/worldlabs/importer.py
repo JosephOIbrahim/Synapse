@@ -9,11 +9,14 @@ GLB is a mesh, not a splat, and is refused.
 from __future__ import annotations
 
 import json
+import logging
 import math
 from pathlib import Path
 import re
 
 from .client import WorldLabsError
+
+logger = logging.getLogger(__name__)
 
 
 class ImportValidationError(WorldLabsError):
@@ -314,8 +317,11 @@ def _collider_faces(obj, path):
         import hou
         try:
             unpack.cook(force=True)
-        except hou.OperationFailed:
-            # An unreadable collider must not abort the import: the floor then comes from the splats.
+        except Exception as exc:  # noqa: BLE001
+            # An unreadable collider must not abort the import: the floor then comes from the splats. Matched
+            # broadly: in a long session (the seat suite) `hou` can be re-imported, and the OperationFailed class
+            # the cook raises is then not the one `hou.OperationFailed` names here.
+            logger.warning('World Labs collider %s could not be read and was skipped: %s', path, exc)
             return None
         if gltf.errors() or unpack.errors():
             return None

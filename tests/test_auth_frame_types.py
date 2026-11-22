@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from synapse.server.auth import AUTH_COMMAND_TYPE, authenticate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -127,8 +129,21 @@ class _FakeWS:
         self.sent.append(frame)
 
 
+def _import_mcp_server():
+    """A real import. Only Houdini's own Python may skip: it lacks the MCP client's dependencies (pywin32), and
+    the client never runs there. Stock CPython and CI must import it, or this test fails."""
+    import importlib.util
+    try:
+        import mcp_server
+    except ModuleNotFoundError as exc:
+        if importlib.util.find_spec('_hou') is not None:
+            pytest.skip('the MCP client cannot import under Houdini\'s Python: %s' % exc)
+        raise
+    return mcp_server
+
+
 def test_client_sends_the_auth_frame_as_text(monkeypatch):
-    import mcp_server  # a real import: a skip here would hide the client side
+    mcp_server = _import_mcp_server()
     monkeypatch.setattr(mcp_server, "_get_auth_key", lambda: KEY)
     ws = _FakeWS()
     asyncio.run(mcp_server._auth_handshake(ws))
