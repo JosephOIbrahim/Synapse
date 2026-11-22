@@ -197,7 +197,18 @@ if HWEBSERVER_AVAILABLE:
         async def receive(self, text_data=None, bytes_data=None):
             """Handle incoming SynapseCommand message."""
             if text_data is None:
-                return
+                # A UTF-8 binary frame carries the same JSON. mcp_server.py up to
+                # v5.104.0 sends its authenticate message as bytes (orjson), and
+                # dropping that frame left every key-holding client waiting 5 s
+                # for an auth reply that never came (seat, 2026-11-22). Decoding
+                # happens BEFORE the auth gate, so it cannot skip auth.
+                if bytes_data is None:
+                    return
+                try:
+                    text_data = bytes(bytes_data).decode("utf-8")
+                except (UnicodeDecodeError, TypeError, ValueError):
+                    logger.warning("Dropped a non-UTF-8 binary frame from %s", self._client_id)
+                    return
 
             # Auth handshake (first message when key is configured)
             if not self._authenticated and self._auth_key:
