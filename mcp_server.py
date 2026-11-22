@@ -99,7 +99,10 @@ async def _auth_handshake(ws) -> None:
         logger.warning("Expected auth_required, got %s (auth may be disabled)", msg.get("type"))
         return
 
-    await ws.send(_dumps({
+    # A TEXT frame, like every command (send_command uses _dumps_str). _dumps
+    # returns bytes, which websockets sends as a BINARY frame, and the Houdini
+    # server up to v5.104.0 ignores binary frames, so the reply never came.
+    await ws.send(_dumps_str({
         "type": "authenticate",
         "id": "auth-handshake",
         "payload": {"key": key},
