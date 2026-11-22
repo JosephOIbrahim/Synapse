@@ -170,7 +170,7 @@ def test_transport_failure_is_public_safe():
 @pytest.mark.parametrize('value,expected', [
     ('op123abc', 'op123abc'),
     ('accounts/acct_1/projects/p/operations/op123abc', 'op123abc'),
-    (' c02073059eeb4e57913cf57b2bc44331 ', 'c02073059eeb4e57913cf57b2bc44331'),
+    (' 0123456789abcdef0123456789abcdef ', '0123456789abcdef0123456789abcdef'),
 ])
 def test_operation_refs(value, expected):
     assert operation_id_from_ref(value) == expected
