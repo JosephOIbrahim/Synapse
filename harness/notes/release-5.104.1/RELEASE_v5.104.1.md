@@ -45,11 +45,13 @@ import map; `r3` to `r6` 0 failed, each on the code of its day.
 edits, run `r3`, EXIT=1 as always, TREE_MANIFEST unchanged: 98 failed, 4 errors, 13,604 passed,
 514 skipped. Compared by failing test (`compare_seat.py`) with v5.104.0's run `r3`
 (2026-11-22 00:31Z, 96 failing): 96 shared, 0 gone, 6 here only. The 6 fail the same way on
-`c6f8b63f` today under the seat's settings (targeted hython runs); Setup 5.104.0 created
-`~/.synapse/auth.key` on this machine at 14:16Z, after that run, and the seat leg reads the real
-home folder. Run `r1` stopped on an access violation in garbage collection inside a panel test
-(code unchanged here; three reruns of the preceding tests, no crash); run `r2` found the three
-defects fixed in `eb8f8921`.
+`c6f8b63f` today under the seat's settings (targeted hython runs). Four are shown to be the
+key: Setup 5.104.0 created `~/.synapse/auth.key` on this machine at 14:16Z, after that run,
+the seat leg reads the real home folder, and the four pass on this tree without the key. The
+other two are cancel tests that also fail on their own on both trees. Run `r1` stopped on an
+access violation in garbage collection while a panel test built the main panel; the only panel
+file this release changes is the World Labs dialog, and the tests before the crash ran three
+more times under hython without one. Run `r2` found the three defects fixed in `eb8f8921`.
 
 **Installer.** `python -m unittest discover -s installer/tests`: 93 of 93 OK.
 
@@ -81,7 +83,7 @@ SH degree 0, flag byte `0x40`. Headless hython 22.0.400 (Python 3.13.10) on `eb8
 - from the downloaded folder (`prepare_local_asset`): 0.51 s and 2.88 s; source
   `atlas_operation_download`.
 Both: a `ParticleField3DGaussianSplat` prim of 2,000,000 points, rotation (0, 0, 0), scale 1
-marked unknown, lifted 0.63 units; no URL, key, account or project id, or local path in the
+marked unknown, lowered 0.63 units; no URL, key, account or project id, or local path in the
 provenance.
 
 **Not checked.**
@@ -95,14 +97,19 @@ provenance.
 - **Round 1** (independent read-only reviewer, the full diff `c6f8b63f..cb2a54fe` and every
   release sentence): no blocker; three FIX (sidecar beside the cache, unbounded v4
   fallbacks, the `PYTHONPATH` replace list) and three NIT (download source, "lists your
-  operations", axes stated as fact). All fixed in `9ba3c22c` and the release text.
+  operations", axes stated as fact). All fixed in `9ba3c22c` and the release text. The
+  release notes count the same six findings by kind, "four defects and two overstatements":
+  the download-source NIT was a code defect graded minor.
 - **Round 2** (a second read-only reviewer, verification of `9ba3c22c` and the edited
   text): no blocker; confirmed the four fixes; asked for a collider
   test and a no-method `PYTHONPATH` test. Writing the collider test under hython found that an
   unreadable collider aborted the import (`c885a8bd`).
 - **Round 3** (a third read-only reviewer, `c885a8bd`): the record still named the unreadable
   collider, which the scatter recipe would bind; fixed in `4523c66d` exactly as it proposed.
-- **Final text check** (read-only, the release text at this commit): see the Gates row.
+- **Final text check** (read-only, the release text before its fixes; the fixes are in the
+  release commit `8568801c`): see the Gates row.
+- **Committed-tip review** (read-only, `8568801c`): 3 FIX ("lifted" for a splat moved down,
+  twice; "code unchanged" for the `r1` crash) and 4 NIT, all fixed in the commit after it.
 
 ## Gates
 
@@ -110,7 +117,7 @@ provenance.
 |---|---|
 | Stock suite | r7, 0 failed (13,463 passed) |
 | Seat suite | r3, 102 failing tests: 96 as v5.104.0, 6 that fail on `c6f8b63f` too today (4 shown to be the auth key) |
-| Review | three code rounds, all findings fixed; final text check: 1 FIX, 8 NIT, all fixed |
+| Review | three code rounds, all findings fixed; final text check: 1 FIX, 8 NIT, all fixed; committed-tip review: 3 FIX, 4 NIT, all fixed |
 | Setup build and qualification (card 14-16) | after this commit |
 | Push (Gate C), CI on the exact SHA | not yet |
 | Tag, publish | not yet |
