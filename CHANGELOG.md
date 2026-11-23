@@ -2,6 +2,25 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.104.1 - Two seat fixes, and World Labs import reads Atlas
+
+**Install this over 5.104.0.** The first seat installed with 5.104.0 showed two faults, both
+fixed here, and World Labs' API now supports Atlas only. The full note, with its limits, is
+[docs/releases/v5.104.1.md](docs/releases/v5.104.1.md).
+
+- **Moneta schema.** Setup writes a kept `PXR_PLUGINPATH_NAME` list as one `;`-separated
+  string. Under `method: replace`, Houdini 22.0.400 kept only the list's last entry and dropped
+  SYNAPSE's Moneta schema. A `PYTHONPATH` list kept under `replace` is joined the same way.
+- **MCP authentication.** `mcp_server.py` sends its `authenticate` message as a text frame, and
+  the Houdini server decodes a UTF-8 binary frame before its auth check. Before this, every MCP
+  client holding a key failed after 5 s.
+- **Collider.** An unreadable `<world>_collider.glb` beside a splat is skipped with a warning
+  instead of failing the import, and the import record no longer names it.
+- **World Labs: Atlas only.** A read-only Atlas v2 client (three allowlisted read routes; task
+  routes refused before a request is built), an SPZ-to-PLY decoder (Houdini 22.0.400 cannot read
+  SPZ), and a dialog that imports finished Atlas splat scenes or local `.spz` / `.ply` files. The
+  Marble path and the dormant `worldlabs/atlas.py` scaffold are removed.
+
 ## v5.104.0 - Loopback by default, and outcomes that tell the truth
 
 **Upgrade every seat.** The Houdini server binds 127.0.0.1 by default and refuses a wider bind

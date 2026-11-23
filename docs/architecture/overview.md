@@ -332,7 +332,7 @@ flowchart TD
 
 **The key.** A key typed in the masked field wins, then `$WLT_API_KEY`, then the key `worldlabs auth login` saved for the Atlas origin. The saved key is read in place and never shown or copied. The key needs `operations.read` and `assets.read`.
 
-**Remote import.** Choose **Connect to Atlas** to list finished `posedImages2Splats` operations, or paste an operation ID. **Most splats** takes the largest refined output; **Fewest splats · layout** takes the smallest. Then **Import splats**. SYNAPSE calls only three read routes: list operations, get one operation, and create an asset read URL. Any other route, a task route above all, is refused before a request is built. The signed download carries no key.
+**Remote import.** Choose **Connect to Atlas** to list up to 20 finished `posedImages2Splats` operations, or paste an operation ID. **Most splats** takes the largest refined output; **Fewest splats · layout** takes the smallest. Then **Import splats**. SYNAPSE calls only three read routes: list operations, get one operation, and create an asset read URL. Any other route, a task route above all, is refused before a request is built. The signed download carries no key.
 
 **SPZ.** Houdini 22.0.400 cannot read SPZ (probe, 2026-11-22), so SYNAPSE decodes it with numpy into a standard Gaussian PLY, cached by the SPZ's SHA-256 under `~/.synapse/worldlabs/spz/`. SPZ versions 1-3 (gzip) decode everywhere. Version 4 (zstd) needs a zstd decoder, which Python 3.14 has and Houdini's Python 3.13 does not; such a file is refused with a plain message. Degree 1-2 view-dependent color is padded to degree 3, and degree 4 is reduced to degree 3.
 
@@ -342,7 +342,7 @@ The native route is File SOP → Bake GSplats → SOP Import LOP → a Transform
 
 **Format limits:** Gaussian PLY supports constant color (DC-only) or a complete degree-3 spherical-harmonic layout. Partial harmonic layouts, ordinary point PLY and mesh GLB are unsupported. The points keep the file's coordinates and units; the ground node holds the correction. Rendered appearance needs inspection.
 
-Closing the dialog prevents a late scene import; it does not abort a download already running. A live read of the Atlas API (list, get, read URL; 2026-11-22) passed. No real Atlas splat has been imported yet: making one costs credits, so the SPZ version and axes Atlas writes are still unobserved. [v5.89.0](../releases/v5.89.0.md#validation-and-limits) rendered a Karma XPU frame of a grounded local import through the render workspace.
+Closing the dialog prevents a late scene import; it does not abort a download already running. A live read of the Atlas API (list, get, read URL; 2026-11-22) passed. One real Atlas splat (2026-11-22, a refined `posedImages2Splats` run) was SPZ version 2 and imported headless, Y-up with no turn, both by operation ID and from its downloaded folder. Whether Atlas ever writes version 4 is unknown, and its rendered look was not checked. [v5.89.0](../releases/v5.89.0.md#validation-and-limits) rendered a Karma XPU frame of a grounded local import through the render workspace.
 
 Sources: [dialog](../../python/synapse/panel/worldlabs_dialog.py), [Atlas client](../../python/synapse/worldlabs/client.py), [SPZ decoder](../../python/synapse/worldlabs/spz.py), [native importer](../../python/synapse/worldlabs/importer.py).
 

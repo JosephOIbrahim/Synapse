@@ -2,7 +2,7 @@
 
 [Back to README](../README.md) · [Architecture](architecture/overview.md) · [Latest release](https://github.com/JosephOIbrahim/Synapse/releases/latest)
 
-Publication links and wording reviewed on **2026-11-08** for **v5.99.0**; not re-reviewed for later releases — the current release is [v5.104.0](releases/v5.104.0.md). The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
+Publication links and wording reviewed on **2026-11-08** for **v5.99.0**; not re-reviewed for later releases — the current release is [v5.104.1](releases/v5.104.1.md). The feature evidence below retains each release's original scope; this is not a new runtime qualification. [Exact tags and commits](../TAGS.md) identify the published code. A documentation update does not qualify a new installer or a live scene.
 
 ## At a glance
 
@@ -96,7 +96,7 @@ The render workspace opens from **Render**, in the last row of the panel footer 
 ## Optional services and knowledge
 
 - **JEV:** saving a key does not authenticate it, enable assistance or grant data permission. Session keys expire when Houdini closes. Ranking prepares editable suggestions; routing measurement does not change the generation model. [Setup and data boundaries](getting-started/jev-setup.md).
-- **World Labs:** the shipped action imports finished Atlas splat scenes; it never starts an Atlas task. SPZ is decoded to PLY first; version-4 (zstd) SPZ needs a zstd decoder that Houdini's Python lacks. Mesh GLB and plain-point PLY are unsupported. No real Atlas splat has been imported yet, so Atlas's SPZ version, axes and units, and rendered appearance, need their own checks. [Import boundaries](architecture/overview.md#world-labs-import).
+- **World Labs:** the shipped action imports finished Atlas splat scenes; it never starts an Atlas task. SPZ is decoded to PLY first; version-4 (zstd) SPZ needs a zstd decoder that Houdini's Python lacks. Mesh GLB and plain-point PLY are unsupported. One real Atlas splat (2026-11-22) was SPZ version 2 and imported Y-up with no turn; Atlas's units and the rendered appearance still need their own checks. [Import boundaries](architecture/overview.md#world-labs-import).
 - **SideFX:** library searches do not download or build documentation. Ingestion runs separately; partial web fetches remain visible. Documentation is evidence about an API, not proof that the symbol exists in the running build. [Coverage definitions](studio/SIDEFX_LIBRARY.md#stored-material-and-coverage).
 
 Runtime symbol membership is determined by the [introspected table](../python/synapse/cognitive/tools/data/h22_symbol_table.json); node references use the [build-specific catalogue](../rag/catalog/h22.0.400). Installed packages and GUI-only APIs affect that evidence. Newer documentation does not certify an older runtime.

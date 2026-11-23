@@ -12,8 +12,9 @@ the commands below reproduce a build.
 
 ## Current line
 
-v5.104.0 publishes a Setup: it changes product behaviour, including the loopback
-bind and the local auth key Setup now creates. A build from this tree stamps the
+v5.104.1 publishes a Setup: it changes product behaviour. Setup now writes a kept
+`PXR_PLUGINPATH_NAME` list as one path string, so Houdini keeps the Moneta schema;
+5.104.0 added the loopback bind and the local auth key Setup creates. A build from this tree stamps the
 canonical root `VERSION`, and publishing a Setup remains a separate release
 action with its own qualification.
 
