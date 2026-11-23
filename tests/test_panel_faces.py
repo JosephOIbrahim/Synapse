@@ -452,15 +452,27 @@ def test_wordmark_carries_brand_tracking():
     assert abs(f.letterSpacing() - (100 + t.TRACKING_EM["WORDMARK"] * 100)) < 0.05
 
 
+def _readout_want(p):
+    """The model readout's expected text: the registry DISPLAY NAME of the
+    active (provider, model) pair, from providers/registry.py::model_label -
+    the one function that maps a pair to its label. Joe's decision 2026-11-23
+    supersedes Addendum 3.2's <provider>/<model short id> token for the
+    readout (audit_panel.py's readout rows carry the same rule);
+    _author_token() still formats that token for the signed reply line."""
+    from synapse.panel.providers.registry import model_label
+    return model_label(p._provider_id, p._active_model())
+
+
 def test_rail_author_token_shows():
     # v9 — the rail author token is the ENGINE+MODEL click target: a clickable
-    # button whose text tracks _author_token(); its menu data covers every
-    # provider with exactly one active (engine, model) pair.
+    # button whose text is the registry display name of the active pair
+    # (_readout_want; Joe 2026-11-23); its menu data covers every provider
+    # with exactly one active (engine, model) pair.
     from synapse.panel.providers.registry import PROVIDER_IDS
     p = _make_panel()
     assert p._author_lbl is not None
     assert isinstance(p._author_lbl, QtWidgets.QAbstractButton)
-    assert p._author_lbl.text() == p._author_token()
+    assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
     assert hasattr(p, "_open_author_menu")
     items = p._author_menu_items()
     assert [pid for pid, _, _ in items] == list(PROVIDER_IDS)
@@ -470,12 +482,13 @@ def test_rail_author_token_shows():
 
 def test_author_menu_tracks_engine_and_model_switch():
     # v9 — selection stays OBSERVABLE on the token: a provider switch and a
-    # model switch each repaint the author token and move the single active row.
+    # model switch each repaint the author token (to the registry display name
+    # of the new pair, _readout_want) and move the single active row.
     p = _make_panel()
     pid0, mid0 = p._provider_id, p._active_model()   # restore whatever was picked
     p._set_provider("gemini")
     try:
-        assert p._author_lbl.text() == p._author_token()
+        assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
         active = [(pid, mid) for pid, _, rows in p._author_menu_items()
                   for mid, _, on in rows if on]
         assert active == [("gemini", p._active_model())]
@@ -483,7 +496,7 @@ def test_author_menu_tracks_engine_and_model_switch():
         p._pick_engine_model("claude", "claude-fable-5")
         assert p._provider_id == "claude"
         assert p._active_model() == "claude-fable-5"
-        assert p._author_lbl.text() == p._author_token()
+        assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
         active = [(pid, mid) for pid, _, rows in p._author_menu_items()
                   for mid, _, on in rows if on]
         assert active == [("claude", "claude-fable-5")]

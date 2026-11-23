@@ -250,10 +250,38 @@ try:
                  panel._active_model())
     print(f"   active engine mark  : {a_active} (want {want_pair})  "
           + tag(a_active == [want_pair]))
-    # the author token IS the model readout — non-empty and equal to the
-    # panel's own author formatting (selection observable)
-    readout_ok = author is not None and author.text() == panel._author_token()
-    print(f"   model readout token : {a_txt}  " + tag(readout_ok))
+    # --- the author token IS the model readout, and it reads the registry
+    #     DISPLAY NAME of the active (provider, model) pair ('Sonnet 4.6',
+    #     'Nemotron Super 120B', 'GLM 5'). Joe's decision 2026-11-23 ("update
+    #     audit_panel.py's model-readout checks") supersedes Addendum 3.2's
+    #     <provider>/<model short id> token (Joe 2026-09-05); the panel has
+    #     shown the name since the Soft Editorial redesign (782f9dc3). The
+    #     want comes from the ONE function that maps a pair to its label,
+    #     providers/registry.py::model_label - never from the widget's own
+    #     setter (_author_display_label), so no row can pass by construction.
+    #     _readout_ok is the whole rule, shared by the four readout rows:
+    #     non-empty, EQUAL to that label (so never elided or stale), short
+    #     (the token's < 40 cap, kept), and never a raw id - no ':tag'
+    #     (Ollama 'glm-5:cloud'), no '/' (Nemotron's 'nvidia/...' vendor id),
+    #     no '<provider>' + separator prefix (the old 'claude/...' token, a
+    #     raw 'claude-...' id), and never the model id itself. ---
+    from synapse.panel.providers import registry as _mreg
+    READOUT_MAX = 40
+
+    def _readout_ok(txt, pid, mid):
+        want = _mreg.model_label(pid, mid)
+        low, p = str(txt).strip().lower(), str(pid).strip().lower()
+        ok = (isinstance(txt, str) and 0 < len(txt) < READOUT_MAX
+              and txt == want
+              and ":" not in txt and "/" not in txt
+              and not any(low.startswith(p + sep) for sep in "/:-_.")
+              and low != str(mid).strip().lower())
+        return ok, want
+
+    readout_ok, readout_want = (_readout_ok(author.text(), *want_pair)
+                                if author is not None else (False, None))
+    print(f"   model readout token : {a_txt} (want {readout_want!r} = "
+          f"model_label{want_pair})  " + tag(readout_ok))
 
     # --- the model switcher must expose the registry's models + mark the active
     #     one (switching Anthropic models must be apparent, not hidden) —
@@ -336,13 +364,19 @@ try:
     print(f"   body matches host   : body {body_px}px vs host {host_px}px  "
           + tag(body_px >= host_px - 1))
 
-    # --- the model token reads <provider>/<model short id> (Addendum 3.2,
-    #     Joe 2026-09-05): one slash, no ':tag', provider first, short ---
-    def _tok_ok(txt, pid):
-        return (isinstance(txt, str) and txt.count("/") == 1 and ":" not in txt
-                and txt.startswith(pid + "/") and 0 < len(txt) < 40)
-    chip_short = author is not None and _tok_ok(author.text(), getattr(panel, "_provider_id", "claude"))
-    print(f"   token provider/model : {a_txt}  " + tag(chip_short))
+    # --- the display name holds at the MINIMUM pane size too (the panel was
+    #     resized to PANEL_MIN_WIDTH x PANEL_MIN_HEIGHT above): still the
+    #     registry label of the active pair - whole, short, never a raw id
+    #     (_readout_ok). This row was 'token provider/model', the
+    #     <provider>/<model short id> shape (Addendum 3.2, Joe 2026-09-05:
+    #     one slash, no ':tag', provider first, short); Joe's decision
+    #     2026-11-23 supersedes that token with the registry display name. ---
+    _min_pair = (getattr(panel, "_provider_id", DEFAULT_PROVIDER), panel._active_model())
+    _min_txt = author.text() if author is not None else None
+    chip_short, _min_want = (_readout_ok(_min_txt, *_min_pair)
+                             if author is not None else (False, None))
+    print(f"   token display label  : {_min_txt!r} @ {panel.width()}px "
+          f"(want {_min_want!r})  " + tag(chip_short))
 
     # --- ⌘K folded into the input ("/" opens palette; no bar glyph button) ---
     inp = getattr(panel, "_input", None)
@@ -423,20 +457,37 @@ try:
     print(f"   content scales on Aa : prompt {in_a}->{in_b}px · chat {chat_a}->{chat_b}  "
           + tag(content_scales))
 
-    # --- the author token stays SHORT for the slash-bearing provider (Nemotron)
-    #     — the real test the long raw id isn't shown (claude never has a slash);
-    #     it must also TRACK the switch (selection observable) ---
-    panel._set_provider("nemotron")
-    nemo_tok = panel._author_lbl.text()
-    panel._set_provider("claude")
-    print(f"   token nemotron       : {nemo_tok!r}  " + tag(_tok_ok(nemo_tok, "nemotron")))
+    # --- the readout TRACKS a provider switch (selection observable): after
+    #     _set_provider(X) it reads the registry label of X's active model
+    #     (_readout_ok), and after switching back it returns to the starting
+    #     pair's label. Nemotron is the slash-bearing raw id
+    #     ('nvidia/nemotron-3-super-120b-a12b'): neither it nor the old
+    #     'nemotron/...' token may reach the readout. Joe's decision
+    #     2026-11-23 supersedes the Addendum 3.2 provider/model token. ---
+    def _tracks(target):
+        pid0, mid0 = panel._provider_id, panel._active_model()
+        want0 = _mreg.model_label(pid0, mid0)
+        before = panel._author_lbl.text()
+        panel._set_provider(target)
+        pid1, mid1 = panel._provider_id, panel._active_model()
+        shown = panel._author_lbl.text()
+        ok1, want1 = _readout_ok(shown, pid1, mid1)
+        panel._set_provider(pid0)
+        back = panel._author_lbl.text()
+        ok0, _ = _readout_ok(back, panel._provider_id, panel._active_model())
+        ok = (pid1 == target and ok1 and shown != before
+              and panel._provider_id == pid0 and ok0 and back == want0)
+        return ok, shown, want1, back
 
-    # --- same for Ollama — the registry label ('GLM 5'), never the raw
-    #     tag-bearing id ('glm-5:cloud') ---
-    panel._set_provider("ollama")
-    oll_tok = panel._author_lbl.text()
-    panel._set_provider("claude")
-    print(f"   token ollama         : {oll_tok!r}  " + tag(_tok_ok(oll_tok, "ollama")))
+    nemo_ok, nemo_tok, nemo_want, nemo_back = _tracks("nemotron")
+    print(f"   token nemotron       : {nemo_tok!r} (want {nemo_want!r}), "
+          f"back {nemo_back!r}  " + tag(nemo_ok))
+
+    # --- same for Ollama: the registry label ('GLM 5'), never the raw
+    #     tag-bearing id ('glm-5:cloud'), and back again ---
+    oll_ok, oll_tok, oll_want, oll_back = _tracks("ollama")
+    print(f"   token ollama         : {oll_tok!r} (want {oll_want!r}), "
+          f"back {oll_back!r}  " + tag(oll_ok))
 except (Exception, SystemExit) as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")
