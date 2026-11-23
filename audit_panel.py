@@ -250,38 +250,104 @@ try:
                  panel._active_model())
     print(f"   active engine mark  : {a_active} (want {want_pair})  "
           + tag(a_active == [want_pair]))
-    # --- the author token IS the model readout, and it reads the registry
-    #     DISPLAY NAME of the active (provider, model) pair ('Sonnet 4.6',
-    #     'Nemotron Super 120B', 'GLM 5'). Joe's decision 2026-11-23 ("update
-    #     audit_panel.py's model-readout checks") supersedes Addendum 3.2's
-    #     <provider>/<model short id> token (Joe 2026-09-05); the panel has
-    #     shown the name since the Soft Editorial redesign (782f9dc3). The
-    #     want comes from the ONE function that maps a pair to its label,
-    #     providers/registry.py::model_label - never from the widget's own
-    #     setter (_author_display_label), so no row can pass by construction.
-    #     _readout_ok is the whole rule, shared by the four readout rows:
-    #     non-empty, EQUAL to that label (so never elided or stale), short
-    #     (the token's < 40 cap, kept), and never a raw id - no ':tag'
-    #     (Ollama 'glm-5:cloud'), no '/' (Nemotron's 'nvidia/...' vendor id),
-    #     no '<provider>' + separator prefix (the old 'claude/...' token, a
-    #     raw 'claude-...' id), and never the model id itself. ---
+    # --- the author token IS the model readout. Since the 2026-09-23
+    #     approval (Soft Editorial, 782f9dc3; tests/panel/test_bc_wave.py
+    #     ::test_author_token_visible_top_right) it shows the registry DISPLAY
+    #     NAME of the active (provider, model) pair ('Sonnet 4.6', 'Nemotron
+    #     Super 120B', 'GLM 5'), its display may elide in a narrow pane
+    #     (_fit_panel_chrome, ElideMiddle), and its accessible name keeps the
+    #     exact identity ('Generation model: <provider>/<model id>'). That
+    #     approval superseded Addendum 3.2's <provider>/<model short id> token
+    #     (Joe 2026-09-05) for the readout. Joe 2026-11-23 brings these rows in
+    #     line: "update audit_panel.py's model-readout checks in a small lane of
+    #     its own"; A1 "use the wider raw-id rule"; A2 "let the readout elide
+    #     with the accessibleName identity check".
+    #     _readout_ok is the whole rule for one reading, shared by the five
+    #     readout rows; it names every clause the reading fails:
+    #       empty  the readout is empty.
+    #       label  the readout is not the label, whole or as its ElideMiddle
+    #              (_shows). The label is providers/registry.py::model_label of
+    #              the pair the audit read - computed by the registry, never
+    #              read back from the widget.
+    #       name   accessibleName() is not 'Generation model: <pid>/<mid>', so
+    #              the exact pick is pinned without model_label (A2).
+    #       cap colon slash prefix id - the raw-id clauses, on the full label,
+    #              only where the registry has a CURATED name (A1, _curated):
+    #              under 40 characters, no ':' (Ollama 'glm-5:cloud'), no '/'
+    #              (Nemotron's 'nvidia/...'), no '<provider>' + separator
+    #              prefix (the old 'claude/...' token, a raw 'claude-...' id),
+    #              and not the model id. Any other pick - a configured Custom
+    #              engine, a stale or off-registry pick, an artist-kept long
+    #              id, an id bound through Connect models - is labelled by its
+    #              own id by design (model_label: 'any other unknown id falls
+    #              back to itself'), so the registry is trusted there.
+    #     One expected FAIL remains: an unconfigured Custom engine reads
+    #     'Choose a model' against an empty label (there is nothing to chat
+    #     with), so rows 1-2 fail when a pinned settings file selects it.
+    #     (An Ollama id saved without a tag, 'mistral', prettifies to
+    #     'Mistral', which reads as the id, so 'id' fails it too; the tagged
+    #     'mistral:latest' passes.) ---
     from synapse.panel.providers import registry as _mreg
     READOUT_MAX = 40
+    ELIDE_MARK = "…"   # what Qt's ElideMiddle draws (U+2026, seen in hython)
 
-    def _readout_ok(txt, pid, mid):
+    def _shows(txt, want):
+        """txt is want, whole or elided in the middle: exactly one mark
+        standing for at least one dropped character, both kept ends taken
+        unchanged from want (a lone mark or a one-sided cut is not a name)."""
+        if not isinstance(txt, str):
+            return False
+        if txt == want:
+            return True
+        if txt.count(ELIDE_MARK) != 1:
+            return False
+        head, tail = txt.split(ELIDE_MARK)
+        return bool(head and tail and len(head) + len(tail) < len(want)
+                    and want.startswith(head) and want.endswith(tail))
+
+    def _curated(pid, mid):
+        """A1: the registry has a curated display name for this pick - a row
+        of the provider's PROVIDER_MODELS, any Ollama tag (_pretty_ollama
+        promises never the raw id), or the provider default when the provider
+        has rows. Static registry data only, never model_label's output. An
+        unknown provider keeps the full protection."""
+        if pid not in _mreg.PROVIDER_MODELS:
+            return True
+        rows = dict(_mreg.PROVIDER_MODELS[pid])
+        return (mid in rows or pid == "ollama"
+                or (bool(rows) and mid == _mreg.PROVIDER_DEFAULT_MODEL.get(pid)))
+
+    def _readout_ok(txt, acc, pid, mid):
+        """(ok, label, failed clauses) for one reading: text txt and
+        accessible name acc, against the (pid, mid) pair the audit read."""
         want = _mreg.model_label(pid, mid)
-        low, p = str(txt).strip().lower(), str(pid).strip().lower()
-        ok = (isinstance(txt, str) and 0 < len(txt) < READOUT_MAX
-              and txt == want
-              and ":" not in txt and "/" not in txt
-              and not any(low.startswith(p + sep) for sep in "/:-_.")
-              and low != str(mid).strip().lower())
-        return ok, want
+        why = []
+        if not (isinstance(txt, str) and txt):
+            why.append("empty")
+        elif not _shows(txt, want):
+            why.append("label")
+        if acc != "Generation model: %s/%s" % (pid, mid or ""):
+            why.append("name")
+        if _curated(pid, mid):
+            low, pfx = want.strip().lower(), str(pid).strip().lower()
+            why += [c for c, bad in (
+                ("cap", len(want) >= READOUT_MAX),
+                ("colon", ":" in want),
+                ("slash", "/" in want),
+                ("prefix", any(low.startswith(pfx + sep) for sep in "/:-_.")),
+                ("id", low == str(mid).strip().lower())) if bad]
+        return not why, want, why
 
-    readout_ok, readout_want = (_readout_ok(author.text(), *want_pair)
-                                if author is not None else (False, None))
+    def _why(failed):
+        return " (failed: %s)" % ", ".join(failed) if failed else ""
+
+    readout_ok, readout_want, readout_why = (
+        _readout_ok(author.text(), author.accessibleName(), *want_pair)
+        if author is not None else (False, None, ["missing"]))
+    a_name = repr(author.accessibleName()) if author is not None else None
     print(f"   model readout token : {a_txt} (want {readout_want!r} = "
-          f"model_label{want_pair})  " + tag(readout_ok))
+          f"model_label{want_pair}), name {a_name}{_why(readout_why)}  "
+          + tag(readout_ok))
 
     # --- the model switcher must expose the registry's models + mark the active
     #     one (switching Anthropic models must be apparent, not hidden) —
@@ -365,18 +431,21 @@ try:
           + tag(body_px >= host_px - 1))
 
     # --- the display name holds at the MINIMUM pane size too (the panel was
-    #     resized to PANEL_MIN_WIDTH x PANEL_MIN_HEIGHT above): still the
-    #     registry label of the active pair - whole, short, never a raw id
+    #     resized to PANEL_MIN_WIDTH x PANEL_MIN_HEIGHT above): the registry
+    #     label of the active pair, whole or elided (A2), the exact identity
+    #     in the accessible name, never a raw id where the name is curated
     #     (_readout_ok). This row was 'token provider/model', the
-    #     <provider>/<model short id> shape (Addendum 3.2, Joe 2026-09-05:
-    #     one slash, no ':tag', provider first, short); Joe's decision
-    #     2026-11-23 supersedes that token with the registry display name. ---
+    #     <provider>/<model short id> shape (Addendum 3.2, Joe 2026-09-05: one
+    #     slash, no ':tag', provider first, short), which the 2026-09-23
+    #     approval retired for the readout (see the rule above). ---
     _min_pair = (getattr(panel, "_provider_id", DEFAULT_PROVIDER), panel._active_model())
     _min_txt = author.text() if author is not None else None
-    chip_short, _min_want = (_readout_ok(_min_txt, *_min_pair)
-                             if author is not None else (False, None))
+    _min_name = author.accessibleName() if author is not None else None
+    chip_short, _min_want, _min_why = (_readout_ok(_min_txt, _min_name, *_min_pair)
+                                       if author is not None else (False, None, ["missing"]))
     print(f"   token display label  : {_min_txt!r} @ {panel.width()}px "
-          f"(want {_min_want!r})  " + tag(chip_short))
+          f"(want {_min_want!r}), name {_min_name!r}{_why(_min_why)}  "
+          + tag(chip_short))
 
     # --- ⌘K folded into the input ("/" opens palette; no bar glyph button) ---
     inp = getattr(panel, "_input", None)
@@ -457,37 +526,111 @@ try:
     print(f"   content scales on Aa : prompt {in_a}->{in_b}px · chat {chat_a}->{chat_b}  "
           + tag(content_scales))
 
-    # --- the readout TRACKS a provider switch (selection observable): after
-    #     _set_provider(X) it reads the registry label of X's active model
-    #     (_readout_ok), and after switching back it returns to the starting
-    #     pair's label. Nemotron is the slash-bearing raw id
-    #     ('nvidia/nemotron-3-super-120b-a12b'): neither it nor the old
-    #     'nemotron/...' token may reach the readout. Joe's decision
-    #     2026-11-23 supersedes the Addendum 3.2 provider/model token. ---
-    def _tracks(target):
-        pid0, mid0 = panel._provider_id, panel._active_model()
-        want0 = _mreg.model_label(pid0, mid0)
-        before = panel._author_lbl.text()
-        panel._set_provider(target)
-        pid1, mid1 = panel._provider_id, panel._active_model()
-        shown = panel._author_lbl.text()
-        ok1, want1 = _readout_ok(shown, pid1, mid1)
-        panel._set_provider(pid0)
-        back = panel._author_lbl.text()
-        ok0, _ = _readout_ok(back, panel._provider_id, panel._active_model())
-        ok = (pid1 == target and ok1 and shown != before
-              and panel._provider_id == pid0 and ok0 and back == want0)
-        return ok, shown, want1, back
+    # --- the readout TRACKS a provider switch (selection observable).
+    #     _tracks measures start -> target -> start from an engine that is
+    #     neither the target nor Custom: the artist's own when it qualifies,
+    #     else the default engine. So a pinned settings file whose engine IS
+    #     the target still sees a real switch, and switching back never calls
+    #     _set_provider('custom'), which opens the modal Connections dialog
+    #     for an unconfigured Custom engine (synapse_panel.py _set_provider).
+    #     Each reading passes _readout_ok ('to:' / 'back:' clauses); the
+    #     switch must land on the target ('engine'), visibly change the
+    #     readout ('moved'), and return to the start ('return') with the
+    #     start's label ('return-label'). Then the artist's engine comes back
+    #     the way boot sets it (_restore_engine), so a pinned settings file
+    #     keeps its provider_id. Nemotron's raw id carries a '/'
+    #     ('nvidia/nemotron-3-super-120b-a12b'), Ollama's a ':tag'
+    #     ('glm-5:cloud'): neither may reach the readout. ---
+    def _restore_engine(pid0):
+        # synapse_panel.py's boot path: set the id, repaint, persist. Never
+        # _set_provider: for an unconfigured Custom engine it opens a dialog.
+        panel._provider_id = pid0
+        panel._refresh_engine_selector()
+        panel._persist_picks()
 
-    nemo_ok, nemo_tok, nemo_want, nemo_back = _tracks("nemotron")
+    def _tracks(target):
+        pid0 = panel._provider_id
+        start = (pid0 if pid0 in PROVIDER_IDS and pid0 not in (target, "custom")
+                 else (DEFAULT_PROVIDER if target != DEFAULT_PROVIDER else "gemini"))
+        if start != pid0:
+            panel._set_provider(start)
+        lbl = panel._author_lbl
+        want_s = _mreg.model_label(panel._provider_id, panel._active_model())
+        before = lbl.text()
+        panel._set_provider(target)
+        pid1 = panel._provider_id
+        shown = lbl.text()
+        _, want1, why1 = _readout_ok(shown, lbl.accessibleName(),
+                                     pid1, panel._active_model())
+        panel._set_provider(start)
+        back = lbl.text()
+        _, _, why0 = _readout_ok(back, lbl.accessibleName(),
+                                 panel._provider_id, panel._active_model())
+        why = (["to:" + c for c in why1] + ["back:" + c for c in why0]
+               + [c for c, bad in (
+                   ("engine", pid1 != target),
+                   ("moved", shown == before),
+                   ("return", panel._provider_id != start),
+                   ("return-label", not _shows(back, want_s))) if bad])
+        if panel._provider_id != pid0:
+            _restore_engine(pid0)
+        return not why, shown, want1, back, why
+
+    nemo_ok, nemo_tok, nemo_want, nemo_back, nemo_why = _tracks("nemotron")
     print(f"   token nemotron       : {nemo_tok!r} (want {nemo_want!r}), "
-          f"back {nemo_back!r}  " + tag(nemo_ok))
+          f"back {nemo_back!r}{_why(nemo_why)}  " + tag(nemo_ok))
 
     # --- same for Ollama: the registry label ('GLM 5'), never the raw
     #     tag-bearing id ('glm-5:cloud'), and back again ---
-    oll_ok, oll_tok, oll_want, oll_back = _tracks("ollama")
+    oll_ok, oll_tok, oll_want, oll_back, oll_why = _tracks("ollama")
     print(f"   token ollama         : {oll_tok!r} (want {oll_want!r}), "
-          f"back {oll_back!r}  " + tag(oll_ok))
+          f"back {oll_back!r}{_why(oll_why)}  " + tag(oll_ok))
+
+    # --- and a MODEL switch inside one engine (Addendum 3.2's "tracks the
+    #     selection" covers the model as well as the engine): the artist's
+    #     engine when the registry curates two or more of its models, else
+    #     the default engine. _set_model to its second curated row (the
+    #     first when the second is the active pick): the readout must follow
+    #     ('model', 'moved', 'to:' clauses) and come back with the pick
+    #     ('return', 'return-label', 'back:' clauses); then the artist's
+    #     engine is restored as above. ---
+    def _model_follows():
+        pid0 = panel._provider_id
+        start = (pid0 if len(_mreg.PROVIDER_MODELS.get(pid0, ())) >= 2
+                 else DEFAULT_PROVIDER)
+        if start != pid0:
+            panel._set_provider(start)
+        lbl = panel._author_lbl
+        rows = [m for m, _ in _mreg.PROVIDER_MODELS.get(panel._provider_id, ())]
+        m0 = panel._active_model()
+        want_s = _mreg.model_label(panel._provider_id, m0)
+        before = lbl.text()
+        pick = [m for m in rows[1:2] + rows[:1] if m != m0]
+        shown = want1 = back = None
+        why = ["rows"]          # fewer than two curated rows: nothing to switch
+        if pick:
+            panel._set_model(pick[0])
+            mid1 = panel._active_model()
+            shown = lbl.text()
+            _, want1, why1 = _readout_ok(shown, lbl.accessibleName(),
+                                         panel._provider_id, mid1)
+            panel._set_model(m0)
+            back = lbl.text()
+            _, _, why0 = _readout_ok(back, lbl.accessibleName(),
+                                     panel._provider_id, panel._active_model())
+            why = (["to:" + c for c in why1] + ["back:" + c for c in why0]
+                   + [c for c, bad in (
+                       ("model", mid1 != pick[0]),
+                       ("moved", shown == before),
+                       ("return", panel._active_model() != m0),
+                       ("return-label", not _shows(back, want_s))) if bad])
+        if panel._provider_id != pid0:
+            _restore_engine(pid0)
+        return not why, start, shown, want1, back, why
+
+    mod_ok, mod_eng, mod_tok, mod_want, mod_back, mod_why = _model_follows()
+    print(f"   token model switch   : {mod_eng} {mod_tok!r} (want {mod_want!r}), "
+          f"back {mod_back!r}{_why(mod_why)}  " + tag(mod_ok))
 except (Exception, SystemExit) as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")
