@@ -98,8 +98,10 @@ def _agent_usd_provenance(payload: Dict[str, Any]) -> None:
 
     Honors the "provenance or it didn't happen" convention for the mutation by
     appending the build receipt to $HIP/claude/agent.usd's
-    /SYNAPSE/memory/decisions. Mirrors mcp/session.py's canonical agent.usd
-    ensure-pattern (hip/job -> ensure_scene_structure -> agent_usd -> writer).
+    /SYNAPSE/memory/decisions. Uses the agent.usd ensure-pattern of the
+    WebSocket disconnect hook (server/websocket.py): hip/job ->
+    ensure_scene_structure -> agent_usd -> writer. (MCP session ends no longer
+    use it: mcp/session.py writes only into an agent.usd that already exists.)
 
     It MUST NEVER raise: provenance is best-effort and a write failure must not
     block or fail a build (the build completes + returns BUILT regardless). The

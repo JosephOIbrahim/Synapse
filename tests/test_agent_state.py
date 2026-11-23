@@ -494,6 +494,53 @@ class TestTasksWithMockPxr:
         assert t1.GetAttribute("synapse:status").Get() == "suspended"
         assert t2.GetAttribute("synapse:status").Get() == "suspended"
 
+    def test_suspend_with_a_cutoff_spares_tasks_not_proven_older(
+            self, agent_usd_path, mock_pxr, monkeypatch):
+        """created_at_or_before suspends only tasks whose creation second ended by the cutoff.
+
+        mcp/session.py writes a session's end record late, possibly after the
+        next session created tasks; those must stay as they are. createdAt
+        has one-second resolution, so a task stamped in the cutoff's own
+        second, or with no stamp, is left alone.
+        """
+        import calendar
+
+        agent_state.initialize_agent_usd(agent_usd_path)
+        real_now = agent_state._now
+        for task_id, stamp in (("earlier", "2026-11-23T11:59:59Z"),
+                               ("same_second", "2026-11-23T12:00:00Z"),
+                               ("later", "2026-11-23T12:00:05Z"),
+                               ("unstamped", "2026-11-23T11:00:00Z")):
+            monkeypatch.setattr(agent_state, "_now", lambda stamp=stamp: stamp)
+            agent_state.create_task(agent_usd_path, task_id, task_id)
+        monkeypatch.setattr(agent_state, "_now", real_now)
+        agent_state.update_task_status(agent_usd_path, "later", "executing")
+        stage = _fake_stages[os.path.normpath(agent_usd_path)]
+        del stage.GetPrimAtPath("/SYNAPSE/agent/tasks/unstamped")._attrs["synapse:createdAt"]
+
+        cutoff = calendar.timegm((2026, 11, 23, 12, 0, 0, 0, 0, 0)) + 0.5  # 12:00:00.5Z
+        agent_state.suspend_all_tasks(agent_usd_path, created_at_or_before=cutoff)
+
+        status = {
+            task_id: stage.GetPrimAtPath(f"/SYNAPSE/agent/tasks/{task_id}")
+            .GetAttribute("synapse:status").Get()
+            for task_id in ("earlier", "same_second", "later", "unstamped")
+        }
+        assert status == {
+            "earlier": "suspended",
+            "same_second": "pending",
+            "later": "executing",
+            "unstamped": "pending",
+        }
+
+        # At exactly the end of a creation second, that second is "at or before".
+        agent_state.suspend_all_tasks(agent_usd_path,
+                                      created_at_or_before=cutoff + 0.5)  # 12:00:01.0Z
+        assert stage.GetPrimAtPath("/SYNAPSE/agent/tasks/same_second").GetAttribute(
+            "synapse:status").Get() == "suspended"
+        assert stage.GetPrimAtPath("/SYNAPSE/agent/tasks/later").GetAttribute(
+            "synapse:status").Get() == "executing"
+
     def test_resume_task(self, agent_usd_path, mock_pxr):
         agent_state.initialize_agent_usd(agent_usd_path)
         agent_state.create_task(agent_usd_path, "t1", "Task 1")

@@ -15,6 +15,7 @@ Schema v2.0.0 prim layout:
     /SYNAPSE/memory/                    sessions/, decisions/, assets/, parameters/, wedges/
 """
 
+import calendar
 import hashlib
 import logging
 import os
@@ -276,8 +277,21 @@ def update_task_status(agent_usd_path: str, task_id: str, status: str,
     stage.GetRootLayer().Save()
 
 
-def suspend_all_tasks(agent_usd_path: str) -> None:
-    """Mark all pending/executing tasks as suspended. Called on disconnect."""
+def suspend_all_tasks(agent_usd_path: str,
+                      created_at_or_before: Optional[float] = None) -> None:
+    """Mark pending/executing tasks as suspended. Called when a session ends.
+
+    ``created_at_or_before`` (epoch seconds) limits this to tasks that already
+    existed at that moment. The MCP session-end record is written after the
+    session ended, possibly after the next session created tasks
+    (mcp/session.py), and must not suspend those. ``synapse:createdAt`` has
+    one-second resolution, so a task counts only when its whole creation
+    second is at or before the cutoff: a task stamped in the cutoff's own
+    second, or with no readable stamp, is left as it is. Leaving one alone is
+    the safe error -- marking a running task of the next session suspended is
+    not. Without the argument every pending or executing task is suspended,
+    as before.
+    """
     if not PXR_AVAILABLE:
         return
 
@@ -289,11 +303,27 @@ def suspend_all_tasks(agent_usd_path: str) -> None:
     now = _now()
     for task in tasks_prim.GetChildren():
         status_attr = task.GetAttribute("synapse:status")
-        if status_attr and status_attr.Get() in ("pending", "executing"):
-            status_attr.Set("suspended")
-            task.CreateAttribute("synapse:suspendedAt", Sdf.ValueTypeNames.String).Set(now)
+        if not (status_attr and status_attr.Get() in ("pending", "executing")):
+            continue
+        if created_at_or_before is not None and not _created_by(task, created_at_or_before):
+            continue
+        status_attr.Set("suspended")
+        task.CreateAttribute("synapse:suspendedAt", Sdf.ValueTypeNames.String).Set(now)
 
     stage.GetRootLayer().Save()
+
+
+def _created_by(task, cutoff: float) -> bool:
+    """True when the task's ``synapse:createdAt`` proves it existed at *cutoff*."""
+    attr = task.GetAttribute("synapse:createdAt")
+    stamp = attr.Get() if attr else None
+    try:
+        created = calendar.timegm(time.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ"))
+    except (TypeError, ValueError):
+        logger.debug("Task %s has no readable createdAt; not suspended", task.GetName())
+        return False
+    # _now() truncates to the second: the task was made in [created, created + 1).
+    return created + 1 <= cutoff
 
 
 def resume_task(agent_usd_path: str, task_id: str) -> None:

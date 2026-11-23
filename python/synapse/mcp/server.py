@@ -91,6 +91,19 @@ except ImportError:
 logger = logging.getLogger("synapse.mcp")
 
 
+def _reload_show_config() -> None:
+    """Clear the show-config cache (core/show_config.py). No hou, no file I/O.
+
+    Imported per call, so the module is the one in sys.modules now.
+    """
+    try:
+        from ..core.show_config import reload_show_config
+    except ImportError:
+        logger.debug("core.show_config unavailable; no show-config cache to clear")
+        return
+    reload_show_config()
+
+
 def _isError_text(result: dict) -> str:
     """Extract a human-readable error message from a dispatch_tool isError result."""
     content = result.get("content", [])
@@ -558,30 +571,46 @@ class MCPServer:
     def _handle_initialize(self, params: dict) -> dict:
         """MCP initialize handshake.
 
-        Creates a session and returns server capabilities. It runs no tool,
-        makes no hou.* call and never waits on Houdini's main thread.
+        Creates a session, clears the show-config cache and returns server
+        capabilities. It runs no tool, makes no hou.* call, does no file I/O
+        and never waits on Houdini's main thread.
 
         Creating the session first sweeps expired sessions. Their end records
-        are only queued here; mcp/session.py's recorder thread later posts one
-        short payload of hou reads to the main thread (hdefereval.executeDeferred,
-        which nothing waits on) and writes agent.usd on its own thread.
+        are only queued here; mcp/session.py's recorder thread asks the main
+        thread for a short scene read (run_on_main, label
+        "mcp:session_end:capture") and writes agent.usd on its own thread.
         """
         client_info = params.get("clientInfo", {})
         session_id = self._sessions.create_session(client_info)
         self._sessions.mark_initialized(session_id)
         self._events.create_session_queue(session_id)
 
-        # No project-context preload here. initialize used to run
+        # Session start is show config's reload point (M2-I): the next
+        # get_show_config() re-reads show.json. The reload only clears a dict
+        # (core/show_config.py reload_show_config): no hou, no file I/O,
+        # nothing on the main thread.
+        _reload_show_config()
+
+        # No project_setup preload here. Every initialize used to run
         # synapse_project_setup on Houdini's main thread (R-001's run_on_main,
-        # label "mcp:initialize:project_setup") and cache the result in
-        # session.project_context, which nothing ever read. A payload that has
-        # started on the main thread cannot be stopped, so one slow step in it
-        # held the GUI: on 2026-11-22 the panel's first tools/call sent the
-        # lazy initialize, the preload never returned, and Windows closed
-        # Houdini about 68 s later (the Connect-freeze forensics of
-        # 2026-11-23, remediation 1). Project memory still
-        # loads when an agent calls synapse_project_setup, as the system
-        # prompt tells it to. Pinned by tests/test_mcp_initialize_main_thread.py.
+        # label "mcp:initialize:project_setup"). On every Connect that:
+        #   - ran ensure_scene_structure, seeding $JOB/claude/project.md,
+        #     $HIP/claude/memory.md and agent.usd when missing. Nothing needs
+        #     them at Connect: project_setup and the memory writers create
+        #     them when called, and so do the agent.usd writers
+        #     (server/handlers.py _resolve_agent_usd,
+        #     host/graph_synth_runtime.py _agent_usd_provenance);
+        #   - ran reload_show_config(), which stays, above, as a cache clear;
+        #   - cached the loaded context in session.project_context, which
+        #     nothing read (the slot is gone).
+        # A payload that has started on the main thread cannot be stopped, so
+        # one slow step in it held the GUI: on 2026-11-22 the panel's first
+        # tools/call sent the lazy initialize, the preload never returned, and
+        # Windows closed Houdini about 68 s after it started
+        # (docs/reviews/connect-freeze-forensics-2026-11-23.md, section 1;
+        # remediation 1 there). Project memory still loads when an agent calls
+        # synapse_project_setup, as the instructions below tell it to. Pinned
+        # by tests/test_mcp_initialize_main_thread.py.
 
         return {
             "_session_id": session_id,  # stripped before sending

@@ -2,8 +2,10 @@
 Tests for the autonomy -> agent.usd task provenance wiring.
 
 These pin the live producer that `_handle_autonomous_render` now feeds into the
-already-live `suspend_all_tasks(agent_usd)` consumer (websocket.py:483 /
-mcp/session.py:207). Before this wire, `/SYNAPSE/agent/tasks/` was ALWAYS empty
+already-live `suspend_all_tasks(agent_usd)` consumers (the WebSocket disconnect
+hook in server/websocket.py, and the MCP session-end recorder in mcp/session.py,
+which suspends only tasks created by the session's end). Before this wire,
+`/SYNAPSE/agent/tasks/` was ALWAYS empty
 because nothing called `create_task`; the consumer therefore always found
 nothing. The loop-closure test below proves a real producer -> consumer closure.
 

@@ -13,10 +13,9 @@ and states which thread does what.
 
 import logging
 import os
-import queue
 import threading
 import time
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Sequence, Tuple
 
 try:
     # Read ONLY inside _read_scene_facts, which runs on Houdini's main thread.
@@ -48,7 +47,7 @@ class MCPSession:
 
     __slots__ = (
         "session_id", "client_info", "created_at", "last_activity",
-        "protocol_version", "initialized", "project_context", "preflight_due",
+        "protocol_version", "initialized", "preflight_due",
     )
 
     def __init__(self, session_id: str, client_info: dict):
@@ -58,7 +57,6 @@ class MCPSession:
         self.last_activity = self.created_at
         self.protocol_version = "2025-06-18"
         self.initialized = False
-        self.project_context = None
         # Level 1, R-5: the session's next change is checked first (server/preflight_gate.py)
         self.preflight_due = True
 
@@ -202,104 +200,190 @@ class MCPSessionManager:
 # writes, all inside the request.
 
 _RECORDER_THREAD_NAME = "synapse-mcp-session-end"
+_CAPTURE_LABEL = "mcp:session_end:capture"
+
+# How long the recorder thread waits for Houdini's main thread to run its read.
+# Only the recorder thread waits; no request does. It is the freeze chain's
+# escalation age (server/freeze_chain.py ESCALATION_S): a read that has not
+# started by then is dropped, and the record with it.
+_CAPTURE_TIMEOUT_S = 30.0
+
+# Operator switch, read per call: "0", "false" or "off" turns MCP session-end
+# records off (nothing is queued, posted or written). tests/conftest.py sets it
+# to "0" for the whole test session; a test that wants records turns it back on.
+_RECORDS_ENV = "SYNAPSE_MCP_SESSION_END_RECORDS"
+
+
+def _records_enabled() -> bool:
+    """False when the operator, or the test suite, has turned the records off."""
+    return os.environ.get(_RECORDS_ENV, "1").strip().lower() not in ("0", "false", "off")
+
+
+class _SessionEnd(NamedTuple):
+    """Sessions that ended together, as the request thread saw them end."""
+
+    session_ids: Tuple[str, ...]
+    ended_at: str  # UTC "%Y-%m-%dT%H:%M:%SZ": the record's end time
+    ended_epoch: float  # the same moment in epoch seconds: the task cutoff
+
+
+def _batch_ids(batch: Sequence[_SessionEnd]) -> Tuple[str, ...]:
+    return tuple(sid for end in batch for sid in end.session_ids)
 
 
 class _SessionEndRecorder:
     """Writes MCP session-end records. Four hops, each on a thread allowed to do it.
 
-    1. Request thread (initialize's sweep, DELETE /mcp): ``schedule`` puts a
-       job on an unbounded queue. It never waits and calls no hou.
-    2. Recorder thread (one daemon thread, FIFO): posts ``_capture`` with
-       ``hdefereval.executeDeferred`` and does not wait for it. The post is made
-       here, not on the request thread, because the vendor's registration calls
-       ``hou.ui.addEventLoopCallback`` when no deferred callback is active, and
-       that waits for the HOM lock the main thread may be holding
-       (hdefereval.py, ``_queueDeferred``).
-    3. Houdini's main thread: ``_capture`` reads the scene's hip path and, for
-       an untitled hip, whether it was ever saved and this launch's unsaved
-       notes folder. Reads only -- no filesystem work -- then queues the facts.
-    4. Recorder thread: finds the scene's EXISTING ``claude/agent.usd`` and
-       writes the record. No hou.
+    1. Request thread (initialize's sweep, DELETE /mcp): ``schedule`` appends
+       the end under a lock and wakes the recorder. It never waits on Houdini,
+       posts nothing to the main thread and calls no hou.
+    2. Recorder thread (one daemon thread): takes every end queued so far and
+       asks the main thread for the scene facts through ``run_on_main``
+       (label ``mcp:session_end:capture``). The dispatch is in run_on_main's
+       pending-dispatch registry, so the emergency halt can cancel it, and its
+       hold is labelled in the main-thread telemetry. ``record_stall=False``
+       and ``record_wait=False``: a background read that sits through a stall
+       must not trip the stall detector or skew the command-wait histogram.
+       The post is made here, not on the request thread, because the vendor's
+       registration calls ``hou.ui.addEventLoopCallback`` when no deferred
+       callback is active, and that waits for the HOM lock the main thread may
+       be holding (hdefereval.py, ``_queueDeferred``). This thread waits for
+       the read, at most ``capture_timeout`` seconds.
+    3. Houdini's main thread: reads the scene's hip path and, for an untitled
+       hip, whether it was ever saved and this launch's unsaved notes folder.
+       Reads only -- no filesystem work.
+    4. Recorder thread: adds every end that queued while it waited for the
+       read, then writes ONE record for all of them into the scene's EXISTING
+       ``claude/agent.usd``. No hou. Ends that bunch up behind a stalled main
+       thread therefore become one write: ``log_session`` names its prim by
+       the second it is written, so separate writes in one second would
+       overwrite each other. The task suspension is limited to tasks created
+       by the latest of those ends, so a record that lands after the next
+       session started cannot suspend that session's tasks.
+
+    If the main thread does not start the read within ``capture_timeout``
+    (a freeze), or the emergency halt cancels it, the batch is dropped with a
+    warning and no record is written. Under hython nothing reaches this
+    class: ``hou`` imports but ``hdefereval`` raises ImportError, so
+    ``_schedule_session_end`` posts nothing and no session-end record is
+    written (the code before this recorder wrote one inline).
 
     One thread writes every MCP session-end record, so they never race each
     other. agent_state's writers take no file lock (none of its callers do),
     so this cannot serialize against agent.usd writers elsewhere -- the same
     as before, when these writes ran on concurrent request threads.
-
-    If the main thread never runs the capture (frozen, or no event loop as in
-    hython), no record is written and nothing waits for it.
     """
 
-    def __init__(self):
-        self._jobs: "queue.Queue[Tuple[Any, ...]]" = queue.Queue()
-        self._thread_lock = threading.Lock()
+    def __init__(self, capture_timeout: float = _CAPTURE_TIMEOUT_S):
+        self._capture_timeout = capture_timeout
+        self._cond = threading.Condition()
+        self._pending: List[_SessionEnd] = []
+        self._busy = False
+        self._stopping = False
         self._thread: Optional[threading.Thread] = None
 
-    def schedule(self, session_ids: Tuple[str, ...], ended_at: str) -> None:
-        """Request thread: queue the record. Never waits; calls no hou."""
-        self._jobs.put(("post", session_ids, ended_at))
-        self._ensure_thread()
+    def schedule(self, end: _SessionEnd) -> None:
+        """Request thread: queue the end and wake the recorder. Never waits on Houdini."""
+        with self._cond:
+            if self._stopping:
+                logger.warning(
+                    "MCP session-end recorder is stopped; %s not recorded", end.session_ids,
+                )
+                return
+            self._pending.append(end)
+            self._cond.notify_all()
+            if self._thread is None or not self._thread.is_alive():
+                self._thread = threading.Thread(
+                    target=self._run, name=_RECORDER_THREAD_NAME, daemon=True,
+                )
+                self._thread.start()
 
     def wait_idle(self, timeout: float) -> bool:
-        """True once every queued job has been handled; False on timeout.
+        """True once nothing is queued and no batch is in hand; False on timeout.
 
-        For tests and diagnostics only. A posted capture the main thread has
-        not run yet is not a queued job.
+        For tests and diagnostics only. A batch whose main-thread read has not
+        run yet is in hand, so this waits for the read too.
         """
         deadline = time.monotonic() + timeout
-        with self._jobs.all_tasks_done:
-            while self._jobs.unfinished_tasks:
+        with self._cond:
+            while self._pending or self._busy:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     return False
-                self._jobs.all_tasks_done.wait(remaining)
+                self._cond.wait(remaining)
         return True
 
-    def _ensure_thread(self) -> None:
-        with self._thread_lock:
-            if self._thread is not None and self._thread.is_alive():
-                return
-            thread = threading.Thread(
-                target=self._run, name=_RECORDER_THREAD_NAME, daemon=True,
-            )
-            thread.start()
-            self._thread = thread
+    def stop(self, timeout: float) -> bool:
+        """Stop the recorder thread; True once it has exited.
+
+        Ends still queued are dropped. A batch in hand finishes first, so this
+        can wait for its main-thread read (``capture_timeout``) and its write.
+        For tests and diagnostics: the process-wide recorder is never stopped.
+        """
+        with self._cond:
+            self._stopping = True
+            self._cond.notify_all()
+            thread = self._thread
+        if thread is None:
+            return True
+        thread.join(timeout)
+        return not thread.is_alive()
 
     def _run(self) -> None:
+        dropped: List[_SessionEnd] = []
         while True:
-            job = self._jobs.get()
+            with self._cond:
+                while not self._pending and not self._stopping:
+                    self._cond.wait()
+                if self._stopping:
+                    dropped, self._pending = self._pending, []
+                    self._cond.notify_all()
+                    break
+                batch, self._pending = self._pending, []
+                self._busy = True
             try:
-                if job[0] == "post":
-                    self._post_capture(job[1], job[2])
-                else:
-                    _write_session_end(job[1], job[2], job[3])
+                self._record(batch)
             except Exception:
                 logger.warning(
-                    "MCP session-end record for %s was not written", job[1],
+                    "MCP session-end record for %s was not written", _batch_ids(batch),
                     exc_info=True,
                 )
             finally:
-                self._jobs.task_done()
+                with self._cond:
+                    self._busy = False
+                    self._cond.notify_all()
+        if dropped:
+            logger.warning(
+                "MCP session-end recorder stopped; %s not recorded", _batch_ids(dropped),
+            )
 
-    def _post_capture(self, session_ids: Tuple[str, ...], ended_at: str) -> None:
-        """Recorder thread: post the main-thread read. Does not wait for it."""
-        import hdefereval
+    def _record(self, batch: List[_SessionEnd]) -> None:
+        """Recorder thread: read the scene on main, then write one record.
+
+        Extends *batch* in place with the ends that queued during the read.
+        """
+        from ..server.main_thread import MainThreadTimeout, run_on_main
 
         detector, unsaved_base_of = _scene_fact_helpers()
-
-        def _capture():
-            # Houdini's main thread. hou reads only; no filesystem work.
-            try:
-                facts = _read_scene_facts(detector, unsaved_base_of)
-            except Exception:
-                logger.warning(
-                    "MCP session-end record for %s skipped: could not read the "
-                    "scene path", session_ids, exc_info=True,
-                )
-                return
-            self._jobs.put(("write", session_ids, ended_at, facts))
-
-        hdefereval.executeDeferred(_capture)
+        try:
+            facts = run_on_main(
+                lambda: _read_scene_facts(detector, unsaved_base_of),
+                timeout=self._capture_timeout,
+                record_stall=False,
+                record_wait=False,
+                label=_CAPTURE_LABEL,
+            )
+        except MainThreadTimeout as exc:
+            logger.warning(
+                "MCP session-end record for %s skipped: Houdini's main thread did not "
+                "run the scene read within %.1f s (started: %s)",
+                _batch_ids(batch), self._capture_timeout, exc.started,
+            )
+            return
+        with self._cond:
+            batch.extend(self._pending)
+            self._pending = []
+        _write_session_end(batch, facts)
 
 
 _RECORDER = _SessionEndRecorder()
@@ -308,21 +392,34 @@ _RECORDER = _SessionEndRecorder()
 def _schedule_session_end(session_ids: Iterable[str]) -> None:
     """Hand ended sessions to the recorder. Never waits; calls no hou.
 
-    Outside Houdini (no ``hou``, or no ``hdefereval`` to reach the main thread)
-    nothing is recorded, as before: there is no scene to record into.
+    Nothing is recorded, and no thread starts, when:
+
+    * there is no ``hou`` (outside Houdini), as before;
+    * the records are switched off (``SYNAPSE_MCP_SESSION_END_RECORDS=0``);
+    * ``hdefereval`` does not import. Under hython ``hou`` imports but
+      ``hdefereval`` raises ImportError (the vendor module refuses to load
+      when ``hou.isUIAvailable()`` is False), so nothing is posted and no
+      session-end record is written. The code before this recorder wrote
+      those records inline, so an MCP server hosted in hython now writes none.
     """
     session_ids = tuple(session_ids)
     if not session_ids or hou is None:
         return
+    if not _records_enabled():
+        logger.debug(
+            "%s is off: MCP session-end record for %s not written", _RECORDS_ENV, session_ids,
+        )
+        return
     try:
-        import hdefereval  # noqa: F401 -- presence only; posting is the recorder's
+        import hdefereval  # noqa: F401 -- presence only; the recorder thread posts
     except ImportError:
         logger.debug(
             "No hdefereval: MCP session-end record for %s skipped", session_ids,
         )
         return
-    ended_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    _RECORDER.schedule(session_ids, ended_at)
+    ended_epoch = time.time()
+    ended_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ended_epoch))
+    _RECORDER.schedule(_SessionEnd(session_ids, ended_at, ended_epoch))
 
 
 def _scene_fact_helpers():
@@ -397,16 +494,16 @@ def _existing_agent_usd(facts: Dict[str, Any]) -> Optional[str]:
     return agent_usd if os.path.isfile(agent_usd) else None
 
 
-def _write_session_end(session_ids: Tuple[str, ...], ended_at: str,
-                       facts: Dict[str, Any]) -> None:
-    """Recorder thread, no hou: suspend pending tasks and log the session end.
+def _write_session_end(batch: Sequence[_SessionEnd], facts: Dict[str, Any]) -> None:
+    """Recorder thread, no hou: suspend pending tasks and log the session end(s).
 
-    Writes only into an agent.usd that already exists. It no longer runs
-    ensure_scene_structure, so a session end creates no claude/ folder,
-    project.md, memory.md or agent.usd. It no longer calls write_session_end
-    either: with only a timestamp that call wrote nothing (scene_memory skips
-    bodyless session ends, Mile 1 / C-2).
+    One record for the whole batch. Writes only into an agent.usd that already
+    exists. It no longer runs ensure_scene_structure, so a session end creates
+    no claude/ folder, project.md, memory.md or agent.usd. It no longer calls
+    write_session_end either: with only a timestamp that call wrote nothing
+    (scene_memory skips bodyless session ends, Mile 1 / C-2).
     """
+    session_ids = _batch_ids(batch)
     agent_usd = _existing_agent_usd(facts)
     if agent_usd is None:
         logger.debug(
@@ -416,9 +513,12 @@ def _write_session_end(session_ids: Tuple[str, ...], ended_at: str,
         return
     from synapse.memory.agent_state import log_session, suspend_all_tasks
 
-    suspend_all_tasks(agent_usd)
+    last = max(batch, key=lambda end: end.ended_epoch)
+    # Only tasks created by the last end: this record can land after the next
+    # session's first writes, and must not suspend what that session started.
+    suspend_all_tasks(agent_usd, created_at_or_before=last.ended_epoch)
     if len(session_ids) == 1:
         summary_text = "MCP session ended (id: {})".format(session_ids[0])
     else:
         summary_text = "MCP sessions ended (ids: {})".format(", ".join(session_ids))
-    log_session(agent_usd, {"end_time": ended_at, "summary_text": summary_text})
+    log_session(agent_usd, {"end_time": last.ended_at, "summary_text": summary_text})

@@ -2743,8 +2743,9 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     def _resolve_agent_usd() -> Optional[str]:
         """Resolve the live agent.usd path for the current scene, or None.
 
-        Mirrors the proven-live pattern at websocket.py:475-482 /
-        mcp/session.py:200-207. Best-effort: returns None (never raises)
+        Mirrors the WebSocket disconnect hook's pattern (server/websocket.py);
+        MCP session ends no longer use it (mcp/session.py writes only into an
+        agent.usd that already exists). Best-effort: returns None (never raises)
         when Houdini is unavailable, the scene structure can't be built,
         or the file doesn't exist yet.
         """
@@ -3024,8 +3025,10 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # Provenance: open a task lifecycle in agent.usd on dispatch.
         # Best-effort -- a writer failure must never abort or slow the render.
         # The pending task is the producer for the already-live
-        # suspend_all_tasks(agent_usd) consumer (websocket.py:483 /
-        # mcp/session.py:207), which until now had nothing to find.
+        # suspend_all_tasks consumers (the WebSocket disconnect hook in
+        # server/websocket.py; the MCP session-end recorder in mcp/session.py,
+        # which suspends only tasks created by the session's end), which until
+        # now had nothing to find.
         agent_usd = self._resolve_agent_usd()
         if agent_usd:
             try:

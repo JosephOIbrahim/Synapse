@@ -40,7 +40,7 @@
     "python/synapse/loop/ports.py": 5,
     "python/synapse/loop/subprocess_port.py": 1,
     "python/synapse/loop/worker.py": 1,
-    "python/synapse/mcp/server.py": 7,
+    "python/synapse/mcp/server.py": 6,
     "python/synapse/mcp/tool_impls/solaris/component_builder.py": 2,
     "python/synapse/mcp/tool_impls/solaris/create_variants.py": 3,
     "python/synapse/mcp/tool_impls/solaris/import_megascans.py": 1,
