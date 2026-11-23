@@ -75,8 +75,8 @@ The provenance writers are **built but dormant — zero live callers**:
 | `log_integrity` | `agent_state.py:325` | **none** (test-only) |
 | `write_verification` | `agent_state.py:585` | **none** (test-only) |
 | `create_task` | `agent_state.py:231` | **none** (test-only) |
-| `log_session` | `agent_state.py:550` | **LIVE** — `mcp/session.py:198, :208` |
-| `suspend_all_tasks` | `agent_state.py:275` | **LIVE** — `mcp/session.py:198, :207` |
+| `log_session` | `agent_state.py:550` | **LIVE** — `mcp/session.py` `_write_session_end` (recorder thread, fed by MCP session ends and by the disconnect hook of the fallback WebSocket server, `server/websocket.py`, which the package starts only when the hwebserver adapter cannot load; the GUI's hwebserver `/synapse` endpoint writes no session-end record, and nothing is recorded under hython; writes only into an agent.usd that already exists) |
+| `suspend_all_tasks` | `agent_state.py:275` | **LIVE** — `mcp/session.py` `_write_session_end` (same recorder and the same limits as `log_session` above) |
 | `initialize_agent_usd` | `agent_state.py:61` | **LIVE** — `scene_memory.py:136-137, :963-964` |
 
 Consequence: the `routing_log`, `handoff_chain`, and `integrity` prims are authored **empty** at
@@ -227,7 +227,7 @@ The markdown Ledger is organized by **session headers** of the form
     synapse:date         "2026-06-05"
     synapse:phase        "Phase 0.0 · CONFIRM THE POSTURE"
     synapse:track        "TRACK H"
-    synapse:summary_text  …      (existing log_session field, mcp/session.py:212)
+    synapse:summary_text  …      (existing log_session field, mcp/session.py _write_session_end)
 ```
 
 Each `/SYNAPSE/agent/ledger/<...>` prim then carries a `synapse:session` **relationship** (USD
@@ -308,9 +308,9 @@ Two layers need wiring: (i) the **dormant USD writers** to live emit points, and
 | `log_handoff` | `AgentHandoff.verify()` | **DEFER — theater.** `AgentHandoff` (`shared/bridge.py`) has **zero** callers under `python/synapse/` — only tests. `run_team.py` (the orchestrator that would drive handoffs) **does not exist** in the repo. Real sessions perform no handoffs. |
 | `log_integrity` | Stage-5 `IntegrityBlock` | **DEFER — fiction-risk.** The one live `IntegrityBlock` (the `/mcp` bridge path) carries **self-asserted** anchors (`undo_group_active=True` set as a literal, never measured). Persisting its `fidelity`/`anchors_hold` would launder a fiction into durable provenance. The genuinely-live `FloorGate` (0a′) carries a *different, weaker* signal (op outcome, no fidelity/hashes). |
 | `write_verification` | Stage-5 VERIFY | ✅ **LIVE (alt) — WIRED.** `_handle_autonomous_render` (`handlers.py:1437`, registered live at `:584`) returns a `RenderReport` whose `plan.validation_checks` + `evaluation` are unconditionally populated. (Render-quality verification, **not** scene-hash — a documented semantic substitution. `report.verification` is always `None` live — no predictor — so it is avoided.) |
-| `create_task` | Task dispatch | ✅ **LIVE — WIRED.** Same handler runs a real Plan→dispatch loop. Crucially, the **consumer is already live**: `suspend_all_tasks` (`_write_session_end` in `mcp/session.py`, which runs on the session-end recorder thread for WebSocket disconnects and MCP session ends alike and suspends only tasks created by the session's end) iterates `/SYNAPSE/agent/tasks/` — always empty until now because nothing produced tasks. Paired with `update_task_status` for the lifecycle. |
+| `create_task` | Task dispatch | ✅ **LIVE — WIRED.** Same handler runs a real Plan→dispatch loop. Crucially, the **consumer is already live**: `suspend_all_tasks` (`_write_session_end` in `mcp/session.py`, which runs on the session-end recorder thread and suspends only tasks created by the latest session end its record names, a swept MCP session ending at its last request; it records MCP session ends and disconnects from the fallback WebSocket server, `server/websocket.py`, which the package starts only when the hwebserver adapter cannot load. The GUI's hwebserver `/synapse` endpoint writes no session-end record, and nothing is recorded under hython) iterates `/SYNAPSE/agent/tasks/` — always empty until now because nothing produced tasks. Paired with `update_task_status` for the lifecycle. |
 
-Already live (do not re-wire): `log_session` + `suspend_all_tasks` in `mcp/session.py` `_write_session_end` (recorder thread, fed by the WebSocket disconnect hook and by MCP session ends; writes only into an agent.usd that already exists);
+Already live (do not re-wire): `log_session` + `suspend_all_tasks` in `mcp/session.py` `_write_session_end` (recorder thread, fed by MCP session ends and by the disconnect hook of the fallback WebSocket server, `server/websocket.py`, which the package starts only when the hwebserver adapter cannot load; the GUI's hwebserver `/synapse` endpoint writes no session-end record, and nothing is recorded under hython; writes only into an agent.usd that already exists);
 `initialize_agent_usd` at `scene_memory.py:136-137,963-964`.
 
 **The 3 DEFER rows stay dormant by design** until a genuinely-live producer exists (e.g. if
@@ -455,7 +455,7 @@ Every file:line in this RFC was re-read this session. Key anchors:
   `:399` `log_routing_decision`; `:456` `log_handoff`; `:550` `log_session`;
   `:585` `write_verification`; `:81-100` empty audit prims authored at init;
   `:122-145` inline USDA fallback; `Save()` per write at `:112/:223/:244/:364/:425/:481/:579/:603`.
-- `mcp/session.py:198,207,208` live `log_session` + `suspend_all_tasks` callers.
+- `mcp/session.py` `_write_session_end`: the live `log_session` + `suspend_all_tasks` caller.
 - `scene_memory.py:136-137, 963-964` live `initialize_agent_usd` callers.
 - `evolution.py:118` `parse_markdown_memory`; `:249-271` `synapse:*` namespace shared.
 - `write_report.py:83-97` backups; `:132-148` atomic write; zero `hou`.

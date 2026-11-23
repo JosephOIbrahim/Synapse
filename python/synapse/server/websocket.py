@@ -647,17 +647,37 @@ class SynapseServer:
                     logger.error("End session error: %s", e)
 
             # Living Memory: the session-end record. This thread only queues it
-            # (mcp/session.py, schedule_session_end) and goes on: no hou.* call,
-            # no file work, no wait on Houdini's main thread. The session-end
-            # recorder reads the scene on the main thread, then on its own
-            # thread suspends the scene's pending agent tasks, adds "Session
-            # ended (client: ...)" to its EXISTING claude/agent.usd, and appends
-            # the summary of a session that did something to its EXISTING
-            # claude/memory.md (an empty session writes no '### Session End'
-            # stub, Mile 1 / C-2). A disconnect creates no claude/ folder or
-            # seed file, so $JOB is not read. Without hdefereval (a headless
-            # server in hython) nothing is recorded: the rule /mcp session
-            # ends already follow.
+            # (mcp/session.py, schedule_session_end) and goes on: for the
+            # record it makes no hou.* call, does no file work and does not
+            # wait on Houdini's main thread. The session-end recorder reads the
+            # scene on the main thread, then on its own thread suspends the
+            # scene's pending agent tasks, adds "Session ended (client: ...)"
+            # to its EXISTING claude/agent.usd, and appends the summary of a
+            # session that did something to its EXISTING claude/memory.md (an
+            # empty session writes no '### Session End' stub, Mile 1 / C-2). A
+            # disconnect creates no claude/ folder or seed file, so $JOB is not
+            # read. Without hdefereval (a headless server in hython) nothing is
+            # recorded: the rule /mcp session ends already follow.
+            #
+            # Not moved: bridge.end_session above. With SYNAPSE_AUTO_MEMORY=1
+            # and a session that ran a command, it writes the session summary
+            # row to the memory store from THIS thread (SynapseMemory.add is
+            # @_on_memory_main: run_on_main, label "memory:add", up to 10 s
+            # once posted -- run_on_main's default, server/main_thread.py
+            # _DEFAULT_TIMEOUT -- a timeout counted by the stall detector). If
+            # that write times out or raises, end_session raises,
+            # session_summary_text stays empty, and the memory.md summary below
+            # is lost as well; a native (Rust) panic in it is logged by
+            # end_session instead, and the summary is kept.
+            # tests/test_ws_disconnect_session_end.py pins the wait and the
+            # loss. The GUI's hwebserver /synapse disconnect makes the same
+            # end_session write from the coroutine Houdini runs on its asyncio
+            # loop (server/hwebserver_adapter.py).
+            #
+            # Only this server records disconnects. The package starts it only
+            # when the hwebserver adapter cannot load (server/start_hwebserver.py);
+            # the GUI's hwebserver /synapse endpoint (server/hwebserver_adapter.py)
+            # writes no session-end record.
             if session_id:
                 try:
                     schedule_session_end(

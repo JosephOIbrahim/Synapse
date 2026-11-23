@@ -46,9 +46,10 @@ _STATIC_RESOURCES: list[dict] = [
         "uri": "synapse://project/context",
         "name": "Project Context",
         "description": (
-            "Project memory, scene memory, agent state, and evolution stage. "
-            "Auto-loaded on session start. Read this to understand the artist's "
-            "project history, previous decisions, and current scene context."
+            "Project memory, scene memory, agent state, and evolution stage: the "
+            "artist's project history, previous decisions, and current scene "
+            "context. Not loaded automatically: call synapse_project_setup, or "
+            "read this resource, at session start."
         ),
         "mimeType": "application/json",
         "_handler": "project_setup",

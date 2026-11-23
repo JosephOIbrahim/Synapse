@@ -2743,12 +2743,12 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
     def _resolve_agent_usd() -> Optional[str]:
         """Resolve the live agent.usd path for the current scene, or None.
 
-        The pattern the session-end writers used before v5.104.2; neither the
-        WebSocket disconnect hook nor MCP session ends use it now (both queue
-        to the recorder in mcp/session.py, which writes only into an agent.usd
-        that already exists). Best-effort: returns None (never raises)
-        when Houdini is unavailable, the scene structure can't be built,
-        or the file doesn't exist yet.
+        The pattern the session-end writers used before the session-end
+        recorder in mcp/session.py; neither the WebSocket disconnect hook nor
+        MCP session ends use it now (both queue to that recorder, which writes
+        only into an agent.usd that already exists). Best-effort: returns None
+        (never raises) when Houdini is unavailable, the scene structure can't
+        be built, or the file doesn't exist yet.
         """
         if not HOU_AVAILABLE:
             return None
@@ -3027,9 +3027,13 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # Best-effort -- a writer failure must never abort or slow the render.
         # The pending task is the producer for the already-live
         # suspend_all_tasks consumer (the session-end recorder in
-        # mcp/session.py, which records WebSocket disconnects and MCP session
-        # ends and suspends only tasks created by the session's end), which
-        # until now had nothing to find.
+        # mcp/session.py, which suspends only tasks created by the latest
+        # session end its record names; a swept MCP session ends at its last
+        # request), which until now had nothing to find. That recorder runs for MCP
+        # session ends and for disconnects from the fallback WebSocket server
+        # (server/websocket.py, started only when the hwebserver adapter cannot
+        # load). The GUI's hwebserver /synapse endpoint records no session end,
+        # and nothing is recorded under hython.
         agent_usd = self._resolve_agent_usd()
         if agent_usd:
             try:

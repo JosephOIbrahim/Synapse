@@ -855,11 +855,13 @@ class TestP1AutoInitProjectContext:
     The preload ran synapse_project_setup on Houdini's main thread during the
     handshake. That seeded the scene structure (ensure_scene_structure: project.md,
     memory.md, agent.usd), reloaded show config, and cached the loaded context in
-    session.project_context, which nothing read; that slot is gone. Each memory
-    and agent.usd writer seeds what it needs when it writes, and initialize keeps
-    the show-config reload (tests/test_mcp_initialize_main_thread.py pins it). The
-    agent loads project memory by calling synapse_project_setup itself; the
-    instructions still say so.
+    session.project_context, which nothing read; that slot is gone. Each writer
+    that creates memory seeds what it writes when it writes; the session-end
+    recorder (mcp/session.py) writes only into files that already exist, so a
+    session that never seeds agent.usd leaves no session-end record. Initialize
+    keeps the show-config reload (tests/test_mcp_initialize_main_thread.py pins
+    it). The agent loads project memory by calling synapse_project_setup itself;
+    the instructions still say so.
     """
 
     def test_session_has_no_project_context_slot(self):
@@ -912,6 +914,25 @@ class TestP1ProjectContextResource:
         ctx_resource = [r for r in resources if r["uri"] == "synapse://project/context"]
         assert len(ctx_resource) == 1
         assert "project memory" in ctx_resource[0]["description"].lower()
+
+    def test_project_context_resource_does_not_claim_to_be_auto_loaded(self, server, mock_handler):
+        """The served description sends the agent to synapse_project_setup.
+
+        Initialize stopped preloading project context (Connect freeze,
+        2026-11-22), so an agent that reads "auto-loaded" from resources/list
+        could skip the project_setup call it now depends on. Checked as served,
+        after an initialize that ran no tool.
+        """
+        _, headers = server.handle_request(_jsonrpc("initialize", {}, msg_id=1))
+        resp_body, _ = server.handle_request(
+            _jsonrpc("resources/list", {}, msg_id=2), session_id=headers["Mcp-Session-Id"])
+        described = {r["uri"]: r["description"]
+                     for r in _parse_response(resp_body)["result"]["resources"]}
+        desc = described["synapse://project/context"]
+
+        assert "auto-loa" not in desc.lower(), desc
+        assert "Not loaded automatically" in desc and "synapse_project_setup" in desc, desc
+        assert not mock_handler.handle.called, "initialize or resources/list ran a tool"
 
 
 # ===========================================================================

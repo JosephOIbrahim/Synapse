@@ -282,13 +282,18 @@ def suspend_all_tasks(agent_usd_path: str,
     """Mark pending/executing tasks as suspended. Called when a session ends.
 
     ``created_at_or_before`` (epoch seconds) limits this to tasks that already
-    existed at that moment. The MCP session-end record is written after the
-    session ended, possibly after the next session created tasks
-    (mcp/session.py), and must not suspend those. ``synapse:createdAt`` has
+    existed at that moment. The session-end recorder (mcp/session.py
+    ``_write_session_end``) passes the latest session end its record names:
+    the time of a DELETE /mcp or a WebSocket disconnect, or, for an MCP
+    session the sweep removed, that session's last request. Its record is
+    written later -- behind a busy main thread, or at the sweep, which for an
+    expired session comes more than the session TTL after that request --
+    when tasks may have been created since, by other clients or by that last
+    request itself, and those are left alone. ``synapse:createdAt`` has
     one-second resolution, so a task counts only when its whole creation
     second is at or before the cutoff: a task stamped in the cutoff's own
     second, or with no readable stamp, is left as it is. Leaving one alone is
-    the safe error -- marking a running task of the next session suspended is
+    the safe error -- marking another client's running task suspended is
     not. Without the argument every pending or executing task is suspended,
     as before.
     """

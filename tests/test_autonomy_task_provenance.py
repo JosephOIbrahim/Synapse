@@ -3,8 +3,12 @@ Tests for the autonomy -> agent.usd task provenance wiring.
 
 These pin the live producer that `_handle_autonomous_render` now feeds into the
 already-live `suspend_all_tasks(agent_usd)` consumer (the session-end recorder
-in mcp/session.py, which records WebSocket disconnects and MCP session ends and
-suspends only tasks created by the session's end). Before this wire,
+in mcp/session.py, which suspends only tasks created by the latest session end
+its record names; a swept MCP session ends at its last request). The
+recorder runs for MCP session ends and for disconnects from the fallback
+WebSocket server (server/websocket.py, started only when the hwebserver adapter
+cannot load); the GUI's hwebserver /synapse endpoint records no session end,
+and nothing is recorded under hython. Before this wire,
 `/SYNAPSE/agent/tasks/` was ALWAYS empty
 because nothing called `create_task`; the consumer therefore always found
 nothing. The loop-closure test below proves a real producer -> consumer closure.

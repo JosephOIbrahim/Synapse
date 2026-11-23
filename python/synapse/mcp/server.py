@@ -576,9 +576,11 @@ class MCPServer:
         and never waits on Houdini's main thread.
 
         Creating the session first sweeps expired sessions. Their end records
-        are only queued here; mcp/session.py's recorder thread asks the main
-        thread for a short scene read (run_on_main, label
-        "mcp:session_end:capture") and writes agent.usd on its own thread.
+        are only queued here (or skipped: no hou, records off, or a process
+        where hdefereval does not import); in a graphical session
+        mcp/session.py's recorder thread asks the main thread for a short
+        scene read (run_on_main, label "mcp:session_end:capture") and writes
+        agent.usd on its own thread.
         """
         client_info = params.get("clientInfo", {})
         session_id = self._sessions.create_session(client_info)
@@ -595,22 +597,33 @@ class MCPServer:
         # synapse_project_setup on Houdini's main thread (R-001's run_on_main,
         # label "mcp:initialize:project_setup"). On every Connect that:
         #   - ran ensure_scene_structure, seeding $JOB/claude/project.md,
-        #     $HIP/claude/memory.md and agent.usd when missing. Nothing needs
-        #     them at Connect: project_setup and the memory writers create
-        #     them when called, and so do the agent.usd writers
-        #     (server/handlers.py _resolve_agent_usd,
-        #     host/graph_synth_runtime.py _agent_usd_provenance);
+        #     $HIP/claude/memory.md and agent.usd when missing. The writers
+        #     that create memory do it when called: project_setup, the memory
+        #     writers and the agent.usd writers (server/handlers.py
+        #     _resolve_agent_usd, host/graph_synth_runtime.py
+        #     _agent_usd_provenance). The session-end record
+        #     (mcp/session.py) writes only into an agent.usd and memory.md
+        #     that already exist, so a session on a scene that nothing seeds
+        #     -- no synapse_project_setup, memory write or autonomous render --
+        #     now leaves no session-end record; the seed used to give it one;
         #   - ran reload_show_config(), which stays, above, as a cache clear;
         #   - cached the loaded context in session.project_context, which
         #     nothing read (the slot is gone).
         # A payload that has started on the main thread cannot be stopped, so
         # one slow step in it held the GUI: on 2026-11-22 the panel's first
         # tools/call sent the lazy initialize, the preload never returned, and
-        # Windows closed Houdini about 68 s after it started
-        # (docs/reviews/connect-freeze-forensics-2026-11-23.md, section 1;
-        # remediation 1 there). Project memory still loads when an agent calls
-        # synapse_project_setup, as the instructions below tell it to. Pinned
-        # by tests/test_mcp_initialize_main_thread.py.
+        # Windows closed Houdini (docs/reviews/connect-freeze-forensics-2026-11-23.md,
+        # section 1, remediation 1 in section 4; that file is in the
+        # repository, not in git-archive builds: .gitattributes export-ignores
+        # docs/reviews). Project memory still loads when an agent calls
+        # synapse_project_setup, as the instructions below tell it to. That
+        # tools/call still runs the same payload on the main thread
+        # (run_on_main(dispatch_once) in _handle_tools_call), so the hold this
+        # removes from initialize can still open on an agent's first
+        # synapse_project_setup call. Remediation 2 there (moving the
+        # filesystem work in _scene_paths and ensure_scene_structure off the
+        # main thread) is what closes that, and it is still open. Pinned by
+        # tests/test_mcp_initialize_main_thread.py.
 
         return {
             "_session_id": session_id,  # stripped before sending
