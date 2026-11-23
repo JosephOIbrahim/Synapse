@@ -1,27 +1,31 @@
 {
   "version": "5.104.1",
-  "review": "REL-5.104.1-REVIEW-3-PLUS-TEXT",
-  "reviewer": "Claude Code independent read-only review agents: three code rounds and one final release-text check (2026-11-22)",
-  "reviewed_date": "2026-11-22",
+  "review": "REL-5.104.1-REVIEW-3-PLUS-TEXT-PLUS-TIP",
+  "reviewer": "Claude Code independent read-only review agents: three code rounds and one final release-text check (2026-11-22), a review of the committed release tip 8568801c and a review of its text-fix commit (2026-11-23)",
+  "reviewed_date": "2026-11-23",
   "verdict": "PASS",
   "passed": true,
-  "commit_range": "c6f8b63f2eaae2b2702ebc33b3da9d493303753c..8568801cff4e6c6d86a1a58d530d0c8645ddc6ce",
+  "commit_range": "c6f8b63f2eaae2b2702ebc33b3da9d493303753c..2771324d8a5305593b9597a9e141b34b80bc0ab1",
   "coverage": {
     "code_reviewed_by_the_rounds": "c6f8b63f..cb2a54fe in round 1 (both lanes), 9ba3c22c in round 2, c885a8bd in round 3; 4523c66d implements round 3's prescribed fix; eb8f8921 fixes the seat run's three hython-only defects",
-    "release_text": "every release-text change against v5.104.0, checked in round 1, round 2 and the final text check"
+    "release_text": "every release-text change against v5.104.0, checked in round 1, round 2 and the final text check; the committed text in 8568801c reviewed on 2026-11-23, and its text-fix commit 2771324d reviewed the same day"
   },
   "finding_summary": {
     "code_findings_fixed": "round 1: sidecar and collider beside the cached PLY, unbounded v4 zstd fallbacks, PYTHONPATH under replace (FIX x3), download source (NIT); round 2: two test gaps; round 3: unreadable collider still recorded; seat run r2: collider guard class match, compression on 3.13, auth test import under hython",
-    "text_findings_fixed": "final text check: 1 FIX (the Atlas section overstated what was run) and 8 NITs, all fixed",
+    "text_findings_fixed": "final text check: 1 FIX (the Atlas section overstated what was run) and 8 NITs, all fixed; committed-tip review of 8568801c: 3 FIX (the splat was lowered, not lifted, twice; the r1 crash's panel code did change) and 4 NITs, all fixed in 2771324d",
     "accepted_limits": [
       "the fixed auth client and server were not run together against a Houdini window (hwebserver completes no WebSocket handshake headless)",
       "a v4 SPZ is refused on Houdini's Python 3.13; Atlas wrote v2 in the one real run",
       "the rendered look of an Atlas import was not checked"
+    ],
+    "text_findings_accepted": [
+      "text-fix review NIT: the notes' Review paragraph opens with 'Three independent read-only review rounds and a final text check' and does not count the committed-text review in that sentence (its last sentences do)",
+      "text-fix review NIT: the record's 'fixed in the commit after it' means the text-fix commit 2771324d; the commit directly after 8568801c is the superseded crux record 17ea7c06"
     ]
   },
   "evidence_outside_this_review": {
     "stock_suite": "13,463 passed, 0 failed, 735 skipped, 11 deselected, 10 xfailed on eb8f8921 + release edits (run r7)",
-    "seat_suite": "98 failed + 4 errors = 102 failing tests: the 96 of v5.104.0's seat run, plus 6 that fail on c6f8b63f too since this machine gained ~/.synapse/auth.key (run r3, hython 22.0.400)",
+    "seat_suite": "98 failed + 4 errors = 102 failing tests: the 96 of v5.104.0's seat run, plus 6 that fail on c6f8b63f too today: 4 shown to be this machine's ~/.synapse/auth.key, 2 cancel tests that also fail on their own on both trees (run r3, hython 22.0.400)",
     "real_atlas_splat": "SPZ v2, 2,000,000 splats, imported headless in hython 22.0.400 on eb8f8921 both by operation ID (AtlasClient.prepare_import) and from the downloaded folder (prepare_local_asset), then import_local_asset"
   }
 }
