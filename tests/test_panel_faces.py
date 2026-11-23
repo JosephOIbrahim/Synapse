@@ -462,8 +462,8 @@ def _readout_want(p):
     readout; _author_token() still formats that token for the signed reply
     line. This is the equality half of audit_panel.py's readout rule (the
     audit adds the raw-id clauses for curated names and lets the display
-    elide at the minimum width, Joe 2026-11-23 A1/A2); these panels are wide
-    enough that the names here print whole."""
+    elide only where the whole label does not fit, Joe 2026-11-23 A1/A2);
+    these panels are wide enough that the names here print whole."""
     from synapse.panel.providers.registry import model_label
     return model_label(p._provider_id, p._active_model())
 
@@ -485,10 +485,11 @@ def test_rail_author_token_shows():
     assert p._author_lbl is not None
     assert isinstance(p._author_lbl, QtWidgets.QAbstractButton)
     assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
-    # The accessible name is written by the display pass (_fit_panel_chrome,
-    # on show / resize / every repaint), so it is read on the shown panel.
-    p.show()                                   # offscreen: activates layout
-    QtWidgets.QApplication.processEvents()
+    # The accessible name is written by the display pass (_fit_panel_chrome),
+    # which every repaint ends in once the rail is built: one repaint, never
+    # show() - a shown panel here left the process-wide FreezeChain armed
+    # (R310a; tests/conftest.py::_contain_leaked_freeze_chain).
+    p._refresh_engine_selector()
     assert p._author_lbl.accessibleName() == _readout_identity(p), (
         p._author_lbl.accessibleName(), _readout_identity(p))
     assert hasattr(p, "_open_author_menu")
