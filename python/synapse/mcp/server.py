@@ -558,69 +558,25 @@ class MCPServer:
     def _handle_initialize(self, params: dict) -> dict:
         """MCP initialize handshake.
 
-        Creates a session, returns server capabilities, and pre-loads
-        project context for the session (best-effort).
+        Creates a session and returns server capabilities. It does no Houdini
+        work: no tool dispatch, nothing marshalled to the main thread.
         """
         client_info = params.get("clientInfo", {})
         session_id = self._sessions.create_session(client_info)
         self._sessions.mark_initialized(session_id)
         self._events.create_session_queue(session_id)
 
-        # Auto-load project context so agents start with full memory
-        session = self._sessions.get_session(session_id)
-        if session is not None:
-            try:
-                handler = self._get_handler()
-                # R-001: the preload dispatches on Houdini's MAIN thread.
-                # dispatch_tool routes every tool that is not read-only to the
-                # BRIDGE through execute_through_bridge (mcp/tools.py:126), and
-                # synapse_project_setup is not in the bridge's read-only set.
-                # The bridge's _execute_houdini opens hou.undos.group() and
-                # computes the R1 scene hash on the CALLING thread
-                # (shared/bridge.py:1919) — on an hwebserver worker that is an
-                # off-main hou.* call: main_thread_executed records False,
-                # fidelity drops to 0.0, the bridge returns a failure, and
-                # session.project_context never caches. L8's "dispatch on the
-                # calling thread" was correct about the HANDLER (project_setup's
-                # own hou.* surface is handlers_memory._scene_paths, which
-                # marshals itself) but missed the dispatcher's bridge envelope.
-                #
-                # run_on_main is the safe primitive, not the vendor's blocking
-                # marshal L8 removed: a main-thread caller (panel-initiated
-                # initialize, hython, a Qt slot) runs the payload inline — no
-                # self-deadlock — and an off-main caller defers with a bounded
-                # wait. Timeout comes from the canonical C7 table, the same
-                # budget tools/call gives this tool. record_stall/record_wait
-                # keep their defaults: this is a real foreground dispatch, not
-                # a background poll.
-                dispatch_started = False
-
-                def _preload_project_context():
-                    nonlocal dispatch_started
-                    dispatch_started = True
-                    return dispatch_tool(handler, "synapse_project_setup", {})
-
-                try:
-                    from ..server.main_thread import run_on_main
-                    from ..core.timeouts import timeout_for
-                    result = run_on_main(
-                        _preload_project_context,
-                        timeout=timeout_for("synapse_project_setup"),
-                        label="mcp:initialize:project_setup",
-                    )
-                except ImportError:
-                    # No hdefereval: outside Houdini (tests/CI) there is no
-                    # main thread to marshal to and no real hou to be unsafe
-                    # with, so dispatch directly. Never replay a dispatch that
-                    # already started — dispatch_tool re-raises a handler's
-                    # ImportError, and that must not become a second call.
-                    if dispatch_started:
-                        raise
-                    result = _preload_project_context()
-                if not result.get("isError"):
-                    session.project_context = result
-            except Exception:
-                pass  # Best-effort — don't fail the handshake
+        # No project-context preload here. initialize used to run
+        # synapse_project_setup on Houdini's main thread (R-001's run_on_main,
+        # label "mcp:initialize:project_setup") and cache the result in
+        # session.project_context, which nothing ever read. A payload that has
+        # started on the main thread cannot be stopped, so one slow step in it
+        # held the GUI: on 2026-11-22 the panel's first tools/call sent the
+        # lazy initialize, the preload never returned, and Windows closed
+        # Houdini about 68 s later (the Connect-freeze forensics of
+        # 2026-11-23, remediation 1). Project memory still
+        # loads when an agent calls synapse_project_setup, as the system
+        # prompt tells it to. Pinned by tests/test_mcp_initialize_main_thread.py.
 
         return {
             "_session_id": session_id,  # stripped before sending

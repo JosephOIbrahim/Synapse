@@ -850,52 +850,43 @@ class TestP1EnrichedDescriptions:
 # ===========================================================================
 
 class TestP1AutoInitProjectContext:
-    """P1: Verify project context auto-loads on session start."""
+    """Initialize no longer preloads project context (Connect freeze, 2026-11-22).
+
+    The preload ran synapse_project_setup on Houdini's main thread during the
+    handshake and cached a result nothing read. The agent loads project memory
+    by calling synapse_project_setup itself; the instructions still say so.
+    """
 
     def test_session_has_project_context_attribute(self):
-        """MCPSession should have a project_context slot."""
+        """MCPSession keeps its project_context slot, unset by default."""
         mgr = session_mod.MCPSessionManager()
         sid = mgr.create_session({"name": "test"})
         session = mgr.get_session(sid)
         assert hasattr(session, "project_context")
         assert session.project_context is None
 
-    def test_auto_init_calls_project_setup(self):
-        """Initialize should attempt to call project_setup."""
+    def test_initialize_does_not_call_project_setup(self):
+        """Initialize runs no tool: the handler is never asked for anything."""
         handler = MagicMock()
-        response = MagicMock()
-        response.success = True
-        response.data = {"stage": "flat", "scene_memory": {}}
-        handler.handle.return_value = response
-
         srv = server_mod.MCPServer(handler=handler)
         body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
         resp_body, headers = srv.handle_request(body)
 
-        # Verify handler.handle was called (for project_setup auto-init)
-        assert handler.handle.called
-        # Verify the command was project_setup
-        call_args = handler.handle.call_args_list[0][0][0]
-        assert call_args.type == "project_setup"
+        assert "result" in _parse_response(resp_body)
+        assert not handler.handle.called
 
-    def test_auto_init_caches_context_on_session(self):
-        """Project context should be cached on the MCPSession."""
+    def test_initialize_leaves_project_context_unset(self):
+        """Nothing is cached on the session by the handshake."""
         handler = MagicMock()
-        response = MagicMock()
-        response.success = True
-        response.data = {"stage": "flat", "scene_memory": {"entries": []}}
-        handler.handle.return_value = response
-
         srv = server_mod.MCPServer(handler=handler)
         body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
         _, headers = srv.handle_request(body)
 
-        sid = headers["Mcp-Session-Id"]
-        session = srv._sessions.get_session(sid)
-        assert session.project_context is not None
+        session = srv._sessions.get_session(headers["Mcp-Session-Id"])
+        assert session.project_context is None
 
     def test_auto_init_failure_doesnt_break_init(self):
-        """If project_setup fails, initialize should still succeed."""
+        """A handler that would fail cannot break initialize (it is not called)."""
         handler = MagicMock()
         handler.handle.side_effect = Exception("Houdini not ready")
 
