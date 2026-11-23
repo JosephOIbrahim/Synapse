@@ -1,0 +1,27 @@
+{
+  "version": "5.104.1",
+  "review": "REL-5.104.1-REVIEW-3-PLUS-TEXT",
+  "reviewer": "Claude Code independent read-only review agents: three code rounds and one final release-text check (2026-11-22)",
+  "reviewed_date": "2026-11-22",
+  "verdict": "PASS",
+  "passed": true,
+  "commit_range": "c6f8b63f2eaae2b2702ebc33b3da9d493303753c..8568801cff4e6c6d86a1a58d530d0c8645ddc6ce",
+  "coverage": {
+    "code_reviewed_by_the_rounds": "c6f8b63f..cb2a54fe in round 1 (both lanes), 9ba3c22c in round 2, c885a8bd in round 3; 4523c66d implements round 3's prescribed fix; eb8f8921 fixes the seat run's three hython-only defects",
+    "release_text": "every release-text change against v5.104.0, checked in round 1, round 2 and the final text check"
+  },
+  "finding_summary": {
+    "code_findings_fixed": "round 1: sidecar and collider beside the cached PLY, unbounded v4 zstd fallbacks, PYTHONPATH under replace (FIX x3), download source (NIT); round 2: two test gaps; round 3: unreadable collider still recorded; seat run r2: collider guard class match, compression on 3.13, auth test import under hython",
+    "text_findings_fixed": "final text check: 1 FIX (the Atlas section overstated what was run) and 8 NITs, all fixed",
+    "accepted_limits": [
+      "the fixed auth client and server were not run together against a Houdini window (hwebserver completes no WebSocket handshake headless)",
+      "a v4 SPZ is refused on Houdini's Python 3.13; Atlas wrote v2 in the one real run",
+      "the rendered look of an Atlas import was not checked"
+    ]
+  },
+  "evidence_outside_this_review": {
+    "stock_suite": "13,463 passed, 0 failed, 735 skipped, 11 deselected, 10 xfailed on eb8f8921 + release edits (run r7)",
+    "seat_suite": "98 failed + 4 errors = 102 failing tests: the 96 of v5.104.0's seat run, plus 6 that fail on c6f8b63f too since this machine gained ~/.synapse/auth.key (run r3, hython 22.0.400)",
+    "real_atlas_splat": "SPZ v2, 2,000,000 splats, imported headless in hython 22.0.400 on eb8f8921 both by operation ID (AtlasClient.prepare_import) and from the downloaded folder (prepare_local_asset), then import_local_asset"
+  }
+}
