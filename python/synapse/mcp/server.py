@@ -558,8 +558,13 @@ class MCPServer:
     def _handle_initialize(self, params: dict) -> dict:
         """MCP initialize handshake.
 
-        Creates a session and returns server capabilities. It does no Houdini
-        work: no tool dispatch, nothing marshalled to the main thread.
+        Creates a session and returns server capabilities. It runs no tool,
+        makes no hou.* call and never waits on Houdini's main thread.
+
+        Creating the session first sweeps expired sessions. Their end records
+        are only queued here; mcp/session.py's recorder thread later posts one
+        short payload of hou reads to the main thread (hdefereval.executeDeferred,
+        which nothing waits on) and writes agent.usd on its own thread.
         """
         client_info = params.get("clientInfo", {})
         session_id = self._sessions.create_session(client_info)
@@ -996,7 +1001,11 @@ class MCPServer:
     # -----------------------------------------------------------------
 
     def destroy_session(self, session_id: str) -> bool:
-        """Destroy a session (e.g. on HTTP DELETE /mcp)."""
+        """Destroy a session (e.g. on HTTP DELETE /mcp).
+
+        Returns without waiting on Houdini: the session-end record is queued
+        for mcp/session.py's recorder, as initialize's sweep does.
+        """
         self._events.destroy_session_queue(session_id)
         return self._sessions.destroy_session(session_id)
 
