@@ -850,62 +850,42 @@ class TestP1EnrichedDescriptions:
 # ===========================================================================
 
 class TestP1AutoInitProjectContext:
-    """P1: Verify project context auto-loads on session start."""
+    """Initialize no longer preloads project context (Connect freeze, 2026-11-22).
 
-    def test_session_has_project_context_attribute(self):
-        """MCPSession should have a project_context slot."""
+    The preload ran synapse_project_setup on Houdini's main thread during the
+    handshake. That seeded the scene structure (ensure_scene_structure: project.md,
+    memory.md, agent.usd), reloaded show config, and cached the loaded context in
+    session.project_context, which nothing read; that slot is gone. Each writer
+    that creates memory seeds what it writes when it writes; the session-end
+    recorder (mcp/session.py) writes only into files that already exist, so a
+    session that never seeds agent.usd leaves no session-end record. Initialize
+    keeps the show-config reload (tests/test_mcp_initialize_main_thread.py pins
+    it). The agent loads project memory by calling synapse_project_setup itself;
+    the instructions still say so.
+    """
+
+    def test_session_has_no_project_context_slot(self):
+        """Nothing caches project context on a session, before or after initialize."""
+        assert "project_context" not in session_mod.MCPSession.__slots__
         mgr = session_mod.MCPSessionManager()
-        sid = mgr.create_session({"name": "test"})
-        session = mgr.get_session(sid)
-        assert hasattr(session, "project_context")
-        assert session.project_context is None
+        session = mgr.get_session(mgr.create_session({"name": "test"}))
+        assert not hasattr(session, "project_context")
 
-    def test_auto_init_calls_project_setup(self):
-        """Initialize should attempt to call project_setup."""
+        srv = server_mod.MCPServer(handler=MagicMock())
+        _, headers = srv.handle_request(
+            _jsonrpc("initialize", {"clientInfo": {"name": "test"}}))
+        initialized = srv._sessions.get_session(headers["Mcp-Session-Id"])
+        assert not hasattr(initialized, "project_context")
+
+    def test_initialize_does_not_call_project_setup(self):
+        """Initialize runs no tool: the handler is never asked for anything."""
         handler = MagicMock()
-        response = MagicMock()
-        response.success = True
-        response.data = {"stage": "flat", "scene_memory": {}}
-        handler.handle.return_value = response
-
         srv = server_mod.MCPServer(handler=handler)
         body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
         resp_body, headers = srv.handle_request(body)
 
-        # Verify handler.handle was called (for project_setup auto-init)
-        assert handler.handle.called
-        # Verify the command was project_setup
-        call_args = handler.handle.call_args_list[0][0][0]
-        assert call_args.type == "project_setup"
-
-    def test_auto_init_caches_context_on_session(self):
-        """Project context should be cached on the MCPSession."""
-        handler = MagicMock()
-        response = MagicMock()
-        response.success = True
-        response.data = {"stage": "flat", "scene_memory": {"entries": []}}
-        handler.handle.return_value = response
-
-        srv = server_mod.MCPServer(handler=handler)
-        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
-        _, headers = srv.handle_request(body)
-
-        sid = headers["Mcp-Session-Id"]
-        session = srv._sessions.get_session(sid)
-        assert session.project_context is not None
-
-    def test_auto_init_failure_doesnt_break_init(self):
-        """If project_setup fails, initialize should still succeed."""
-        handler = MagicMock()
-        handler.handle.side_effect = Exception("Houdini not ready")
-
-        srv = server_mod.MCPServer(handler=handler)
-        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
-        resp_body, headers = srv.handle_request(body)
-
-        resp = _parse_response(resp_body)
-        assert "result" in resp
-        assert "Mcp-Session-Id" in headers
+        assert "result" in _parse_response(resp_body)
+        assert not handler.handle.called
 
 
 # ===========================================================================
@@ -934,6 +914,25 @@ class TestP1ProjectContextResource:
         ctx_resource = [r for r in resources if r["uri"] == "synapse://project/context"]
         assert len(ctx_resource) == 1
         assert "project memory" in ctx_resource[0]["description"].lower()
+
+    def test_project_context_resource_does_not_claim_to_be_auto_loaded(self, server, mock_handler):
+        """The served description sends the agent to synapse_project_setup.
+
+        Initialize stopped preloading project context (Connect freeze,
+        2026-11-22), so an agent that reads "auto-loaded" from resources/list
+        could skip the project_setup call it now depends on. Checked as served,
+        after an initialize that ran no tool.
+        """
+        _, headers = server.handle_request(_jsonrpc("initialize", {}, msg_id=1))
+        resp_body, _ = server.handle_request(
+            _jsonrpc("resources/list", {}, msg_id=2), session_id=headers["Mcp-Session-Id"])
+        described = {r["uri"]: r["description"]
+                     for r in _parse_response(resp_body)["result"]["resources"]}
+        desc = described["synapse://project/context"]
+
+        assert "auto-loa" not in desc.lower(), desc
+        assert "Not loaded automatically" in desc and "synapse_project_setup" in desc, desc
+        assert not mock_handler.handle.called, "initialize or resources/list ran a tool"
 
 
 # ===========================================================================

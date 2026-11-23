@@ -1,44 +1,104 @@
-"""R-001 — the MCP initialize preload must not touch ``hou.*`` off the main thread.
+"""MCP initialize and DELETE do no Houdini work on their own thread and never wait on main.
 
-Finding (Wave 0 repair scaffold, node SUBSTRATE-1): ``MCPServer._handle_initialize``
-called ``dispatch_tool(handler, "synapse_project_setup", {})`` on the hwebserver
-worker thread. ``dispatch_tool`` routes every tool that is not read-only *to the
-bridge* through ``execute_through_bridge`` (``synapse.panel.bridge_adapter``);
-``synapse_project_setup`` is not in the bridge's read-only set, so the bridge's
-``_execute_houdini`` ran ``hou.undos.group()`` and the R1 topological scene hash
-on the CALLING thread. Off Houdini's main thread that is an unsafe ``hou.*``
-call, ``_on_main_thread()`` records ``main_thread_executed=False``, fidelity
-drops to 0.0, the bridge returns a failure, and ``session.project_context``
-never caches.
+History. ``MCPServer._handle_initialize`` used to preload project context by
+dispatching ``synapse_project_setup``. First it ran on the hwebserver worker,
+where the bridge's undo group and R1 scene hash were off-main ``hou.*`` calls
+(R-001, Wave 0). R-001 moved the whole dispatch onto Houdini's main thread with
+``run_on_main`` (label ``mcp:initialize:project_setup``). That made it safe but
+unbounded: a payload that has started on the main thread cannot be stopped.
 
-These tests pin the repair's observable predicate:
+On every Connect that preload ran ``ensure_scene_structure`` (seeding
+``$JOB/claude/project.md``, ``$HIP/claude/memory.md`` and ``agent.usd`` when
+missing), ran ``reload_show_config()``, and cached the loaded context in
+``session.project_context``, which nothing read. On 2026-11-22 the panel's
+first tools/call (the Doctor button) sent the lazy ``initialize``, the preload
+never returned, and Windows closed Houdini
+(docs/reviews/connect-freeze-forensics-2026-11-23.md, section 1; the file is
+in the repository, not in git-archive builds). So the preload is gone: an
+agent loads project memory by calling ``synapse_project_setup`` itself, as the
+system prompt and the initialize instructions tell it to; each writer that
+creates memory creates the scene structure when it writes (the session-end
+recorder writes only into files that already exist, so a session that never
+seeds agent.usd leaves no session-end record); and initialize keeps the
+show-config reload, which only clears a dict. Not closed here: that
+synapse_project_setup tools/call still runs the same payload on the main
+thread (run_on_main), so the hold can still open on an agent's first call.
+Remediation 2 in the forensics doc (filesystem work off main in
+``_scene_paths`` and ``ensure_scene_structure``) closes that; it is open.
 
-  * ``MCPServer.handle_request("initialize")`` called from a NON-main thread
-    with the REAL dispatch chain (``dispatch_tool`` -> ``bridge_adapter`` ->
-    ``shared.bridge``) records ZERO ``hou.*`` calls on any thread other than
-    the process main thread, and the session caches ``project_context``.
-  * The same handshake called ON the main thread neither deadlocks nor
-    changes behaviour (``run_on_main``'s fast path 2 runs the payload inline;
-    the L8 self-deadlock the vendor blocking marshal caused must not return).
+These tests pin that ``initialize``:
 
-The handler object is minimal on purpose: the real ``SynapseHandler``
-project_setup body touches the Living-Memory store on disk, which is not what
-this node is about. Everything between the server and the handler — the tool
-registry entry, ``dispatch_tool``, the bridge adapter and the bridge — is the
-real production chain. A handler is a real object whose ``handle()`` is
-actually invoked, and it records the thread it ran on so the test can prove
-the marshal moved the whole dispatch, not just the bridge envelope.
+  * called from a NON-main thread, returns without the main thread doing
+    anything (nothing is posted to hdefereval, so it cannot wait on a
+    payload), and never reaches the handler or any ``hou.*`` call;
+  * called ON the main thread, likewise reaches no handler and no ``hou.*``;
+  * never calls ``run_on_main`` at all;
+  * still clears the show-config cache, with no hou call and nothing posted;
+  * still answers with a session id and the instructions that name
+    ``synapse_project_setup``.
 
-Idiom: patch ``shared.bridge`` MODULE globals (``_HOU_AVAILABLE`` / ``hou``),
-never ``sys.modules['hou']`` — the fake-hou residency trap in tests/conftest.py.
-``hdefereval`` is installed in ``sys.modules`` only for the duration of each
-test (``monkeypatch.setitem``) so the REAL ``run_on_main`` resolve sees it.
+Session end (the session-end recorder in mcp/session.py). initialize first
+sweeps expired sessions, and DELETE /mcp ends one. Both used to run the
+session-end cleanup inline on the request thread: ``hou.hipFile.path()``,
+``hou.getenv("JOB")``, ``ensure_scene_structure`` (folders and seed files) and
+the agent.usd writes, all off Houdini's main thread. The second half of this
+file pins that:
+
+  * initialize (sweeping an expired session) and DELETE return with the main
+    thread idle, make no ``hou.*`` call and no file write on the request
+    thread, and post nothing to hdefereval from it;
+  * in hython, where importing hdefereval runs a module body that calls
+    ``hou.isUIAvailable()`` and raises ImportError, that import runs on the
+    recorder thread, once, never on the request thread; nothing is recorded;
+  * the recorder thread reads the scene through ``run_on_main`` (label
+    ``mcp:session_end:capture``, in the pending-dispatch registry, so the
+    emergency halt can cancel it, and opted out of the stall detector and the
+    dispatch-wait histogram), and once the main thread runs that read the
+    record is written on the recorder thread -- never on the main thread --
+    into the scene's existing agent.usd (saved, relocated and untitled scenes);
+  * a session end creates no ``claude/`` folder, seed file or agent.usd;
+  * ends that queue up behind a stalled main thread become ONE record, and a
+    task created after the end survives the late record;
+  * a session the sweep removes (expired, or evicted over the session cap)
+    ends at its last request, not at the sweep: a task created while it sat
+    idle stays pending, one that existed when it went idle is suspended;
+    DELETE keeps the time it was called;
+  * outside Houdini (no ``hou``), or with the records switched off, nothing is
+    recorded or posted and no thread starts; without ``hdefereval`` nothing is
+    recorded or posted, and after the recorder thread has found that once,
+    later ends queue nothing -- and a test that does not opt in cannot start
+    the process-wide recorder; an hdefereval import that raises anything else
+    does the same, with a warning, and leaves no dead thread behind;
+  * switched off after ends queued, the records post no read for them; switched
+    off while a read is pending, they write nothing when it returns;
+  * a recorder thread that cannot start does not fail initialize or DELETE;
+  * a scene read that does not finish (main busy, or cancelled by the
+    emergency halt) is logged as exactly that;
+  * the capture timeout is the freeze chain's escalation age;
+  * the recorder thread is a daemon, and ``stop`` joins it. Every recorder a
+    test here starts is stopped and joined (``_SessionEndEnv.close``), and
+    tests/conftest.py fails any test that leaves one running.
+
+The fakes are the ones R-001 used: a thread-recording ``hou`` patched into the
+``shared.bridge`` and ``synapse.mcp.session`` MODULE globals (never
+``sys.modules['hou']``, the fake-hou residency trap in tests/conftest.py), and
+an ``hdefereval`` installed in ``sys.modules`` only for the duration of each
+test so the REAL ``run_on_main`` posts to it. Nothing pumps that fake except
+the test, on its own (main) thread. The hython test instead installs
+``_VendorHdefereval``, an import hook whose module body does what the vendor
+module's does under hython.
 """
 
 from __future__ import annotations
 
+import builtins
 import contextlib
+import importlib
+import importlib.abc
+import importlib.util
 import json
+import logging
+import os
 import queue
 import sys
 import threading
@@ -51,11 +111,34 @@ import pytest
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
+_TESTS_DIR = Path(__file__).resolve().parent
+if str(_TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TESTS_DIR))  # for the test_agent_state harness
 
 import shared.bridge as b  # noqa: E402
 from synapse.core.protocol import SynapseResponse
 from synapse.mcp import server as server_mod
 from synapse.panel import bridge_adapter as ba
+from synapse.server import main_thread
+
+# Imported NOW, before any test installs the ``import hou`` seam below, so each
+# binds its module-level ``hou`` to the suite's resident and never to a fake.
+import synapse.host.memory_lifecycle as memory_lifecycle  # noqa: E402
+import synapse.memory.agent_state as agent_state  # noqa: E402
+import synapse.memory.scene_memory as scene_memory  # noqa: E402
+import synapse.memory.store  # noqa: E402,F401
+
+# The FakeStage mock-pxr harness, as tests/test_autonomy_task_provenance.py uses it.
+import test_agent_state as pxr_harness  # noqa: E402
+
+session_mod = importlib.import_module("synapse.mcp.session")
+
+# Literals, not session_mod attributes, so a red-control tree without them
+# still runs these tests to their assertions.
+_RECORDS_ENV = "SYNAPSE_MCP_SESSION_END_RECORDS"
+_CAPTURE_LABEL = "mcp:session_end:capture"
+_RECORDER_THREAD_NAME = "synapse-mcp-session-end"  # tests/conftest.py matches this name
+_STAMP = "%Y-%m-%dT%H:%M:%SZ"
 
 
 # ---------------------------------------------------------------------------
@@ -71,44 +154,125 @@ def _fresh_process_bridge():
 
 
 # ---------------------------------------------------------------------------
-# A fake hdefereval that delivers ONE deferred callable at a time
+# A fake hdefereval that only records what is posted to the main thread
 # ---------------------------------------------------------------------------
 class _FakeHdefereval(types.ModuleType):
-    """``executeDeferred`` posts; the test's main thread pumps the queue.
-
-    This models hdefereval's contract on the one axis under test: the
-    callable runs on the process main thread, not on the poster's thread.
-    """
+    """``executeDeferred`` posts; only the test runs what was posted (``pump``)."""
 
     def __init__(self):
         super().__init__("hdefereval")
         self.pending: queue.Queue = queue.Queue()
+        self.posted_from = []  # thread ident of every executeDeferred caller
+        self._posted = threading.Condition()
 
     def executeDeferred(self, fn):
-        self.pending.put(fn)
+        with self._posted:
+            self.posted_from.append(threading.get_ident())
+            self.pending.put(fn)
+            self._posted.notify_all()
+
+    def wait_for_posts(self, count, timeout):
+        """True once *count* payloads have been posted in all; False on timeout."""
+        deadline = time.monotonic() + timeout
+        with self._posted:
+            while len(self.posted_from) < count:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._posted.wait(remaining)
+        return True
+
+    def pump(self):
+        """Run every posted payload on the CALLING thread (the test's main)."""
+        ran = 0
+        while True:
+            try:
+                fn = self.pending.get_nowait()
+            except queue.Empty:
+                return ran
+            fn()
+            ran += 1
 
 
 # ---------------------------------------------------------------------------
 # A fake hou that records the calling thread of every entry point the bridge
-# reaches on this path (the R1 hash + the undo group + the undo evidence)
+# would reach on a dispatch (the R1 hash, the undo group, the undo evidence)
 # ---------------------------------------------------------------------------
 class _ThreadRecordingHou:
-    def __init__(self):
+    def __init__(self, hip_path="untitled.hip", is_new_file=True):
         self.calls = []  # list[(call_name, thread_ident)]
+        self.holders = []  # the run_on_main label holding the main thread at each call
+        self.ui_checks = []  # the NAME of the thread of every isUIAvailable call
         self._lock = threading.Lock()
         self.undos = _ThreadRecordingUndos(self)
+        self.hipFile = _ThreadRecordingHipFile(self, hip_path, is_new_file)
         self.LopNode = type("LopNode", (), {})
 
     def record(self, name):
+        holder = main_thread.current_main_thread_holder()
         with self._lock:
             self.calls.append((name, threading.current_thread().ident))
+            self.holders.append(holder[0] if holder else None)
 
     def node(self, path):
         self.record("hou.node")
-        # None -> the R1 hash uses its "invalid_context" sentinel, and
-        # before == after so the op's delta is "no_change". The bridge path
-        # is still fully exercised (group + hash + evidence).
         return None
+
+    def getenv(self, name, default=None):
+        self.record("hou.getenv")
+        return default
+
+    def isUIAvailable(self):
+        """hython's answer. Thread NAMES, not idents: an exited thread's ident is reused."""
+        self.record("hou.isUIAvailable")
+        with self._lock:
+            self.ui_checks.append(threading.current_thread().name)
+        return False
+
+
+class _VendorHdefereval(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+    """``import hdefereval`` as hython runs it: a real module body, every time.
+
+    The vendor module ends with ``if not hou.isUIAvailable(): raise
+    ImportError(...)`` (hdefereval.py:240-241 in Houdini 22.0.400). Python does
+    not cache a failed import, so each ``import hdefereval`` finds the module
+    again and runs its body -- a hou call -- on the importing thread. A planted
+    ``sys.modules['hdefereval'] = None`` fails the import without running any
+    body, which is why the other hdefereval-less tests cannot see this.
+    """
+
+    def __init__(self, hou_fake):
+        self._hou = hou_fake
+        self.ran_on = []  # the NAME of the thread of every module-body run
+
+    def find_spec(self, name, path=None, target=None):
+        if name != "hdefereval":
+            return None
+        return importlib.util.spec_from_loader(name, self)
+
+    def create_module(self, spec):
+        return None  # the default module object
+
+    def exec_module(self, module):
+        self.ran_on.append(threading.current_thread().name)
+        module.hou = self._hou
+        if not self._hou.isUIAvailable():
+            raise ImportError("hdefereval is only available in a graphical Houdini")
+
+
+class _ThreadRecordingHipFile:
+    def __init__(self, hou_fake, hip_path, is_new_file):
+        self._hou = hou_fake
+        self._path = hip_path
+        self._is_new = is_new_file
+
+    def path(self):
+        self._hou.record("hou.hipFile.path")
+        return self._path
+
+    def isNewFile(self):
+        self._hou.record("hou.hipFile.isNewFile")
+        return self._is_new
 
 
 class _ThreadRecordingUndos:
@@ -129,9 +293,9 @@ class _ThreadRecordingUndos:
 
 
 # ---------------------------------------------------------------------------
-# The dispatch target: a real object invoked through the real chain
+# A real handler object; it records every command it is asked to run
 # ---------------------------------------------------------------------------
-class _ProjectSetupHandler:
+class _RecordingHandler:
     def __init__(self):
         self.calls = []  # list[(command_type, thread_ident)]
 
@@ -140,7 +304,7 @@ class _ProjectSetupHandler:
         return SynapseResponse(
             id=command.id,
             success=True,
-            data={"project_memory": "R-001 preload", "scene_memory": ""},
+            data={"project_memory": "should never be read", "scene_memory": ""},
         )
 
 
@@ -149,29 +313,48 @@ def _initialize_body():
         "jsonrpc": "2.0",
         "id": 1,
         "method": "initialize",
-        "params": {"clientInfo": {"name": "r001-main-thread"}},
+        "params": {"clientInfo": {"name": "initialize-no-main-thread-work"}},
     }).encode("utf-8")
 
 
-def _pump_until(worker, fake_hdefereval, timeout=15.0):
-    """Run deferred callbacks on THIS (main) thread until the worker returns."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if not worker.is_alive() and fake_hdefereval.pending.empty():
-            break
-        try:
-            callback = fake_hdefereval.pending.get(timeout=0.02)
-        except queue.Empty:
-            continue
-        callback()
-    worker.join(timeout=5.0)
-    assert not worker.is_alive(), (
-        "initialize never returned: the preload's deferred payload was never "
-        "delivered to the main thread"
+@pytest.fixture
+def fakes(monkeypatch):
+    hou_fake = _ThreadRecordingHou()
+    fake_hdefereval = _FakeHdefereval()
+    monkeypatch.setattr(b, "_HOU_AVAILABLE", True)
+    monkeypatch.setattr(b, "hou", hou_fake)
+    monkeypatch.setitem(sys.modules, "hdefereval", fake_hdefereval)
+    return hou_fake, fake_hdefereval
+
+
+def _assert_no_houdini_work(server, headers, handler, hou_fake, fake_hdefereval):
+    assert handler.calls == [], (
+        "initialize dispatched {!r}; it must not run any tool (the old preload "
+        "ran synapse_project_setup on Houdini's main thread)".format(handler.calls)
     )
+    assert hou_fake.calls == [], (
+        "initialize made hou.* calls {!r}; it must not touch Houdini".format(hou_fake.calls)
+    )
+    assert fake_hdefereval.pending.empty(), (
+        "initialize posted work to Houdini's main thread; a started main-thread "
+        "payload cannot be stopped, which is how the 2026-11-22 Connect froze"
+    )
+    session = server._sessions.get_session(headers["Mcp-Session-Id"])
+    assert session is not None
+    assert session.initialized is True
+    assert not hasattr(session, "project_context"), (
+        "the session carries a project_context slot again; nothing reads one")
 
 
-def _run_initialize_off_main(server, fake_hdefereval):
+def test_initialize_off_main_returns_without_the_main_thread(fakes):
+    """Off-main initialize finishes while nobody pumps the main thread.
+
+    The old preload posted its payload and waited for it; with nothing pumping
+    the fake hdefereval it could not return, so the join below would time out.
+    """
+    hou_fake, fake_hdefereval = fakes
+    handler = _RecordingHandler()
+    server = server_mod.MCPServer(handler=handler)
     outcome = {}
 
     def _call():
@@ -182,80 +365,1122 @@ def _run_initialize_off_main(server, fake_hdefereval):
 
     worker = threading.Thread(target=_call, name="hwebserver-worker", daemon=True)
     worker.start()
-    _pump_until(worker, fake_hdefereval)
+    worker.join(timeout=5.0)
+    assert not worker.is_alive(), (
+        "initialize did not return within 5 s with the main thread idle: it is "
+        "waiting on main-thread work"
+    )
     if "error" in outcome:
         raise outcome["error"]
-    return outcome["response"]
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-def test_initialize_preload_runs_hou_on_the_main_thread(monkeypatch):
-    """The R-001 predicate: off-main initialize -> no off-main hou.* + cached context.
-
-    On 4aab502a this fails twice over: the bridge's undo group and R1 hash run
-    on the hwebserver worker (recorded as off-main hou calls), and the fidelity
-    failure means ``session.project_context`` stays None.
-    """
-    hou_fake = _ThreadRecordingHou()
-    fake_hdefereval = _FakeHdefereval()
-    monkeypatch.setattr(b, "_HOU_AVAILABLE", True)
-    monkeypatch.setattr(b, "hou", hou_fake)
-    monkeypatch.setitem(sys.modules, "hdefereval", fake_hdefereval)
-
-    handler = _ProjectSetupHandler()
-    server = server_mod.MCPServer(handler=handler)
-
-    resp_body, headers = _run_initialize_off_main(server, fake_hdefereval)
-
+    resp_body, headers = outcome["response"]
     assert resp_body is not None
     assert "Mcp-Session-Id" in headers
-
-    main_ident = threading.main_thread().ident
-    off_main = [(name, tid) for name, tid in hou_fake.calls
-                if tid != main_ident]
-    assert off_main == [], (
-        "hou.* ran off Houdini's main thread during initialize: {!r}. The "
-        "preload must dispatch through run_on_main.".format(off_main)
-    )
-
-    session = server._sessions.get_session(headers["Mcp-Session-Id"])
-    assert session is not None
-    assert session.project_context is not None, (
-        "the bridge failed the preload (main_thread_executed=False), so the "
-        "session never cached project_context"
-    )
-
-    # The dispatch went through exactly once (never replayed) and the handler
-    # itself ran on the main thread — the whole dispatch was marshalled.
-    assert [ctype for ctype, _ in handler.calls] == ["project_setup"]
-    assert handler.calls[0][1] == main_ident
+    _assert_no_houdini_work(server, headers, handler, hou_fake, fake_hdefereval)
 
 
-def test_initialize_on_the_main_thread_stays_inline_and_caches(monkeypatch):
-    """A main-thread caller must not self-deadlock and must still cache.
-
-    This is the L8 property: run_on_main's fast path 2 calls the payload
-    directly from the main thread, unlike the vendor's blocking marshal that
-    parked forever when its own thread was the one that had to release it.
-    """
-    hou_fake = _ThreadRecordingHou()
-    fake_hdefereval = _FakeHdefereval()
-    monkeypatch.setattr(b, "_HOU_AVAILABLE", True)
-    monkeypatch.setattr(b, "hou", hou_fake)
-    monkeypatch.setitem(sys.modules, "hdefereval", fake_hdefereval)
-
-    handler = _ProjectSetupHandler()
+def test_initialize_on_the_main_thread_does_no_houdini_work(fakes):
+    """On the main thread run_on_main would run inline, so check the calls."""
+    hou_fake, fake_hdefereval = fakes
+    handler = _RecordingHandler()
     server = server_mod.MCPServer(handler=handler)
 
     resp_body, headers = server.handle_request(_initialize_body())
 
     assert resp_body is not None
-    assert fake_hdefereval.pending.empty(), (
-        "a main-thread initialize deferred its payload — it must run inline "
-        "(deferring from the main thread is the deadlock L8 removed)"
+    _assert_no_houdini_work(server, headers, handler, hou_fake, fake_hdefereval)
+
+
+def test_initialize_never_calls_run_on_main(fakes, monkeypatch):
+    """Nothing in initialize is marshalled, inline or deferred."""
+    marshalled = []
+
+    def _refuse(fn, *args, **kwargs):
+        marshalled.append(kwargs.get("label"))
+        raise AssertionError("initialize called run_on_main (label %r)" % kwargs.get("label"))
+
+    monkeypatch.setattr(main_thread, "run_on_main", _refuse)
+    handler = _RecordingHandler()
+    server = server_mod.MCPServer(handler=handler)
+
+    resp_body, headers = server.handle_request(_initialize_body())
+
+    assert marshalled == []
+    assert resp_body is not None
+    assert handler.calls == []
+
+
+def test_initialize_clears_the_show_config_cache_without_houdini_work(fakes, monkeypatch):
+    """Session start is show config's reload point; the reload is a dict clear only.
+
+    The preload used to reach reload_show_config() through project_setup. It
+    stays in initialize, where it touches no hou, no file and no main thread.
+    """
+    hou_fake, fake_hdefereval = fakes
+    show_config = importlib.import_module("synapse.core.show_config")
+    monkeypatch.setattr(show_config, "hou", hou_fake, raising=False)
+    monkeypatch.setattr(session_mod, "hou", hou_fake, raising=False)
+    stale = ("<stale env file>", "<stale hip show.json>", "<stale job show.json>")
+    show_config._cache[stale] = object()
+    try:
+        server = server_mod.MCPServer(handler=_RecordingHandler())
+        (resp_body, headers), _ident = _run_on_request_thread(
+            lambda: server.handle_request(_initialize_body()), "initialize")
+
+        assert resp_body is not None and "Mcp-Session-Id" in headers
+        assert stale not in show_config._cache, (
+            "initialize no longer reloads show config: a show.json edited between "
+            "sessions is not re-read at session start")
+        assert hou_fake.calls == [], hou_fake.calls
+        assert fake_hdefereval.posted_from == [] and fake_hdefereval.pending.empty()
+    finally:
+        show_config._cache.pop(stale, None)
+
+
+def test_initialize_still_points_agents_at_project_setup(fakes):
+    """The handshake keeps telling the agent to load memory itself."""
+    handler = _RecordingHandler()
+    server = server_mod.MCPServer(handler=handler)
+
+    resp_body, _ = server.handle_request(_initialize_body())
+
+    result = json.loads(resp_body)["result"]
+    assert "synapse_project_setup" in result["instructions"]
+    assert result["capabilities"]["tools"] == {"listChanged": True}
+
+
+# ===========================================================================
+# Session end: initialize's sweep and DELETE /mcp
+# ===========================================================================
+
+_TWO_HOURS = 7200.0
+_REQUEST_JOIN_S = 5.0
+_TEST_CAPTURE_TIMEOUT_S = 5.0
+
+
+class _SessionEndEnv:
+    """One session-end test's fakes, and the thread every call ran on."""
+
+    def __init__(self, hou_fake, hdefereval, recorder, scene):
+        self.hou = hou_fake  # None: the test runs outside Houdini
+        self.hdefereval = hdefereval  # None: there is no hdefereval
+        self.recorder = recorder  # None: a tree without the recorder (red control)
+        self.scene = scene
+        # (writer, agent_usd, summary dict / task cutoff, thread ident)
+        self.writes = []
+        self.lookups = []  # thread ident of every agent.usd lookup
+
+    def wait_for_read(self, count=1):
+        """Wait until the recorder has posted its main-thread read(s)."""
+        assert self.hdefereval.wait_for_posts(count, _REQUEST_JOIN_S), (
+            "the session-end recorder posted no main-thread read within 5 s")
+
+    def run_main(self):
+        """Houdini's main thread goes idle: run what was posted, on THIS thread."""
+        return self.hdefereval.pump()
+
+    def settle(self):
+        if self.recorder is not None:
+            assert self.recorder.wait_idle(_REQUEST_JOIN_S), (
+                "the session-end recorder did not go idle within 5 s"
+            )
+
+    def recorder_started(self):
+        return getattr(self.recorder, "_thread", None) is not None
+
+    def close(self):
+        """Release, stop and join the recorder; leave run_on_main's queue empty."""
+        if self.recorder is None:
+            return
+        if self.hdefereval is not None:
+            deadline = time.monotonic() + _REQUEST_JOIN_S
+            while not self.recorder.wait_idle(0.05):
+                self.hdefereval.pump()  # a read the test never let the main thread run
+                assert time.monotonic() < deadline, "the session-end recorder never went idle"
+            self.hdefereval.pump()  # the wake a cancelled or timed-out read leaves behind
+        stop = getattr(self.recorder, "stop", None)
+        if stop is not None:  # a red-control tree has no stop()
+            assert stop(_REQUEST_JOIN_S), "the session-end recorder thread did not stop"
+            thread = getattr(self.recorder, "_thread", None)
+            assert thread is None or not thread.is_alive()
+        with main_thread._deferred_lock:
+            left = list(main_thread._deferred_calls), main_thread._deferred_wake
+        assert left == ([], None), "the test left run_on_main's deferred queue non-empty"
+
+
+def _scene_layout(tmp_path, layout, monkeypatch):
+    """A scene on disk. ``agent_usd`` is where its session-end record belongs."""
+    if layout == "saved":
+        scene = tmp_path / "shot"
+        (scene / "claude").mkdir(parents=True)
+        hip = scene / "shot.hip"
+        hip.write_text("", encoding="utf-8")
+        agent_usd = scene / "claude" / "agent.usd"
+        agent_usd.write_text("#usda 1.0\n", encoding="utf-8")
+        return {"hip": str(hip), "is_new": False, "agent_usd": str(agent_usd)}
+    if layout == "relocated":
+        # The hip's folder has no claude/; this process recorded a relocation.
+        scene = tmp_path / "locked_shot"
+        scene.mkdir()
+        hip = scene / "shot.hip"
+        hip.write_text("", encoding="utf-8")
+        moved = tmp_path / "moved"
+        (moved / "claude").mkdir(parents=True)
+        agent_usd = moved / "claude" / "agent.usd"
+        agent_usd.write_text("#usda 1.0\n", encoding="utf-8")
+        monkeypatch.setitem(scene_memory._RELOCATED, os.path.normpath(str(scene)), str(moved))
+        return {"hip": str(hip), "is_new": False, "agent_usd": str(agent_usd)}
+    if layout == "unsaved":
+        base = tmp_path / "untitled" / "sessions" / "launch"
+        (base / "claude").mkdir(parents=True)
+        agent_usd = base / "claude" / "agent.usd"
+        agent_usd.write_text("#usda 1.0\n", encoding="utf-8")
+        hip = tmp_path / "bin" / "untitled.hip"  # Houdini's never-saved placeholder
+        return {"hip": str(hip), "is_new": True, "agent_usd": str(agent_usd),
+                "unsaved_base": base}
+    if layout == "no_memory":
+        scene = tmp_path / "fresh"
+        scene.mkdir()
+        hip = scene / "fresh.hip"
+        hip.write_text("", encoding="utf-8")
+        return {"hip": str(hip), "is_new": False, "agent_usd": None,
+                "claude_dir": str(scene / "claude")}
+    if layout == "claude_without_agent_usd":
+        # The scene has notes (claude/memory.md) but no agent.usd yet.
+        scene = tmp_path / "noted"
+        (scene / "claude").mkdir(parents=True)
+        (scene / "claude" / "memory.md").write_text("# Scene memory\n", encoding="utf-8")
+        hip = scene / "noted.hip"
+        hip.write_text("", encoding="utf-8")
+        return {"hip": str(hip), "is_new": False, "agent_usd": None,
+                "claude_dir": str(scene / "claude")}
+    raise AssertionError(layout)
+
+
+def _install_import_hou_seam(monkeypatch, hou_fake):
+    """Route a function-level ``import hou`` to the fake, for this test only.
+
+    The pre-fix cleanup (an older red control's tree) imported hou inside the
+    function, which a module-global patch cannot reach. This intercepts the
+    import statement instead of planting ``sys.modules['hou']``, so nothing
+    becomes resident; the memory modules were imported at the top of this
+    file, before any seam existed. ``None`` makes ``import hou`` fail, as it
+    does outside Houdini.
+    """
+    real_import = builtins.__import__
+
+    def _import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "hou" and level == 0:
+            if hou_fake is None:
+                raise ImportError("No module named 'hou'")
+            return hou_fake
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _import)
+
+
+@pytest.fixture
+def session_end_env(monkeypatch, tmp_path):
+    made = []
+
+    def _make(layout="saved", hou_present=True, hdefereval_present=True,
+              real_writers=False, capture_timeout=_TEST_CAPTURE_TIMEOUT_S):
+        scene = _scene_layout(tmp_path, layout, monkeypatch)
+        hou_fake = _ThreadRecordingHou(scene["hip"], scene["is_new"]) if hou_present else None
+        monkeypatch.setattr(session_mod, "hou", hou_fake, raising=False)
+        _install_import_hou_seam(monkeypatch, hou_fake)
+        # The explicit opt-in: tests/conftest.py turns the records off for the run.
+        monkeypatch.setenv(_RECORDS_ENV, "1")
+        if hdefereval_present:
+            hdefereval = _FakeHdefereval()
+            monkeypatch.setitem(sys.modules, "hdefereval", hdefereval)
+        else:
+            hdefereval = None
+            monkeypatch.setitem(sys.modules, "hdefereval", None)  # import fails
+        with main_thread._deferred_lock:
+            assert main_thread._deferred_wake is None, (
+                "an earlier test left a run_on_main wake that nothing ran")
+        recorder = None
+        if hasattr(session_mod, "_SessionEndRecorder"):
+            try:
+                recorder = session_mod._SessionEndRecorder(capture_timeout=capture_timeout)
+            except TypeError:  # a red-control tree's recorder takes no timeout
+                recorder = session_mod._SessionEndRecorder()
+            monkeypatch.setattr(session_mod, "_RECORDER", recorder)
+        env = _SessionEndEnv(hou_fake, hdefereval, recorder, scene)
+
+        if not real_writers:
+            def _suspend(path, created_at_or_before=None):
+                env.writes.append(
+                    ("suspend_all_tasks", path, created_at_or_before, threading.get_ident()))
+
+            def _log(path, summary):
+                env.writes.append(("log_session", path, dict(summary), threading.get_ident()))
+
+            monkeypatch.setattr(agent_state, "suspend_all_tasks", _suspend)
+            monkeypatch.setattr(agent_state, "log_session", _log)
+        if hasattr(session_mod, "_existing_agent_usd"):
+            real_lookup = session_mod._existing_agent_usd
+
+            def _lookup(facts):
+                env.lookups.append(threading.get_ident())
+                return real_lookup(facts)
+
+            monkeypatch.setattr(session_mod, "_existing_agent_usd", _lookup)
+        if layout == "unsaved" and hou_fake is not None:
+            # In Houdini this reads hou.text.expandString, so it is a hou read.
+            def _existing_unsaved_base():
+                hou_fake.record("memory_lifecycle.existing_unsaved_base")
+                return scene["unsaved_base"]
+
+            monkeypatch.setattr(memory_lifecycle, "existing_unsaved_base", _existing_unsaved_base)
+        made.append(env)
+        return env
+
+    yield _make
+    # Before monkeypatch undoes the fakes: release, stop and join every recorder.
+    for env in made:
+        env.close()
+
+
+def _run_on_request_thread(fn, what):
+    """Call *fn* on an hwebserver-like worker while nothing pumps the main thread."""
+    outcome = {}
+
+    def _call():
+        outcome["ident"] = threading.get_ident()
+        try:
+            outcome["value"] = fn()
+        except BaseException as exc:  # surfaced to the test below
+            outcome["error"] = exc
+
+    worker = threading.Thread(target=_call, name="hwebserver-worker", daemon=True)
+    worker.start()
+    worker.join(timeout=_REQUEST_JOIN_S)
+    assert not worker.is_alive(), (
+        "{} did not return within 5 s with the main thread idle: it is waiting on "
+        "main-thread work".format(what)
     )
-    session = server._sessions.get_session(headers["Mcp-Session-Id"])
-    assert session.project_context is not None
-    assert [ctype for ctype, _ in handler.calls] == ["project_setup"]
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["value"], outcome["ident"]
+
+
+def _expired_session(server):
+    sid = server._sessions.create_session({"name": "expired"})
+    _age(server, sid)
+    return sid
+
+
+def _age(server, *sids):
+    with server._sessions._lock:
+        for sid in sids:
+            server._sessions._sessions[sid].last_activity = time.time() - _TWO_HOURS
+
+
+def _assert_request_thread_clean(env, request_ident, what):
+    if env.hou is not None:
+        on_request = [name for name, ident in env.hou.calls if ident == request_ident]
+        assert on_request == [], (
+            "{} made hou.* calls on its request thread: {}".format(what, on_request)
+        )
+    file_work = [w[0] for w in env.writes if w[3] == request_ident]
+    file_work += ["agent.usd lookup" for ident in env.lookups if ident == request_ident]
+    assert file_work == [], (
+        "{} did session-end file work on its request thread: {}".format(what, file_work)
+    )
+    if env.hdefereval is not None:
+        assert request_ident not in env.hdefereval.posted_from, (
+            "{} posted to hdefereval itself; the vendor registration can wait on "
+            "the HOM lock the main thread holds".format(what)
+        )
+
+
+def _deliver_and_assert_off_main(env, request_ident):
+    """Run the one posted read on this (main) thread; the writes must land elsewhere."""
+    env.wait_for_read()
+    assert env.hou.calls == [], (
+        "hou was read before the main thread ran the posted payload: {}".format(env.hou.calls)
+    )
+    assert env.writes == [], "the record was written before the main thread read the scene"
+    main_ident = threading.get_ident()
+    ran = env.run_main()
+    assert ran == 1, "expected exactly one posted main-thread read, got {}".format(ran)
+    env.settle()
+
+    off_main = [name for name, ident in env.hou.calls if ident != main_ident]
+    assert off_main == [], "hou.* ran off the main thread: {}".format(off_main)
+    assert env.writes, "no session-end record was written after the main thread's read"
+    write_threads = {w[3] for w in env.writes} | set(env.lookups)
+    assert main_ident not in write_threads, "session-end file work ran on the main thread"
+    assert request_ident not in write_threads, "session-end file work ran on the request thread"
+    return [name for name, _ident in env.hou.calls]
+
+
+def _summaries(env):
+    return [w[2]["summary_text"] for w in env.writes if w[0] == "log_session"]
+
+
+class _SessionLog(logging.Handler):
+    """Every record ``synapse.mcp.session`` logs, from any thread."""
+
+    def __init__(self):
+        super().__init__(logging.DEBUG)
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
+
+    def warnings(self):
+        return [r for r in self.records if r.levelno >= logging.WARNING]
+
+
+@pytest.fixture
+def session_log():
+    """Caught on the module's own logger, so propagation settings do not matter."""
+    logger = logging.getLogger("synapse.mcp.session")
+    handler, level = _SessionLog(), logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    yield handler
+    logger.removeHandler(handler)
+    logger.setLevel(level)
+
+
+def test_initialize_sweeping_an_expired_session_does_no_houdini_work_on_its_thread(
+        session_end_env):
+    """initialize ends an expired session: its request thread stays free of hou and files."""
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    expired = _expired_session(server)
+
+    (resp_body, headers), request_ident = _run_on_request_thread(
+        lambda: server.handle_request(_initialize_body()), "initialize")
+
+    assert resp_body is not None and "Mcp-Session-Id" in headers
+    _assert_request_thread_clean(env, request_ident, "initialize")
+    assert server._sessions.get_session(expired) is None
+    _deliver_and_assert_off_main(env, request_ident)
+    assert _summaries(env) == ["MCP session ended (id: {})".format(expired)]
+
+
+def test_delete_does_no_houdini_work_on_its_thread(session_end_env):
+    """DELETE /mcp (destroy_session) returns with the main thread idle and no hou on its thread."""
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+
+    destroyed, request_ident = _run_on_request_thread(
+        lambda: server.destroy_session(sid), "DELETE /mcp")
+
+    assert destroyed is True
+    _assert_request_thread_clean(env, request_ident, "DELETE /mcp")
+    assert server._sessions.get_session(sid) is None
+    _deliver_and_assert_off_main(env, request_ident)
+
+
+@pytest.mark.parametrize("layout", ["saved", "relocated", "unsaved"])
+def test_session_end_record_lands_in_the_scenes_existing_agent_usd(session_end_env, layout):
+    """Once main runs the read, the record goes to the agent.usd the resolver names."""
+    env = session_end_env(layout)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "ending"})
+
+    destroyed, request_ident = _run_on_request_thread(
+        lambda: server.destroy_session(sid), "DELETE /mcp")
+    assert destroyed is True
+    _assert_request_thread_clean(env, request_ident, "DELETE /mcp")
+    hou_reads = _deliver_and_assert_off_main(env, request_ident)
+
+    agent_usd = env.scene["agent_usd"]
+    assert [(w[0], w[1]) for w in env.writes] == [
+        ("suspend_all_tasks", agent_usd), ("log_session", agent_usd)]
+    cutoff, summary = env.writes[0][2], env.writes[1][2]
+    assert summary["summary_text"] == "MCP session ended (id: {})".format(sid)
+    assert isinstance(cutoff, float), (
+        "suspend_all_tasks was not limited to tasks created by the end: {!r}".format(cutoff))
+    assert summary["end_time"] == time.strftime(_STAMP, time.gmtime(cutoff)), (
+        "the task cutoff and the record's end time are not the same moment")
+    if layout == "unsaved":
+        assert hou_reads == ["hou.hipFile.path", "hou.hipFile.isNewFile",
+                             "memory_lifecycle.existing_unsaved_base"]
+    else:
+        assert hou_reads == ["hou.hipFile.path"]
+        resolved = os.path.join(scene_memory.resolve_hip_dir(env.scene["hip"]),
+                                "claude", "agent.usd")
+        assert os.path.normcase(resolved) == os.path.normcase(agent_usd)
+
+
+def test_session_end_creates_no_memory_folder(session_end_env):
+    """A scene with no claude/ gets none: a session end seeds nothing."""
+    env = session_end_env("no_memory")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "ending"})
+
+    destroyed, request_ident = _run_on_request_thread(
+        lambda: server.destroy_session(sid), "DELETE /mcp")
+
+    assert destroyed is True
+    assert not os.path.exists(env.scene["claude_dir"]), (
+        "the session end created claude/ on the request thread")
+    _assert_request_thread_clean(env, request_ident, "DELETE /mcp")
+    env.wait_for_read()
+    assert env.run_main() == 1
+    env.settle()
+    assert env.writes == []
+    assert not os.path.exists(env.scene["claude_dir"])
+
+
+def test_a_claude_folder_without_agent_usd_gets_no_record_and_no_new_file(session_end_env):
+    """claude/ exists but agent.usd does not: the end writes nothing and creates nothing.
+
+    The recorder does look (the lookup runs on its thread); agent_state's
+    writers would create the file, so the lookup's isfile guard is what keeps
+    a session end from seeding agent.usd.
+    """
+    env = session_end_env("claude_without_agent_usd")
+    claude_dir = env.scene["claude_dir"]
+    before = sorted(os.listdir(claude_dir))
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "ending"})
+
+    destroyed, request_ident = _run_on_request_thread(
+        lambda: server.destroy_session(sid), "DELETE /mcp")
+
+    assert destroyed is True
+    _assert_request_thread_clean(env, request_ident, "DELETE /mcp")
+    env.wait_for_read()
+    assert env.run_main() == 1
+    env.settle()
+    assert env.lookups, "the recorder never looked for the scene's agent.usd"
+    assert env.writes == [], "a session end wrote into a scene with no agent.usd: {}".format(
+        [w[:2] for w in env.writes])
+    assert sorted(os.listdir(claude_dir)) == before == ["memory.md"]
+
+
+def test_outside_houdini_a_session_end_records_and_posts_nothing(session_end_env):
+    """No hou: initialize's sweep and DELETE still work and nothing is recorded."""
+    env = session_end_env("saved", hou_present=False)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    leaving = server._sessions.create_session({"name": "leaving"})
+    expired = _expired_session(server)
+
+    (resp_body, _), _ident = _run_on_request_thread(
+        lambda: server.handle_request(_initialize_body()), "initialize")
+    destroyed, _ident = _run_on_request_thread(
+        lambda: server.destroy_session(leaving), "DELETE /mcp")
+
+    assert resp_body is not None and destroyed is True
+    assert server._sessions.get_session(expired) is None
+    env.settle()
+    assert env.hdefereval.pending.empty() and env.hdefereval.posted_from == []
+    assert env.writes == [] and env.lookups == []
+    assert not env.recorder_started()
+
+
+def test_without_hdefereval_a_session_end_posts_and_records_nothing(session_end_env):
+    """hou but no hdefereval: nothing posted or written; later ends queue nothing.
+
+    The recorder thread (not the request thread) finds that hdefereval does
+    not import, drops the end and exits; the next end starts no thread.
+    """
+    env = session_end_env("saved", hdefereval_present=False)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    first = server._sessions.create_session({"name": "leaving"})
+    second = server._sessions.create_session({"name": "later"})
+
+    destroyed, request_ident = _run_on_request_thread(
+        lambda: server.destroy_session(first), "DELETE /mcp")
+
+    assert destroyed is True
+    _assert_request_thread_clean(env, request_ident, "DELETE /mcp")
+    env.settle()
+    checker = env.recorder._thread
+    assert checker is not None and checker.name == _RECORDER_THREAD_NAME
+    checker.join(_REQUEST_JOIN_S)
+    assert not checker.is_alive(), "the recorder thread kept running without hdefereval"
+
+    destroyed, _ident = _run_on_request_thread(
+        lambda: server.destroy_session(second), "DELETE /mcp")
+
+    assert destroyed is True
+    env.settle()
+    assert env.recorder._thread is checker, "a later end started another recorder thread"
+    assert env.hou.calls == []
+    assert env.writes == [] and env.lookups == []
+
+
+def test_in_hython_initialize_and_delete_make_no_hou_call_on_their_thread(
+        session_end_env, monkeypatch):
+    """hdefereval's import guard calls hou.isUIAvailable(): never on a request thread.
+
+    Under hython ``hou`` imports and ``import hdefereval`` runs the vendor body
+    and fails, on every attempt. initialize's sweep and DELETE /mcp end
+    sessions on hwebserver workers, so that check belongs to the recorder
+    thread: once per process, and nothing is recorded.
+    """
+    env = session_end_env("saved", hdefereval_present=False)
+    vendor = _VendorHdefereval(env.hou)
+    monkeypatch.delitem(sys.modules, "hdefereval")  # absent, so the import finds the hook
+    monkeypatch.setattr(sys, "meta_path", [vendor] + sys.meta_path)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    leaving = server._sessions.create_session({"name": "leaving"})
+    expired = _expired_session(server)
+
+    (resp_body, headers), _ident = _run_on_request_thread(
+        lambda: server.handle_request(_initialize_body()), "initialize")
+    env.settle()
+    destroyed, _ident = _run_on_request_thread(
+        lambda: server.destroy_session(leaving), "DELETE /mcp")
+    env.settle()
+
+    assert resp_body is not None and "Mcp-Session-Id" in headers and destroyed is True
+    assert server._sessions.get_session(expired) is None
+    on_request_threads = [name for name in env.hou.ui_checks if name != _RECORDER_THREAD_NAME]
+    assert on_request_threads == [], (
+        "initialize / DELETE ran hdefereval's import guard (hou.isUIAvailable) on "
+        "their own thread: {}".format(on_request_threads))
+    assert env.hou.ui_checks == [_RECORDER_THREAD_NAME], (
+        "the recorder thread should run the import guard exactly once: {}".format(
+            env.hou.ui_checks))
+    assert vendor.ran_on == [_RECORDER_THREAD_NAME]
+    assert [name for name, _ident in env.hou.calls] == ["hou.isUIAvailable"]
+    assert env.writes == [] and env.lookups == []
+
+
+class _RaisingVendorHdefereval(_VendorHdefereval):
+    """``import hdefereval`` whose module body raises something other than ImportError."""
+
+    def exec_module(self, module):
+        self.ran_on.append(threading.current_thread().name)
+        raise RuntimeError("the hdefereval module body failed")
+
+
+def test_an_hdefereval_import_that_raises_turns_records_off_without_dead_threads(
+        session_end_env, monkeypatch, session_log):
+    """A RuntimeError from the vendor body is handled like hython's ImportError.
+
+    Only ImportError used to be caught: each end then started a recorder
+    thread that died on the same import, the ends stayed queued, and the
+    queue grew with every end. Now the first thread logs one warning with
+    the traceback, drops what is queued and exits; later ends queue nothing
+    and start no thread.
+    """
+    env = session_end_env("saved", hdefereval_present=False)
+    vendor = _RaisingVendorHdefereval(env.hou)
+    monkeypatch.delitem(sys.modules, "hdefereval")  # absent, so the import finds the hook
+    monkeypatch.setattr(sys, "meta_path", [vendor] + sys.meta_path)
+    died = []
+    monkeypatch.setattr(threading, "excepthook",
+                        lambda args: died.append((args.thread.name, args.exc_type.__name__)))
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sids = [server._sessions.create_session({"name": name}) for name in ("a", "b", "c")]
+
+    for sid in sids:
+        destroyed, _ident = _run_on_request_thread(
+            lambda sid=sid: server.destroy_session(sid), "DELETE /mcp")
+        assert destroyed is True
+        thread = env.recorder._thread
+        if thread is not None:
+            thread.join(_REQUEST_JOIN_S)  # this end's import attempt is over
+
+    assert died == [], "recorder threads died on the hdefereval import: {}".format(died)
+    assert vendor.ran_on == [_RECORDER_THREAD_NAME], (
+        "the import ran again for later ends: {}".format(vendor.ran_on))
+    assert env.recorder.wait_idle(0.5), "ends are still queued: {}".format(
+        [end.ids for end in env.recorder._pending])
+    warned = session_log.warnings()
+    assert len(warned) == 1, [r.getMessage() for r in warned]
+    assert warned[0].exc_info is not None and warned[0].exc_info[0] is RuntimeError
+    assert env.hou.calls == [] and env.writes == [] and env.lookups == []
+
+
+def test_with_the_records_switched_off_a_session_end_posts_and_writes_nothing(
+        session_end_env, monkeypatch):
+    """SYNAPSE_MCP_SESSION_END_RECORDS=off: nothing queued, posted, read or written."""
+    env = session_end_env("saved")
+    monkeypatch.setenv(_RECORDS_ENV, "off")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+
+    destroyed, request_ident = _run_on_request_thread(
+        lambda: server.destroy_session(sid), "DELETE /mcp")
+
+    assert destroyed is True
+    _assert_request_thread_clean(env, request_ident, "DELETE /mcp")
+    env.settle()
+    assert env.hdefereval.posted_from == [] and env.hou.calls == []
+    assert env.writes == [] and env.lookups == []
+    assert not env.recorder_started()
+
+
+class _SlowVendorHdefereval(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+    """``import hdefereval`` that holds the importing thread until the test releases it.
+
+    The module it then makes posts to *fake*, as the vendor's posts to Houdini.
+    """
+
+    def __init__(self, fake):
+        self._fake = fake
+        self.importing = threading.Event()
+        self.release = threading.Event()
+
+    def find_spec(self, name, path=None, target=None):
+        if name != "hdefereval":
+            return None
+        return importlib.util.spec_from_loader(name, self)
+
+    def create_module(self, spec):
+        return None  # the default module object
+
+    def exec_module(self, module):
+        self.importing.set()
+        self.release.wait(_REQUEST_JOIN_S)
+        module.executeDeferred = self._fake.executeDeferred
+
+
+def test_ends_queued_before_the_records_switch_went_off_post_no_read(
+        session_end_env, monkeypatch):
+    """The end queued while records were on; the recorder takes it after they went off.
+
+    The recorder thread is held in its hdefereval import while the operator
+    switches the records off. It reads the switch again when it takes the
+    batch, so it posts no scene read to Houdini's main thread and writes
+    nothing.
+    """
+    env = session_end_env("saved")
+    slow = _SlowVendorHdefereval(env.hdefereval)
+    monkeypatch.delitem(sys.modules, "hdefereval")  # absent, so the import finds the hook
+    monkeypatch.setattr(sys, "meta_path", [slow] + sys.meta_path)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+
+    destroyed, _ident = _run_on_request_thread(
+        lambda: server.destroy_session(sid), "DELETE /mcp")
+    assert destroyed is True
+    assert slow.importing.wait(_REQUEST_JOIN_S), "the recorder thread never began its import"
+    monkeypatch.setenv(_RECORDS_ENV, "off")  # the operator turns the records off
+    slow.release.set()
+
+    deadline = time.monotonic() + _REQUEST_JOIN_S
+    while not env.recorder.wait_idle(0.05) and not env.hdefereval.posted_from:
+        assert time.monotonic() < deadline, "the recorder neither posted nor went idle"
+    assert env.hdefereval.posted_from == [], (
+        "an end queued before the records went off still posted its scene read")
+    assert env.hou.calls == [] and env.writes == [] and env.lookups == []
+
+
+def test_switching_the_records_off_while_a_read_is_pending_writes_nothing(
+        session_end_env, monkeypatch):
+    """Main is stalled with a read posted and an end queued behind it; the records go off.
+
+    The likeliest moment for an operator to reach for the switch. The read
+    already posted still runs when main answers -- it cannot be unposted --
+    but the recorder reads the switch again before it writes, so neither end
+    is written.
+    """
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    first = server._sessions.create_session({"name": "first"})
+    second = server._sessions.create_session({"name": "second"})
+
+    _run_on_request_thread(lambda: server.destroy_session(first), "DELETE /mcp")
+    env.wait_for_read()  # posted; Houdini's main thread is stalled
+    _run_on_request_thread(lambda: server.destroy_session(second), "DELETE /mcp")
+    monkeypatch.setenv(_RECORDS_ENV, "off")
+    assert env.run_main() == 1  # main answers: the read runs
+    env.settle()
+
+    assert [name for name, _ident in env.hou.calls] == ["hou.hipFile.path"]
+    assert env.writes == [] and env.lookups == [], (
+        "the records were switched off while the read was pending, and written anyway: "
+        "{}".format([w[:2] for w in env.writes]))
+
+
+def test_without_opting_in_a_test_cannot_start_the_process_wide_recorder(monkeypatch):
+    """The suite's fake hou and a planted hdefereval are not enough to start it.
+
+    tests/conftest.py turns the records off for the run; a test that ends MCP
+    sessions without opting in (as tests/test_mcp_protocol.py does) starts no
+    recorder thread and posts no read.
+    """
+    hou_fake = _ThreadRecordingHou("shot.hip", False)
+    fake_hdefereval = _FakeHdefereval()
+    monkeypatch.setattr(session_mod, "hou", hou_fake, raising=False)
+    monkeypatch.setitem(sys.modules, "hdefereval", fake_hdefereval)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    leaving = server._sessions.create_session({"name": "leaving"})
+    _expired_session(server)
+
+    server.handle_request(_initialize_body())  # sweeps the expired session
+    assert server.destroy_session(leaving) is True
+
+    assert fake_hdefereval.posted_from == [], (
+        "the process-wide session-end recorder started and posted a read without "
+        "the test opting in")
+    assert [t.name for t in threading.enumerate()
+            if t.name == _RECORDER_THREAD_NAME and t.is_alive()] == []
+    assert hou_fake.calls == []
+    assert os.environ.get(_RECORDS_ENV) == "0", (
+        "tests/conftest.py no longer turns MCP session-end records off for the run")
+
+
+def test_the_recorder_thread_is_a_daemon(session_end_env):
+    """A recorder waiting on a stalled main thread never holds the process open at exit."""
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+
+    _run_on_request_thread(lambda: server.destroy_session(sid), "DELETE /mcp")
+    env.wait_for_read()
+
+    thread = env.recorder._thread
+    assert thread is not None and thread.is_alive()
+    assert thread.daemon is True, "the session-end recorder thread is not a daemon"
+    assert thread.name == _RECORDER_THREAD_NAME  # tests/conftest.py finds leaks by name
+    env.run_main()
+    env.settle()
+
+
+def test_stop_joins_the_recorder_thread_and_later_ends_start_nothing(session_end_env):
+    """``stop`` ends and joins the thread; an end after it queues nothing."""
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    first = server._sessions.create_session({"name": "first"})
+    _run_on_request_thread(lambda: server.destroy_session(first), "DELETE /mcp")
+    env.wait_for_read()
+    env.run_main()
+    env.settle()
+    thread = env.recorder._thread
+
+    assert env.recorder.stop(_REQUEST_JOIN_S) is True
+    assert not thread.is_alive()
+
+    second = server._sessions.create_session({"name": "second"})
+    _run_on_request_thread(lambda: server.destroy_session(second), "DELETE /mcp")
+    assert env.recorder._thread is thread and not thread.is_alive()
+    assert env.recorder.wait_idle(0.1)
+    assert _summaries(env) == ["MCP session ended (id: {})".format(first)]
+
+
+def test_a_sweep_that_ends_several_sessions_writes_one_record_naming_them_all(
+        session_end_env):
+    """Two sessions expire together: one record, both ids, in the order they ended."""
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    first = server._sessions.create_session({"name": "first"})
+    second = server._sessions.create_session({"name": "second"})
+    _age(server, first, second)
+
+    (resp_body, _), request_ident = _run_on_request_thread(
+        lambda: server.handle_request(_initialize_body()), "initialize")
+
+    assert resp_body is not None
+    _assert_request_thread_clean(env, request_ident, "initialize")
+    _deliver_and_assert_off_main(env, request_ident)
+    assert _summaries(env) == ["MCP sessions ended (ids: {}, {})".format(first, second)]
+    assert [w[0] for w in env.writes] == ["suspend_all_tasks", "log_session"]
+
+
+def test_ends_queued_behind_a_stalled_main_thread_become_one_record(session_end_env):
+    """Three DELETEs while the main thread is busy: one read, one record, the last end's time.
+
+    log_session names its prim by the second it writes, so three records
+    written together after the stall would overwrite each other.
+    """
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sids = [server._sessions.create_session({"name": n}) for n in ("a", "b", "c")]
+
+    _run_on_request_thread(lambda: server.destroy_session(sids[0]), "DELETE /mcp")
+    env.wait_for_read()  # the recorder's read waits on a main thread that is not running
+    for sid in sids[1:]:
+        before_last = time.time()
+        destroyed, ident = _run_on_request_thread(
+            lambda sid=sid: server.destroy_session(sid), "DELETE /mcp")
+        assert destroyed is True
+        _assert_request_thread_clean(env, ident, "DELETE /mcp")
+    assert env.writes == []
+
+    env.run_main()  # the main thread comes back
+    env.settle()
+
+    assert _summaries(env) == ["MCP sessions ended (ids: {})".format(", ".join(sids))], (
+        "ends queued behind the stalled main thread were written as separate records")
+    suspends = [w for w in env.writes if w[0] == "suspend_all_tasks"]
+    assert len(suspends) == 1
+    cutoff = suspends[0][2]
+    assert isinstance(cutoff, float) and cutoff >= before_last, (
+        "the task cutoff is not the last end's time")
+    log = [w for w in env.writes if w[0] == "log_session"][0]
+    assert log[2]["end_time"] == time.strftime(_STAMP, time.gmtime(cutoff))
+
+
+def _use_fake_pxr(monkeypatch):
+    """agent_state on the FakeStage harness, with a stage registry of this test's own."""
+    monkeypatch.setattr(pxr_harness, "_fake_stages", {})
+    fake_usd = types.SimpleNamespace(Stage=types.SimpleNamespace(
+        CreateNew=pxr_harness._fake_create_new, Open=pxr_harness._fake_open))
+    monkeypatch.setattr(agent_state, "PXR_AVAILABLE", True)
+    monkeypatch.setattr(agent_state, "Usd", fake_usd)
+    monkeypatch.setattr(agent_state, "Sdf", pxr_harness.FakeSdf)
+    monkeypatch.setattr(agent_state, "Vt", pxr_harness.FakeVt)
+
+
+def test_a_task_created_after_the_end_survives_the_late_record(session_end_env, monkeypatch):
+    """The record lands after the next session dispatched work; that work stays pending.
+
+    The inline write this replaced finished before DELETE returned, so it could
+    never see a later task. The deferred one can, and must leave it alone.
+    """
+    env = session_end_env("saved", real_writers=True)
+    _use_fake_pxr(monkeypatch)
+    agent_usd = env.scene["agent_usd"]
+    agent_state.initialize_agent_usd(agent_usd)
+    real_now = agent_state._now
+    monkeypatch.setattr(agent_state, "_now",
+                        lambda: time.strftime(_STAMP, time.gmtime(time.time() - 60)))
+    agent_state.create_task(agent_usd, "left_running", "dispatched before the session ended")
+    monkeypatch.setattr(agent_state, "_now", real_now)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+
+    _run_on_request_thread(lambda: server.destroy_session(sid), "DELETE /mcp")
+    env.wait_for_read()  # Houdini's main thread is busy; the record is not written yet
+    agent_state.create_task(agent_usd, "next_session", "dispatched after the session ended")
+    env.run_main()
+    env.settle()
+
+    stage = pxr_harness._fake_stages[os.path.normpath(agent_usd)]
+
+    def _status(task_id):
+        return stage.GetPrimAtPath(
+            "/SYNAPSE/agent/tasks/" + task_id).GetAttribute("synapse:status").Get()
+
+    assert _status("next_session") == "pending", (
+        "the late session-end record suspended a task created after the session ended")
+    assert _status("left_running") == "suspended"
+    history = stage.GetPrimAtPath("/SYNAPSE/agent/session_history").GetChildren()
+    assert [p.GetAttribute("synapse:summary").Get() for p in history] == [
+        "MCP session ended (id: {})".format(sid)]
+
+
+def _stamped_task(agent_usd, task_id, epoch, monkeypatch):
+    """create_task with its synapse:createdAt stamped at *epoch* (agent_state._now)."""
+    stamp = time.strftime(_STAMP, time.gmtime(epoch))
+    with monkeypatch.context() as patch:
+        patch.setattr(agent_state, "_now", lambda: stamp)
+        agent_state.create_task(agent_usd, task_id, "created at " + stamp)
+
+
+def _task_status(agent_usd, task_id):
+    stage = pxr_harness._fake_stages[os.path.normpath(agent_usd)]
+    return stage.GetPrimAtPath(
+        "/SYNAPSE/agent/tasks/" + task_id).GetAttribute("synapse:status").Get()
+
+
+def _history(agent_usd):
+    """(summary, endTime) of every session_history entry."""
+    stage = pxr_harness._fake_stages[os.path.normpath(agent_usd)]
+    return [(p.GetAttribute("synapse:summary").Get(), p.GetAttribute("synapse:endTime").Get())
+            for p in stage.GetPrimAtPath("/SYNAPSE/agent/session_history").GetChildren()]
+
+
+@pytest.mark.parametrize("removal", ["expired", "evicted"])
+def test_a_swept_session_ends_at_its_last_request_not_at_the_sweep(
+        session_end_env, monkeypatch, removal):
+    """A session goes idle, another client creates a task, then an initialize sweeps it.
+
+    In the GUI default every MCP session ends this way: the panel sends no
+    DELETE, so a session ends when some later initialize sweeps it. Its
+    record lands at the sweep but ends at the session's last request
+    (``last_activity``), both ways: the task created while the session sat
+    idle stays pending, and the task that existed when it went idle is
+    suspended. Both of the sweep's removals: past the TTL ("expired"), and
+    over the session cap ("evicted": live, but the least recently active).
+    """
+    env = session_end_env("saved", real_writers=True)
+    _use_fake_pxr(monkeypatch)
+    agent_usd = env.scene["agent_usd"]
+    agent_state.initialize_agent_usd(agent_usd)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    idle = server._sessions.create_session({"name": "went idle"})
+    server._sessions.create_session({"name": "still active"})
+    if removal == "expired":
+        went_idle = time.time() - _TWO_HOURS
+    else:
+        monkeypatch.setattr(session_mod, "_MAX_SESSIONS", 1)
+        went_idle = time.time() - 600.0  # inside the 30 min TTL: evicted, not expired
+    with server._sessions._lock:
+        server._sessions._sessions[idle].last_activity = went_idle
+    _stamped_task(agent_usd, "existed_when_idle", went_idle - 60.0, monkeypatch)
+    _stamped_task(agent_usd, "created_while_idle", went_idle + 300.0, monkeypatch)
+
+    (resp_body, _headers), request_ident = _run_on_request_thread(
+        lambda: server.handle_request(_initialize_body()), "initialize")
+
+    assert resp_body is not None
+    assert server._sessions.get_session(idle) is None, "the sweep did not remove the session"
+    _assert_request_thread_clean(env, request_ident, "initialize")
+    env.wait_for_read()
+    assert env.run_main() == 1
+    env.settle()
+    assert _task_status(agent_usd, "created_while_idle") == "pending", (
+        "the swept session's late record suspended a task created after it went idle")
+    assert _task_status(agent_usd, "existed_when_idle") == "suspended"
+    assert _history(agent_usd) == [("MCP session ended (id: {})".format(idle),
+                                    time.strftime(_STAMP, time.gmtime(went_idle)))], (
+        "the record's end time is not the session's last request")
+
+
+def test_delete_ends_the_session_when_it_is_called(session_end_env, monkeypatch):
+    """DELETE /mcp keeps the call time; only the sweep ends a session at its last request.
+
+    A task created after the session's last request but before its DELETE
+    existed when the session ended, so the record suspends it.
+    """
+    env = session_end_env("saved", real_writers=True)
+    _use_fake_pxr(monkeypatch)
+    agent_usd = env.scene["agent_usd"]
+    agent_state.initialize_agent_usd(agent_usd)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+    last_request = time.time() - 600.0
+    with server._sessions._lock:
+        server._sessions._sessions[sid].last_activity = last_request
+    _stamped_task(agent_usd, "after_last_request", last_request + 300.0, monkeypatch)
+
+    called = time.strftime(_STAMP, time.gmtime(time.time()))
+    _run_on_request_thread(lambda: server.destroy_session(sid), "DELETE /mcp")
+    env.wait_for_read()
+    env.run_main()
+    env.settle()
+
+    assert _task_status(agent_usd, "after_last_request") == "suspended"
+    [(summary, end_time)] = _history(agent_usd)
+    assert summary == "MCP session ended (id: {})".format(sid)
+    assert end_time >= called, "the DELETE's record ends before DELETE was called"
+
+
+def test_the_scene_read_is_a_labelled_registered_main_thread_dispatch(session_end_env):
+    """The read goes through run_on_main: labelled while it holds main, cancellable while queued."""
+    env = session_end_env("saved")
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "leaving"})
+
+    _run_on_request_thread(lambda: server.destroy_session(sid), "DELETE /mcp")
+    env.wait_for_read()
+    with main_thread._pending_lock:
+        queued = [entry[2] for entry in main_thread._pending_dispatches.values()]
+    assert queued == [_CAPTURE_LABEL], (
+        "the session-end read is not in run_on_main's pending-dispatch registry, so "
+        "the emergency halt cannot cancel it: {}".format(queued))
+
+    env.run_main()
+    env.settle()
+
+    assert env.hou.holders and set(env.hou.holders) == {_CAPTURE_LABEL}, (
+        "the main-thread read ran unlabelled: {}".format(env.hou.holders))
+    assert main_thread.pending_dispatch_count() == 0
+    assert _summaries(env) == ["MCP session ended (id: {})".format(sid)]
+
+
+def test_the_emergency_halt_cancels_a_queued_scene_read(session_end_env):
+    """cancel_pending_dispatches stops the read; the recorder gives up and keeps working.
+
+    The read opts out of the stall detector and the dispatch-wait histogram
+    (``record_stall=False``, ``record_wait=False``). Neither the cancel nor the
+    2 s timeout that follows may move them: two recorder timeouts behind a
+    long cook would otherwise trip is_main_thread_stalled(), and the
+    WebSocket layer would start fast-failing real commands.
+    """
+    env = session_end_env("saved", capture_timeout=2.0)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    halted = server._sessions.create_session({"name": "halted"})
+    stalls_before = main_thread.stall_state()["consecutive_timeouts"]
+    waits_before = main_thread.dispatch_wait_stats()
+
+    _run_on_request_thread(lambda: server.destroy_session(halted), "DELETE /mcp")
+    env.wait_for_read()
+    assert main_thread.cancel_pending_dispatches("test: emergency halt") == 1
+
+    env.run_main()  # Houdini wakes: the cancelled read does not run
+    env.settle()  # the recorder stops waiting after its 2 s
+    assert env.hou.calls == [] and env.writes == [] and env.lookups == []
+    assert main_thread.stall_state()["consecutive_timeouts"] == stalls_before, (
+        "the session-end read's timeout was counted by the stall detector")
+    assert main_thread.dispatch_wait_stats() == waits_before, (
+        "the session-end read was sampled into the dispatch-wait histogram")
+
+    later = server._sessions.create_session({"name": "later"})
+    _run_on_request_thread(lambda: server.destroy_session(later), "DELETE /mcp")
+    env.wait_for_read(count=2)
+    env.run_main()
+    env.settle()
+    assert _summaries(env) == ["MCP session ended (id: {})".format(later)]
+
+
+def test_a_scene_read_that_did_not_finish_is_logged_as_that(session_end_env, session_log):
+    """The halt cancels the read: the warning says it did not finish, not that main never ran it.
+
+    run_on_main raises the same timeout after a cancel as after a busy main
+    thread, and only once the full capture timeout has passed, so the
+    warning names both causes, the limit, and whether the read started.
+    """
+    env = session_end_env("saved", capture_timeout=0.5)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    sid = server._sessions.create_session({"name": "halted"})
+
+    _run_on_request_thread(lambda: server.destroy_session(sid), "DELETE /mcp")
+    env.wait_for_read()
+    assert main_thread.cancel_pending_dispatches("test: emergency halt") == 1
+    env.run_main()  # the cancelled read does not run
+    env.settle()  # the recorder gives up after its 0.5 s
+
+    assert [r.getMessage() for r in session_log.warnings()] == [
+        "Session-end record for ('{}',) skipped: the scene read did not finish within "
+        "0.5 s (Houdini's main thread busy, or the read cancelled by the emergency halt; "
+        "started: False)".format(sid)]
+    assert env.hou.calls == [] and env.writes == []
+
+
+def test_a_recorder_thread_that_cannot_start_still_lets_initialize_and_delete_answer(
+        session_end_env, monkeypatch):
+    """Session-end bookkeeping never fails initialize or DELETE /mcp.
+
+    ``Thread.start()`` can raise ("can't start new thread"). initialize's
+    sweep and DELETE both end sessions, so the error is logged and the
+    handshake still answers. The ends no thread will take are dropped, not
+    left queued.
+    """
+    env = session_end_env("saved")
+
+    class _ThreadThatCannotStart(threading.Thread):
+        def start(self):
+            raise RuntimeError("can't start new thread")
+
+    fake_threading = types.ModuleType("threading")
+    fake_threading.__dict__.update(threading.__dict__)
+    fake_threading.Thread = _ThreadThatCannotStart
+    monkeypatch.setattr(session_mod, "threading", fake_threading)
+    server = server_mod.MCPServer(handler=_RecordingHandler())
+    leaving = server._sessions.create_session({"name": "leaving"})
+    expired = _expired_session(server)
+
+    (resp_body, headers), _ident = _run_on_request_thread(
+        lambda: server.handle_request(_initialize_body()), "initialize")
+    destroyed, _ident = _run_on_request_thread(
+        lambda: server.destroy_session(leaving), "DELETE /mcp")
+
+    assert resp_body is not None and "Mcp-Session-Id" in headers
+    assert json.loads(resp_body)["result"]["serverInfo"]["name"] == "synapse"
+    assert server._sessions.get_session(expired) is None
+    assert destroyed is True and server._sessions.get_session(leaving) is None
+    assert env.recorder.wait_idle(0.1), "ends that no thread will take are still queued"
+    assert env.hdefereval.posted_from == [] and env.writes == [] and env.lookups == []
+
+
+def test_the_capture_timeout_is_the_freeze_chains_escalation_age():
+    """mcp/session.py says _CAPTURE_TIMEOUT_S is freeze_chain.ESCALATION_S; keep them equal."""
+    from synapse.server import freeze_chain
+
+    assert session_mod._CAPTURE_TIMEOUT_S == freeze_chain.ESCALATION_S

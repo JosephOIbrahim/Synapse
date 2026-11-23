@@ -64,6 +64,24 @@ SESSION_SCRATCH = _give_the_session_its_own_folder()
 
 
 # ---------------------------------------------------------------------------
+# MCP session-end records are off unless a test turns them on
+# ---------------------------------------------------------------------------
+# python/synapse/mcp/session.py writes each MCP session end from a recorder
+# thread that asks Houdini's main thread for a scene read. The canonical fake
+# `hou` below, plus the sys.modules['hdefereval'] fakes many test modules
+# plant, would let any test that ends an MCP session start that thread and
+# post reads to a fake nobody runs: in the module's process-wide recorder, or
+# in a private copy of the module (tests/test_resilience_fixes.py loads some).
+# The switch is read per call, so this one assignment covers every copy.
+# Unlike the folders above it is not a default: an operator's own value is
+# overridden for the test session. A test that wants records turns it back on
+# (monkeypatch.setenv(..., "1")), uses a recorder of its own and stops it;
+# _no_session_end_recorder_left_running below fails a test that leaves a
+# recorder thread running.
+os.environ["SYNAPSE_MCP_SESSION_END_RECORDS"] = "0"
+
+
+# ---------------------------------------------------------------------------
 # Single-source build constants (runway §1.3 — the dual-build H21/H22 axis)
 # ---------------------------------------------------------------------------
 # Tests that pin against the RUNNING build parametrize on HOUDINI_BUILD.
@@ -894,6 +912,56 @@ def _contain_leaked_freeze_chain():
         "the conftest net (R310a zombie class) -- add shutdown_freeze_chain() "
         "to the test's teardown",
         RuntimeWarning, stacklevel=2)
+
+
+# The name python/synapse/mcp/session.py gives its recorder thread
+# (_RECORDER_THREAD_NAME). Matched by name so every copy of the module counts.
+SESSION_END_RECORDER_THREAD = "synapse-mcp-session-end"
+
+
+def session_end_recorder_threads():
+    """MCP session-end recorder threads alive right now, from any module copy."""
+    import threading as _threading
+    return [t for t in _threading.enumerate()
+            if t.name == SESSION_END_RECORDER_THREAD and t.is_alive()]
+
+
+@pytest.fixture(autouse=True)
+def _no_session_end_recorder_left_running():
+    """Fail a test that leaves an MCP session-end recorder thread running.
+
+    Session-end records are off for the test session (see the
+    SYNAPSE_MCP_SESSION_END_RECORDS assignment at the top of this file), so a
+    recorder thread exists only where a test turned them on. That test must
+    stop and join every recorder it started (``_SessionEndRecorder.stop``): a
+    running one can hold a run_on_main dispatch whose wake no later test runs.
+
+    FAILS rather than warns: no test is expected to leave one, and passing
+    after every test is the evidence that no recorder thread survives a run.
+    The thread is stopped first when its recorder can be reached, so one leak
+    does not fail every later test too. No monkeypatch here (see
+    _scrub_worker_tool_allowlist for why a function-scoped autouse fixture in
+    this file must not request it).
+    """
+    yield
+    leaked = session_end_recorder_threads()
+    if not leaked:
+        return
+    for thread in leaked:
+        recorder = getattr(getattr(thread, "_target", None), "__self__", None)
+        stop = getattr(recorder, "stop", None)
+        if stop is not None:
+            try:
+                stop(5.0)
+            except Exception as exc:  # containment only; the failure below is the report
+                print("could not stop leaked session-end recorder: %r" % (exc,))
+    pytest.fail(
+        "MCP session-end recorder thread(s) still running after this test: "
+        f"{[t.name for t in leaked]}. A test that turns "
+        "SYNAPSE_MCP_SESSION_END_RECORDS on must stop and join every recorder "
+        "it starts (_SessionEndRecorder.stop).",
+        pytrace=False,
+    )
 
 
 # ===========================================================================
