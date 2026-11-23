@@ -45,6 +45,7 @@ from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from ..core.farm_contract import FARM_CONTROL_COMMANDS, FARM_READ_COMMANDS
 from ..mcp.read_only_mode import refusal_for_command as _read_only_refusal_for_command
 from ..mcp.read_only_mode import tool_for_command as _read_only_tool_for_command
+from ..mcp.session import WEBSOCKET_CLIENT, schedule_session_end
 from ..core.outcomes import info as _outcome
 from .rbac import Role, check_permission, is_rbac_enabled
 from .sessions import (
@@ -645,32 +646,24 @@ class SynapseServer:
                 except Exception as e:
                     logger.error("End session error: %s", e)
 
-            # Living Memory: suspend agent tasks and write session end
+            # Living Memory: the session-end record. This thread only queues it
+            # (mcp/session.py, schedule_session_end) and goes on: no hou.* call,
+            # no file work, no wait on Houdini's main thread. The session-end
+            # recorder reads the scene on the main thread, then on its own
+            # thread suspends the scene's pending agent tasks, adds "Session
+            # ended (client: ...)" to its EXISTING claude/agent.usd, and appends
+            # the summary of a session that did something to its EXISTING
+            # claude/memory.md (an empty session writes no '### Session End'
+            # stub, Mile 1 / C-2). A disconnect creates no claude/ folder or
+            # seed file, so $JOB is not read. Without hdefereval (a headless
+            # server in hython) nothing is recorded: the rule /mcp session
+            # ends already follow.
             if session_id:
                 try:
-                    from ..memory.scene_memory import write_session_end, ensure_scene_structure
-                    from ..memory.agent_state import suspend_all_tasks, log_session
-                    if HOU_AVAILABLE:
-                        hip_path = hou.hipFile.path()
-                        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
-                        paths = ensure_scene_structure(hip_path, job_path)
-
-                        # Suspend any pending/executing tasks
-                        agent_usd = paths.get("agent_usd", "")
-                        if agent_usd and os.path.exists(agent_usd):
-                            suspend_all_tasks(agent_usd)
-                            log_session(agent_usd, {
-                                "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                                "summary_text": f"Session ended (client: {client_id})",
-                            })
-
-                        # Write session end to memory.md -- only a consolidated
-                        # summary for sessions that actually did something. Empty
-                        # sessions write nothing (no '### Session End' stub).
-                        write_session_end(paths["scene_dir"], {
-                            "stopped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                            "summary_text": session_summary_text if session_had_activity else "",
-                        })
+                    schedule_session_end(
+                        [client_id], caller=WEBSOCKET_CLIENT,
+                        memory_text=session_summary_text if session_had_activity else "",
+                    )
                 except Exception as e:
                     logger.warning("Living Memory disconnect hook error: %s", e)
 
