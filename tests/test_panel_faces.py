@@ -452,15 +452,46 @@ def test_wordmark_carries_brand_tracking():
     assert abs(f.letterSpacing() - (100 + t.TRACKING_EM["WORDMARK"] * 100)) < 0.05
 
 
+def _readout_want(p):
+    """The model readout's expected text: the registry DISPLAY NAME of the
+    active (provider, model) pair, from providers/registry.py::model_label -
+    the one function that maps a pair to its label. The readout has shown it
+    since the 2026-09-23 approval (Soft Editorial, 782f9dc3;
+    tests/panel/test_bc_wave.py::test_author_token_visible_top_right), which
+    superseded Addendum 3.2's <provider>/<model short id> token for the
+    readout; _author_token() still formats that token for the signed reply
+    line. This is the equality half of audit_panel.py's readout rule (the
+    audit adds the raw-id clauses for curated names and lets the display
+    elide only where the whole label does not fit, Joe 2026-11-23 A1/A2);
+    these panels are wide enough that the names here print whole."""
+    from synapse.panel.providers.registry import model_label
+    return model_label(p._provider_id, p._active_model())
+
+
+def _readout_identity(p):
+    """The readout's accessible name: the exact (provider, model) pick,
+    independent of model_label (the identity half of the audit's rule)."""
+    return "Generation model: %s/%s" % (p._provider_id, p._active_model() or "")
+
+
 def test_rail_author_token_shows():
     # v9 — the rail author token is the ENGINE+MODEL click target: a clickable
-    # button whose text tracks _author_token(); its menu data covers every
-    # provider with exactly one active (engine, model) pair.
+    # button whose text is the registry display name of the active pair
+    # (_readout_want) and whose accessible name is the exact pick
+    # (_readout_identity); its menu data covers every provider with exactly
+    # one active (engine, model) pair.
     from synapse.panel.providers.registry import PROVIDER_IDS
     p = _make_panel()
     assert p._author_lbl is not None
     assert isinstance(p._author_lbl, QtWidgets.QAbstractButton)
-    assert p._author_lbl.text() == p._author_token()
+    assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
+    # The accessible name is written by the display pass (_fit_panel_chrome),
+    # which every repaint ends in once the rail is built: one repaint, never
+    # show() - a shown panel here left the process-wide FreezeChain armed
+    # (R310a; tests/conftest.py::_contain_leaked_freeze_chain).
+    p._refresh_engine_selector()
+    assert p._author_lbl.accessibleName() == _readout_identity(p), (
+        p._author_lbl.accessibleName(), _readout_identity(p))
     assert hasattr(p, "_open_author_menu")
     items = p._author_menu_items()
     assert [pid for pid, _, _ in items] == list(PROVIDER_IDS)
@@ -470,12 +501,16 @@ def test_rail_author_token_shows():
 
 def test_author_menu_tracks_engine_and_model_switch():
     # v9 — selection stays OBSERVABLE on the token: a provider switch and a
-    # model switch each repaint the author token and move the single active row.
+    # model switch each repaint the author token (to the registry display name
+    # of the new pair, _readout_want; the exact pick in its accessible name,
+    # _readout_identity) and move the single active row.
     p = _make_panel()
     pid0, mid0 = p._provider_id, p._active_model()   # restore whatever was picked
     p._set_provider("gemini")
     try:
-        assert p._author_lbl.text() == p._author_token()
+        assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
+        assert p._author_lbl.accessibleName() == _readout_identity(p), (
+            p._author_lbl.accessibleName(), _readout_identity(p))
         active = [(pid, mid) for pid, _, rows in p._author_menu_items()
                   for mid, _, on in rows if on]
         assert active == [("gemini", p._active_model())]
@@ -483,7 +518,9 @@ def test_author_menu_tracks_engine_and_model_switch():
         p._pick_engine_model("claude", "claude-fable-5")
         assert p._provider_id == "claude"
         assert p._active_model() == "claude-fable-5"
-        assert p._author_lbl.text() == p._author_token()
+        assert p._author_lbl.text() == _readout_want(p), (p._author_lbl.text(), _readout_want(p))
+        assert p._author_lbl.accessibleName() == _readout_identity(p), (
+            p._author_lbl.accessibleName(), _readout_identity(p))
         active = [(pid, mid) for pid, _, rows in p._author_menu_items()
                   for mid, _, on in rows if on]
         assert active == [("claude", "claude-fable-5")]
