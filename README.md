@@ -9,7 +9,7 @@
 
 <p align="center">Connect a local or cloud model, describe the task in plain words, and SYNAPSE builds real nodes you can inspect and edit.</p>
 
-<p align="center"><sub>v5.104.1 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.104.1 is Latest</sub></p>
+<p align="center"><sub>v5.104.2 · Houdini 22.0.400 · Python 3.13 runtime<br>tags: v5.104.2 is Latest</sub></p>
 
 <p align="center">
   <a href="https://github.com/JosephOIbrahim/Synapse/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/JosephOIbrahim/Synapse?style=flat-square&amp;labelColor=0A0A0A&amp;color=2F5878"></a>
@@ -21,7 +21,7 @@
 
 **[01 Install](#01-install)** · **[02 What it does](#02-what-it-does)** · **[03 Controls](#03-controls)** · **[04 When you get stuck](#04-when-you-get-stuck)** · **[05 Reference](#05-reference)**
 
-[What's new](docs/releases/v5.104.1.md) · [Versions and tags](TAGS.md) · [Current limits](docs/status.md)
+[What's new](docs/releases/v5.104.2.md) · [Versions and tags](TAGS.md) · [Current limits](docs/status.md)
 
 </div>
 
@@ -41,7 +41,7 @@ SYNAPSE does the work inside your Houdini scene through tools you can inspect, a
 
 ## 01 Install
 
-1. Save your scene and close Houdini. Run the [Windows Setup](docs/getting-started/installation.md#windows-installer), or follow [source installation](docs/getting-started/installation.md#source-installation) for v5.104.1.
+1. Save your scene and close Houdini. Run the [Windows Setup](docs/getting-started/installation.md#windows-installer), or follow [source installation](docs/getting-started/installation.md#source-installation) for v5.104.2.
 2. Restart Houdini. Open New Pane Tab, then Synapse.
 3. Open Connect models. Choose a provider and model, and add its key if it needs one.
 4. For node creation, select Build and edit networks. Choose Check connection, then Use this model.
@@ -54,13 +54,13 @@ Using Ollama? Start its service first. Connect starts the separate Houdini bridg
 
 | You want | Get | Know this |
 |---|---|---|
-| An installer | [Windows Setup v5.104.1](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.1/SYNAPSE-5.104.1-Setup.exe) | Setup remains unsigned. Check the file against the release's [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.1/SHA256SUMS.txt). |
-| The source | `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.104.1` | The annotated tag is the release's source. |
-| To check the tag | `git rev-parse 'v5.104.1^{commit}'` | Resolves the annotated tag to its source commit. |
+| An installer | [Windows Setup v5.104.2](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.2/SYNAPSE-5.104.2-Setup.exe) | Setup remains unsigned. Check the file against the release's [SHA-256 checksum](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.2/SHA256SUMS.txt). |
+| The source | `git clone https://github.com/JosephOIbrahim/Synapse && git checkout v5.104.2` | The annotated tag is the release's source. |
+| To check the tag | `git rev-parse 'v5.104.2^{commit}'` | Resolves the annotated tag to its source commit. |
 
 **Published, installed and running can differ.** This page does not update your seat or an open Houdini session. Install separately, then restart Houdini to load the update.
 
-<sub>What was checked: the [5.104.1 note](docs/releases/v5.104.1.md) carries the test lines, what they do not cover, and every limit. Setup includes the panel as of v5.104.1, including Spatial, the Render footer row and the scene-reading Scatter recipe.</sub>
+<sub>What was checked: the [5.104.2 note](docs/releases/v5.104.2.md) carries the test lines from before the release commit, which checks run on that commit, what they do not cover, and every limit. Setup includes the panel as of v5.104.2, including Spatial, the Render footer row and the scene-reading Scatter recipe.</sub>
 
 ## 02 What it does
 
@@ -276,7 +276,7 @@ flowchart LR
 - **Optional JEV assistance:** rank selected-network actions or measure routing. Your generation model stays selected.
 - **Local knowledge:** the [SideFX library](docs/studio/SIDEFX_LIBRARY.md), [project memory](docs/architecture/overview.md#project-and-scene-memory) and [checked lookdev suggestions](docs/development/rsi_stage0.md).
 
-[Current limits](docs/status.md) (reviewed for v5.99.0) · [Latest release notes](docs/releases/v5.104.1.md) · [Changelog](CHANGELOG.md)
+[Current limits](docs/status.md) (reviewed for v5.99.0) · [Latest release notes](docs/releases/v5.104.2.md) · [Changelog](CHANGELOG.md)
 
 ## 03 Controls
 
@@ -328,7 +328,15 @@ The numbers are `_MAX_TOOL_ITERATIONS`, `SYNAPSE_TURN_BUDGET_S` and `SYNAPSE_TUR
 Detail you can come back to. Each block opens in place.
 
 <details>
-<summary><strong>What's new in 5.104.1</strong></summary>
+<summary><strong>What's new in 5.104.2</strong></summary>
+
+**5.104.2 takes project setup out of Connect,** the MCP handshake the panel sends with its first tool call (Doctor included). The first Connect after a 5.104.0 install once held Houdini's main thread in project setup until Windows closed Houdini. Why it never returned is still unknown.
+
+Connect now runs no project setup and makes no Houdini call. Ending a session queues its record instead of writing it on the thread that ended it.
+
+What you will notice: Connect no longer creates the scene's `claude/` notes. The first call that writes them creates them, such as `synapse_project_setup` or a memory write. `SYNAPSE_MCP_SESSION_END_RECORDS=0` turns session-end records off.
+
+Still open: `synapse_project_setup` itself still runs on Houdini's main thread and cannot be stopped once it starts. [What changed in 5.104.2](docs/releases/v5.104.2.md) has the detail and every limit.
 
 **5.104.1 fixes two faults found on the first seat installed with 5.104.0, and World Labs import now reads Atlas.** Setup keeps the Moneta schema registered when the package keeps an earlier schema path beside it, and Claude Code authenticates to Houdini again once Setup has created the key. World Labs' API now supports Atlas only: the World Labs dialog imports finished Atlas splat scenes and local `.spz` or `.ply` files, never starts a paid task, and no longer asks for a Marble world. [What changed in 5.104.1](docs/releases/v5.104.1.md) has the detail and every limit.
 
@@ -440,7 +448,7 @@ The seat runs do not exercise Moneta, and those counts move between runs. They w
 
 The Moneta step, which runs only when the deploy key is configured, shows that Moneta imports; it does not show that the Rust extension runs.
 
-Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.104.1.md) before relying on it.
+Native Houdini behavior and Windows installer qualification are separate checks. See each [release's evidence](docs/releases/v5.104.2.md) before relying on it.
 
 ### How SYNAPSE remembers
 
@@ -457,6 +465,8 @@ Moneta's USD mirror is an inspection view, not the storage owner. Missing servic
 Native policy depends on the installation route. The [source package](packages/synapse.json) retains OFF. Windows Setup can enable a fresh Windows x64 / H22.0.400 / Python 3.13.10 setup only after pinned-artifact and actual execution checks.
 
 5.104.0 changes `installer/` so Setup creates the local auth key when none exists. It changes no file under `packages/` (`git diff --stat v5.103.0 v5.104.0 -- packages/` is empty). 5.104.1 changes `installer/` so Setup writes a kept `PXR_PLUGINPATH_NAME` list, and a `PYTHONPATH` list kept under `replace`, as one path string; it changes no file under `packages/` either (`git diff --stat v5.104.0 v5.104.1 -- packages/` is empty).
+
+5.104.2 changes no installer code and no file under `packages/`: `git diff --stat v5.104.1 724d766d -- installer/ packages/` is empty, and under `installer/` its release commit changes only the text of `installer/README.md`.
 
 Explicit OFF and existing default-OFF choices stay OFF. Existing ON needs the same host, artifact and execution qualification. Memory status reports the module as `loaded`, `blocked` or `not_loaded`; a flag alone proves no execution. [Measured limits](docs/releases/v5.97.7.md#tests).
 

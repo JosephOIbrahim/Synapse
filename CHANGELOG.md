@@ -2,6 +2,35 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.104.2 - Connect runs no project setup
+
+**Install this over 5.104.1.** The first Connect after a 5.104.0 install once held Houdini's
+main thread in project setup until Windows closed Houdini. The cause is still unknown; this
+release takes project setup out of Connect. The full note, with its limits, is
+[docs/releases/v5.104.2.md](docs/releases/v5.104.2.md).
+
+- **Connect.** The MCP `initialize` handshake on Houdini's `/mcp` endpoint runs no
+  `synapse_project_setup`, makes no `hou` call and never waits on the main thread. It no longer
+  creates the scene's `claude/memory.md` and `claude/agent.usd` or the project's
+  `claude/project.md`; the first call that writes them creates them.
+- **Session ends.** Ending an MCP session (`DELETE /mcp`, the expiry sweep, overflow eviction) or
+  disconnecting from the fallback WebSocket server queues the session-end record instead of
+  writing it on that thread. A recorder thread reads the scene on the main thread (label
+  `mcp:session_end:capture`, up to 30 s once posted, `_CAPTURE_TIMEOUT_S`) and writes one record
+  for the ends queued together into an existing `agent.usd`, plus a summary in an existing
+  `memory.md` for a fallback WebSocket session that ran a command or created a node. A record
+  suspends only tasks created before the latest session end it names, and a swept session ends
+  at its last request. `SYNAPSE_MCP_SESSION_END_RECORDS=0` turns the records off. Under hython
+  no record is written.
+- **`synapse://project/context`.** Its description no longer says it is auto-loaded, and it names
+  only `synapse_project_setup` as the call to make at session start.
+- **`audit_panel.py`.** The model-readout checks compare with the registry's display label for the
+  active pair. With its default scratch settings, `--strict` under hython 22.0.400 reports "pass ·
+  2 WARN" on the audit lane's tree, committed as `155bc008` (on 5.104.1 it reported 4 FAIL and
+  2 WARN).
+- **Still open.** `synapse_project_setup` itself still runs on the main thread and cannot be
+  stopped once it starts.
+
 ## v5.104.1 - Two seat fixes, and World Labs import reads Atlas
 
 **Install this over 5.104.0.** The first seat installed with 5.104.0 showed two faults, both

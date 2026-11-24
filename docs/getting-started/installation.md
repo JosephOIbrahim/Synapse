@@ -7,9 +7,9 @@ Houdini runs SYNAPSE with its own Python.
 
 ## Windows installer
 
-**[Windows Setup v5.104.1](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.1/SYNAPSE-5.104.1-Setup.exe)**
-packages the v5.104.1 source and the pinned Moneta 1.3.0 Python backend. It
-includes the panel as of v5.104.1 — Spatial, the Render footer row and the
+**[Windows Setup v5.104.2](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.2/SYNAPSE-5.104.2-Setup.exe)**
+packages the v5.104.2 source and the pinned Moneta 1.3.0 Python backend. It
+includes the panel as of v5.104.2 — Spatial, the Render footer row and the
 scene-reading Scatter recipe.
 
 **Setup creates the local key.** When `~/.synapse/auth.key` holds no readable key
@@ -24,8 +24,8 @@ Supported custom environment entries and extra paths are retained. Edited manage
 packages, multiple registrations, conditional settings and custom Houdini paths
 stop automatic migration. Earlier tags and downloads are preserved.
 
-[Release notes and validation limits](../releases/v5.104.1.md) ·
-[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.1/SHA256SUMS.txt)
+[Release notes and validation limits](../releases/v5.104.2.md) ·
+[SHA-256 checksums](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.2/SHA256SUMS.txt)
 
 1. Save your scene and close Houdini.
 2. Open Setup. This installer is unsigned, so Windows may show an unknown publisher.
@@ -39,11 +39,11 @@ bundle; it needs no terminal, Git or system Python. Model credentials and option
 external services are separate.
 
 **Read the downloaded installer's own validation record.** The
-[5.104.1 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.1/installer-verification.json)
+[5.104.2 verification asset](https://github.com/JosephOIbrahim/Synapse/releases/download/v5.104.2/installer-verification.json)
 binds its checks to the actual Setup hash and source commit. Extraction and
 isolated execution of its embedded maintenance engine are distinct from the
 interactive Windows wizard, registry/shortcut integration and clean-machine
-qualification. See the [release limits](../releases/v5.104.1.md#limits).
+qualification. See the [release limits](../releases/v5.104.2.md#limits).
 
 The source installation steps below are an alternative route. Avoid running
 the source scripts over a registration managed by the Setup wizard.
@@ -60,14 +60,14 @@ Python does not replace Houdini's own runtime.
 ### 1. Keep a copy of the repository
 
 Check out the
-[v5.104.1 tag](https://github.com/JosephOIbrahim/Synapse/tree/v5.104.1) into a
+[v5.104.2 tag](https://github.com/JosephOIbrahim/Synapse/tree/v5.104.2) into a
 permanent folder. Open a terminal in
 the folder containing `install.py`.
 
 If you use Git instead:
 
 ```shell
-git clone --branch v5.104.1 https://github.com/JosephOIbrahim/Synapse.git
+git clone --branch v5.104.2 https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 ```
 

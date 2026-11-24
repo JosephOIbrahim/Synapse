@@ -48,8 +48,8 @@ _STATIC_RESOURCES: list[dict] = [
         "description": (
             "Project memory, scene memory, agent state, and evolution stage: the "
             "artist's project history, previous decisions, and current scene "
-            "context. Not loaded automatically: call synapse_project_setup, or "
-            "read this resource, at session start."
+            "context. Not loaded automatically: call synapse_project_setup at "
+            "session start."
         ),
         "mimeType": "application/json",
         "_handler": "project_setup",

@@ -12,11 +12,15 @@ the commands below reproduce a build.
 
 ## Current line
 
-v5.104.1 publishes a Setup: it changes product behaviour. Setup now writes a kept
-`PXR_PLUGINPATH_NAME` list as one path string, so Houdini keeps the Moneta schema;
-5.104.0 added the loopback bind and the local auth key Setup creates. A build from this tree stamps the
-canonical root `VERSION`, and publishing a Setup remains a separate release
-action with its own qualification.
+v5.104.2 publishes a Setup: it changes product behaviour but no installer code
+(`git diff --stat v5.104.1 724d766d -- installer/` is empty, and under
+`installer/` the release commit changes only this README). The MCP handshake no
+longer runs project setup, and session-end records are queued
+([5.104.2 notes](../docs/releases/v5.104.2.md)).
+5.104.1 made Setup write a kept `PXR_PLUGINPATH_NAME` list as one path string, so
+Houdini keeps the Moneta schema; 5.104.0 added the loopback bind and the local auth
+key Setup creates. A build from this tree stamps the canonical root `VERSION`, and
+publishing a Setup remains a separate release action with its own qualification.
 
 ## Inputs and build
 

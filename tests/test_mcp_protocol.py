@@ -916,12 +916,18 @@ class TestP1ProjectContextResource:
         assert "project memory" in ctx_resource[0]["description"].lower()
 
     def test_project_context_resource_does_not_claim_to_be_auto_loaded(self, server, mock_handler):
-        """The served description sends the agent to synapse_project_setup.
+        """The served description sends the agent to synapse_project_setup, and only there.
 
         Initialize stopped preloading project context (Connect freeze,
         2026-11-22), so an agent that reads "auto-loaded" from resources/list
-        could skip the project_setup call it now depends on. Checked as served,
-        after an initialize that ran no tool.
+        could skip the project_setup call it now depends on. The session-start
+        sentence names only the tool and does not offer reading this resource:
+        tools/call runs project_setup on Houdini's main thread, while
+        resources/read dispatches the same handler on the calling hwebserver
+        worker, without the whole-dispatch run_on_main that tools/call uses
+        (mcp/server.py _handle_resources_read). Checked as served, after an
+        initialize that ran no tool. The whole description is pinned word for
+        word, so a wording that offers the resource anywhere in it fails.
         """
         _, headers = server.handle_request(_jsonrpc("initialize", {}, msg_id=1))
         resp_body, _ = server.handle_request(
@@ -932,6 +938,12 @@ class TestP1ProjectContextResource:
 
         assert "auto-loa" not in desc.lower(), desc
         assert "Not loaded automatically" in desc and "synapse_project_setup" in desc, desc
+        assert desc == (
+            "Project memory, scene memory, agent state, and evolution stage: the "
+            "artist's project history, previous decisions, and current scene "
+            "context. Not loaded automatically: call synapse_project_setup at "
+            "session start."
+        ), desc
         assert not mock_handler.handle.called, "initialize or resources/list ran a tool"
 
 

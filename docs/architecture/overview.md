@@ -4,7 +4,7 @@
 
 These diagrams describe implemented behavior. Each section links to its source. Future modes in `INTENT.md` are not implied by an arrow here.
 
-The current release is **[5.99.0](../releases/v5.99.0.md)**.
+The current release is **[5.104.2](../releases/v5.104.2.md)**.
 [Tag identities](../../TAGS.md) distinguish it from later default-branch edits.
 
 ## Published 5.99.0 installation
@@ -43,7 +43,7 @@ clean-machine and arbitrary artist-scene qualification remain separate.
 
 The [unchanged 5.97.5 installer](../releases/v5.97.5.md) contains no native wheel.
 It refuses edited installer-owned packages, but manual migration generates a new
-registration without the old native/custom entries. Use the current 5.99.0
+registration without the old native/custom entries. Use 5.99.0 or a later
 release for the policy shown above; older tags and assets are preserved.
 
 | Follow a workflow | Start here |
@@ -474,7 +474,7 @@ The [staged workflow guides](../../rag/corpus/guides) retain upstream provenance
 
 ## Release process
 
-The owner's four gates are the stop points of the [v5.101.1 release card](../../harness/notes/release-5.101.1/RELEASE_v5.101.1.md): the VERSION commit, the Gate C push of master, the tag, and `gh release create`. The `TAGS.md` push after publication is asked on its own. Every step between the gates still waits for its own evidence.
+The owner's four gates are the stop points of the [v5.101.1 release card](../../harness/notes/release-5.101.1/RELEASE_v5.101.1.md): the VERSION commit, the Gate C push of master, the tag, and `gh release create`. The `TAGS.md` push after publication is asked on its own. Every step between the gates still waits for its own evidence. The diagram below draws that release's order; the current order is in [docs/RELEASE_CARD.md](../RELEASE_CARD.md).
 
 ```mermaid
 flowchart TD
@@ -517,11 +517,11 @@ flowchart TD
 
 **The builder** stamps `HEAD` into the manifest without a clean-worktree check; the clean-commit requirement is enforced downstream, by the payload-versus-tag comparison.
 
-**The tag gate** tags the `HEAD` it read when it started, and refuses if `HEAD` moves while it runs. It refuses a dirty tracked worktree, version drift, a missing or stale crux record and an existing tag, and it never pushes. It does not check that `HEAD` is the qualified revision, so it must be run with that `HEAD` equal to the commit 6a built. Existing tags are protected by the gate; published assets by operator practice only.
+**The tag gate** tags the `HEAD` it read when it started, and refuses if `HEAD` moves while it runs. It refuses a dirty tracked worktree, version drift, a missing or stale crux record and an existing tag, and it never pushes. It does not check that `HEAD` is the qualified revision. Existing tags are protected by the gate; published assets by operator practice only.
 
 **The release guard** judges at most the first 20 claims of the release notes (`_claims` in [`harness/jev/jev_release.py`](../../harness/jev/jev_release.py)) against the diff stat, the names of added files and the commit subjects since the previous tag. It exits 1 when any claim needs a human read. A claim that names a path missing from the tagged tree is UNSUPPORTED, whatever the model scored.
 
-**The CI gate** matches the **first** run whose `headSha` starts with the commit's 8-character prefix (`scripts/release_ci_gate.py`), with no workflow-name filter and no job inspection. The release card's own rule is the full 40-character SHA and all six expected jobs ([`docs/RELEASE_CARD.md`](../../docs/RELEASE_CARD.md), step 17), and that rule is the operator's, not the script's.
+**The CI gate** matches the **first** run whose `headSha` starts with the commit's 8-character prefix (`scripts/release_ci_gate.py`), with no workflow-name filter and no job inspection. The release card's own rule is the full 40-character SHA and all six expected jobs ([`docs/RELEASE_CARD.md`](../../docs/RELEASE_CARD.md), step 21), and that rule is the operator's, not the script's.
 
 **What the published record contains.** The published CI block is operator-supplied: the publisher writes the run id and the conclusion it was given; the CI gate, `scripts/release_ci_gate.py`, reads CI for the tagged commit but writes no record. The shipped Setup's own embedded tree is never extracted on the host, so the qualification record is produced from a TestSetup twin and stands in for the production executable's bytes.
 
