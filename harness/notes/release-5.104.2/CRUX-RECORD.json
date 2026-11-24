@@ -1,0 +1,30 @@
+{
+  "version": "5.104.2",
+  "review": "REL-5.104.2-LANES-PLUS-TEXT-PLUS-TIP",
+  "reviewer": "Claude Code independent read-only review agents: the preload lane's review rounds and the audit lane's three rounds, five release-text rounds and a re-check of the six text fixes approved before the commit (2026-11-23), a review of the committed release tip 2d6f4ba5 and a review of its text-fix commit 3e350e2b (2026-11-24)",
+  "reviewed_date": "2026-11-24",
+  "verdict": "PASS",
+  "passed": true,
+  "commit_range": "8115d3c2e8b3dc0d4ec92205f60cf9bcffd54171..3e350e2bd0f592d99fef6fe41082bbeb2f72db5d",
+  "coverage": {
+    "code_reviewed_by_the_rounds": "preload lane b00a4572..b5ababf6: reviews of dfe7358a (FAIL, 6 FIX) and round 3 (FAIL, 3 FIX), then round 4 PASS on correctness and claims with 0 FIX, its committed diff equal to the reviewed snapshot; audit lane 1c0f7e53..155bc008: rounds 1 and 2 FAIL, round 3 PASS on both lenses with NITs only, its committed diff equal to the reviewed snapshot",
+    "merges": "c19589de and 724d766d merge the two reviewed lane tips with --no-ff; no file is changed by both lanes, and each of the 19 merged files equals its lane tip's blob",
+    "release_text": "every release-text change in 2d6f4ba5, checked in five rounds (15, 2, 1, 1 and 0 FIX) and a re-check of the six approved text fixes (0 FIX); the release commit equals the re-checked text byte for byte; the committed text in 2d6f4ba5 reviewed on 2026-11-24, and its text-fix commit 3e350e2b reviewed the same day"
+  },
+  "finding_summary": {
+    "code_findings_fixed": "preload lane: 6 FIX in dfe7358a's review and 3 FIX in round 3, fixed before round 4; its round-4 NIT on the project-context resource description was fixed in the release commit; audit lane: the findings of rounds 1 and 2, fixed before round 3",
+    "text_findings_fixed": "release-text rounds 1 to 4: 15, 2, 1 and 1 FIX, all fixed; committed-tip review of 2d6f4ba5: 1 FIX (Upgrading step 3 said a restart ends the version refusal, but Setup does not update the checkout a stdio bridge runs from) and 1 NIT (the list of runs on the release commit implied an order and left out the source archive audit), both fixed in 3e350e2b, whose review found 0 FIX and 0 NIT",
+    "accepted_limits": [
+      "the 2026-11-22 Connect freeze's cause is still unknown; this release takes project setup out of Connect, and synapse_project_setup still runs on Houdini's main thread when called",
+      "nothing in this release was checked in a graphical Houdini session; the first Connect after installing 5.104.2 is the end-to-end check",
+      "the limits listed in docs/releases/v5.104.2.md, including 5.104.1's with two changes"
+    ],
+    "text_findings_accepted": []
+  },
+  "evidence_outside_this_review": {
+    "stock_suite": "13,515 passed, 0 failed, 735 skipped, 11 deselected, 10 xfailed on 2d6f4ba5 (2026-11-24), the same counts in each of 782 files as the merge check on 724d766d",
+    "seat_suite": "97 failed + 4 errors = 101 failing tests on 2d6f4ba5 (hython 22.0.400). Against 5.104.1's seat run (102): 100 shared; 2 gone, both in tests/test_panel_faces.py (the audit lane); 1 new, tests/panel/test_welcome_motion.py::test_event_loop_remains_responsive_during_motion, a timing test that passed in each of three runs of its file alone and has failed intermittently in earlier releases' seat runs. Without this machine's ~/.synapse/auth.key, the 4 failures that read it pass and the 2 known-defect cancel tests still fail (a targeted hython run of 8 tests on 2d6f4ba5: 6 passed, 2 failed)",
+    "setup": "built from 2d6f4ba5, payload 5.104.2-127aa968973a7c2d; the source archive audit passed and the archive equals the archive of 2d6f4ba5; qualification legs A 19 of 19, B 12 of 12 (upgrade from 5.104.1), C 18 of 19, its one other check being the known per-user registration precondition, D2 and D passed on Houdini 22.0.400; installer unit tests 93 of 93; the real seat was unchanged",
+    "text_only_after_the_suites": "3e350e2b changes only docs/releases/v5.104.2.md, which is not in the Setup payload"
+  }
+}
