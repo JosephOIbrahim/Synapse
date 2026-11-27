@@ -96,7 +96,7 @@ def get_anthropic_tools() -> list[dict]:
 _WORKER_TOOLS_CACHE: dict[str, tuple[dict, ...]] = {}
 
 
-def get_anthropic_tools_for_worker() -> list[dict]:
+def get_anthropic_tools_for_worker(profile: str | None = None) -> list[dict]:
     """Return only the tools the autonomous worker is permitted to use.
 
     A subset of ``get_anthropic_tools()`` filtered through
@@ -105,12 +105,12 @@ def get_anthropic_tools_for_worker() -> list[dict]:
     still see every tool. Cached per resolved policy mode.
     """
     from synapse.panel.worker_policy import is_tool_allowed_for_worker, resolve_mode
-    mode = resolve_mode()
+    mode = resolve_mode(profile)
     cached = _WORKER_TOOLS_CACHE.get(mode)
     if cached is None:
         cached = tuple(
             tool for tool in _TOOLS_CACHE
-            if is_tool_allowed_for_worker(tool["name"])[0]
+            if is_tool_allowed_for_worker(tool["name"], profile=profile)[0]
         )
         _WORKER_TOOLS_CACHE[mode] = cached
     return list(cached)

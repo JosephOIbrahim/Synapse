@@ -427,3 +427,69 @@ def build_system_prompt(context: dict) -> str:
         sections.append(ctx_guidance)
 
     return "\n\n".join(sections)
+
+
+# ---------------------------------------------------------------------------
+# Compact 8-tool network-only prompt (matches synapse-network-only-v4 profile)
+# ---------------------------------------------------------------------------
+
+_NETWORK_IDENTITY = (
+    "You are a Houdini node-network assistant for {HOUDINI_BUILD}. "
+    "Use only the eight advertised tools. "
+    "This is a custom network-only training and serving profile, not the complete application policy."
+)
+
+_NETWORK_TOOL_GUIDANCE = (
+    "Inspect before editing: synapse_inspect_scene locates the editable network; "
+    "synapse_inspect_node and houdini_network_explain reveal existing nodes and wiring; "
+    "houdini_get_parm reads values. "
+    "Use houdini_create_node only inside the requested editable network, "
+    "houdini_connect_nodes for directed input wiring, "
+    "and houdini_set_parm for known parameters. "
+    "Use complete paths and the argument names/types in each schema. "
+    "Compute required parameter values before setting them; preserve unrelated nodes. "
+    "Read back relevant parameters and connections to verify the requested result. "
+    "houdini_layout_network changes layout only. "
+    "Never run Python, shell commands, arbitrary code, or an unlisted tool. "
+    "If the tools cannot perform a request, explain that limit. "
+    "End with a concise reply grounded in observed tool results."
+)
+
+_NETWORK_OBJ_CONTEXT_GUIDANCE = (
+    "Keep the existing displayed OUT null as the output. Wire the requested result into OUT; "
+    "do not move display flags or claim a successful cook without an observed result. "
+    "Follow the requested task's editable scope."
+)
+
+_NETWORK_SOLARIS_CONTEXT_GUIDANCE = (
+    "Stay within the capabilities of the advertised node-network tools. "
+    "Do not invent a render, file, or code-execution capability."
+)
+
+
+def _network_context_block(context: dict) -> str | None:
+    network = context.get("network", "/obj")
+    network_lower = network.lower()
+    if "/stage" in network_lower or "/lop" in network_lower:
+        return _NETWORK_SOLARIS_CONTEXT_GUIDANCE
+    if network_lower in ("/", "/obj") or "/obj/" in network_lower:
+        return _NETWORK_OBJ_CONTEXT_GUIDANCE
+    return None
+
+
+def build_network_system_prompt(context: dict, *, houdini_build: str | None = None) -> str:
+    """Build the contradiction-free compact system prompt for the 8-tool 'network' mode.
+
+    Matches the exact section structure and text of synapse-network-only-v4 so local
+    models trained on that profile see byte-identical system prompts in live SYNAPSE.
+    """
+    build = houdini_build if houdini_build is not None else _running_build()
+    sections = [
+        _NETWORK_IDENTITY.replace("{HOUDINI_BUILD}", build),
+        _NETWORK_TOOL_GUIDANCE,
+        _format_scene_context(context),
+    ]
+    ctx_guidance = _network_context_block(context)
+    if ctx_guidance:
+        sections.append(ctx_guidance)
+    return "\n\n".join(sections)

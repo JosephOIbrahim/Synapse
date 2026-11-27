@@ -95,6 +95,16 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.need.addItem("Work with images", "vision")
         self.need.setCurrentIndex(max(0, self.need.findData(saved.get("task_need"))))
         routing_form.addRow(c.label("Task needs", role="label", scale=scale), self.need)
+        self.tool_profile = QtWidgets.QComboBox()
+        self.tool_profile.setObjectName("DsConnectionSelect")
+        self.tool_profile.addItem("Standard SYNAPSE tools", "standard")
+        self.tool_profile.addItem("Compact network tools (8 tools · local models)", "network")
+        self.tool_profile.setCurrentIndex(max(0, self.tool_profile.findData(saved.get("tool_profile", "standard"))))
+        self.tool_profile.setToolTip(
+            "Compact network tools limits the worker to the 8 core Houdini node/network tools "
+            "and a matching compact prompt for local 4B models. Standard keeps the full worker roster."
+        )
+        routing_form.addRow(c.label("Tool profile", role="label", scale=scale), self.tool_profile)
         layout.addLayout(routing_form)
         rules = c.Button("Project rules…", variant="secondary")
         rules.clicked.connect(self._project_rules)
@@ -341,6 +351,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         from synapse.panel.settings import load_settings, save_settings
         settings = load_settings()
         settings.update(routing_mode=self.routing.currentData(), task_need=self.need.currentData(),
+                        tool_profile=self.tool_profile.currentData(),
                         jev_routing_mode=self.jev_routing.currentData(),
                         jev_suggestions_enabled=self.jev_suggestions.isChecked())
         if not save_settings(settings):

@@ -59,6 +59,11 @@ semantically, ``expert``/``ml`` pick exact model ids."""
 
 SEMANTIC_VALUES = ("free_local", "balanced", "best")
 
+TOOL_PROFILES = ("standard", "network")
+"""Worker tool/prompt surface selectable in Connect models.
+``standard`` is the default full worker surface; ``network`` narrows the
+panel worker to the compact 8-tool Houdini network profile for local models."""
+
 _DEFAULTS = {
     "version": SETTINGS_VERSION,
     "profile": "expert",
@@ -72,6 +77,7 @@ _DEFAULTS = {
     "jev_routing_mode": "off",  # Optional shadow measurement; never generation routing.
     "jev_suggestions_enabled": False,  # Explicit action ranking; separate from measurement.
     "task_need": "conversation",
+    "tool_profile": "standard",
     "notifications": {"quiet": False, "desktop": False,
                       "completions": True, "connections": True},
 }
@@ -185,6 +191,8 @@ def load_settings(path: Path | None = None) -> dict:
         out["jev_suggestions_enabled"] = data["jev_suggestions_enabled"]
     if data.get("task_need") in ("conversation", "tools", "vision"):
         out["task_need"] = data["task_need"]
+    if data.get("tool_profile") in TOOL_PROFILES:
+        out["tool_profile"] = data["tool_profile"]
     notifications = data.get("notifications")
     if isinstance(notifications, dict):
         for key in out["notifications"]:

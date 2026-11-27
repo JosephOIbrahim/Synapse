@@ -49,11 +49,27 @@ _MODE_STANDARD = "standard"
 _MODE_UNRESTRICTED = "unrestricted"
 _MODE_DEMO = "demo"
 _MODE_PROPOSAL = "proposal"
+_MODE_NETWORK = "network"
 _VALID_MODES = (
     _MODE_STRICT, _MODE_STANDARD, _MODE_UNRESTRICTED, _MODE_DEMO, _MODE_PROPOSAL,
+    _MODE_NETWORK,
 )
 _DEFAULT_MODE = _MODE_STANDARD
 _PROFILE_ENV_VAR = "SYNAPSE_WORKER_TOOL_PROFILE"
+
+# Compact 8-tool Houdini network editing subset (matched to the local 4B
+# served-v3 / network-only-v4 training profile). Strict subset of 'standard':
+# only registered read-only or inform-level network tools.
+NETWORK_TOOLS = frozenset({
+    "houdini_create_node",
+    "houdini_connect_nodes",
+    "houdini_get_parm",
+    "houdini_set_parm",
+    "synapse_inspect_scene",
+    "synapse_inspect_node",
+    "houdini_layout_network",
+    "houdini_network_explain",
+})
 
 # Knowledge-tool prefix: the 6 ``synapse_group_*`` tools have no TOOL_DEFS
 # entry. They are read-only knowledge lookups (a description string back to
@@ -142,6 +158,22 @@ def demo_tool_definitions() -> list[dict]:
                      "input_schema": deepcopy(RUN_RECIPE_INPUT_SCHEMA)}]
 
 
+def effective_panel_tool_profile(setting_profile: str | None) -> str | None:
+    """Resolve an artist's saved panel tool_profile preference without overriding host env policy.
+
+    A panel preference can ONLY narrow the default ('standard') surface down to
+    'network'. Any explicit SYNAPSE_WORKER_TOOL_MODE or SYNAPSE_WORKER_TOOL_PROFILE
+    environment variable retains full authority.
+    """
+    if not isinstance(setting_profile, str) or setting_profile.strip().lower() != _MODE_NETWORK:
+        return None
+    env_mode = os.environ.get(_ENV_VAR)
+    env_profile = os.environ.get(_PROFILE_ENV_VAR)
+    if env_mode is None and env_profile is None:
+        return _MODE_NETWORK
+    return None
+
+
 def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) -> tuple[bool, str]:
     """Decide whether the autonomous worker may invoke ``tool_name``.
 
@@ -196,6 +228,14 @@ def is_tool_allowed_for_worker(tool_name: str, *, profile: str | None = None) ->
         if not tool_name.startswith(_GROUP_PREFIX) and info and info["read_only"]:
             return True, "demo mode: registered read-only tool"
         return False, "demo mode: only registered reads and recipe proposals permitted"
+
+    if mode == _MODE_NETWORK:
+        # Compact 8-tool network subset: strictly registered read-only or
+        # inform-level tools. Precedes group tools and composite builders.
+        info = _TOOL_INDEX.get(tool_name)
+        if tool_name in NETWORK_TOOLS and info is not None and (info["read_only"] or info["gate"] == "inform"):
+            return True, "network mode: compact 8-tool Houdini network subset"
+        return False, "network mode: only the compact 8-tool Houdini network subset is permitted"
 
     if mode == _MODE_UNRESTRICTED:
         return True, "unrestricted mode: all tools permitted"

@@ -144,6 +144,7 @@ class ClaudeWorker(QThread):
         tools: list[dict] | None = None,
         enforce_worker_policy: bool = True,
         provider=None,
+        tool_profile: str | None = None,
     ) -> None:
         super().__init__(parent)
         self._messages: list[dict] = copy.deepcopy(messages)
@@ -154,8 +155,9 @@ class ClaudeWorker(QThread):
         # LLM never sees a denied tool. enforce_worker_policy gates the
         # dispatch-side check (the load-bearing security boundary).
         self._enforce_worker_policy: bool = enforce_worker_policy
+        self._tool_profile: str | None = tool_profile
         self._tools: list[dict] = (
-            tools if tools is not None else get_anthropic_tools_for_worker()
+            tools if tools is not None else get_anthropic_tools_for_worker(profile=tool_profile)
         )
         self._abort: bool = False
         # Off-main ToolExecutor for the bridge-DOWN fallback. Built lazily on
@@ -719,7 +721,7 @@ class ClaudeWorker(QThread):
         # the worker policy BEFORE dispatch. enforce_worker_policy=False
         # preserves the interactive/human-in-the-loop path untouched.
         if self._enforce_worker_policy:
-            allowed, reason = is_tool_allowed_for_worker(tool_name)
+            allowed, reason = is_tool_allowed_for_worker(tool_name, profile=self._tool_profile)
             if not allowed:
                 summary = json.dumps(tool_input, default=str)[:120] if tool_input else ""
                 self.tool_status.emit(tool_name, "error", reason)

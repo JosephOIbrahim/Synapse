@@ -2410,16 +2410,26 @@ class SynapsePanel(QtWidgets.QWidget):
             "The next request needs permission unless saved Project rules allow it. "
             "Requests already sent may finish.")
 
+    def _active_tool_profile(self):
+        """Effective panel worker tool profile ('network' or None for default/env)."""
+        try:
+            from synapse.panel import settings as pset
+            from synapse.panel.worker_policy import effective_panel_tool_profile
+            return effective_panel_tool_profile(pset.load_settings().get("tool_profile"))
+        except Exception:
+            return None
+
     def _route_connection(self, connection, text):
         from synapse.panel.model_routing import choose_route
         from synapse.panel import settings as pset, connections as cn
         from synapse.panel.providers.registry import build_provider
         settings = pset.load_settings()
+        tool_profile = self._active_tool_profile()
         decision = choose_route(connection.facts, tuple(self._connection_facts.values()),
             mode=settings.get("routing_mode", "chosen_model"),
             need=settings.get("task_need", "conversation"),
             # BP9-WORKER: route on the roster the worker will actually send.
-            tools=(get_anthropic_tools_for_worker()
+            tools=(get_anthropic_tools_for_worker(profile=tool_profile)
                    if get_anthropic_tools_for_worker else None),
             messages=self._messages + [{"role": "user", "content": text}])
         if not decision.ok:
@@ -3829,7 +3839,14 @@ class SynapsePanel(QtWidgets.QWidget):
             self._task_connection = connection
             self._permission_connections[:] = [connection]
             self._last_task_facts = connection.facts
-            self._chat.append_system_message(getattr(connection.provider, "_route_reason", connection.facts.description))
+            route_note = getattr(connection.provider, "_route_reason", connection.facts.description)
+            try:
+                from synapse.panel.worker_policy import resolve_mode
+                if resolve_mode(self._active_tool_profile()) == "network":
+                    route_note = "%s · Compact network profile (8 tools)" % route_note
+            except Exception:
+                pass
+            self._chat.append_system_message(route_note)
             # Submitting is the artist handing off — drop input focus. The last
             # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
             self._hide_turn_receipt()
@@ -3998,8 +4015,19 @@ class SynapsePanel(QtWidgets.QWidget):
         sees 'processing… text, no nodes'). Reads live scene context on the
         main thread (this runs from the send handler), all best-effort."""
         overlay = getattr(self, "_system_prompt_overlay", "") or ""
+        use_network_prompt = False
         try:
-            from synapse.panel.system_prompt import build_system_prompt
+            resolver = getattr(self, "_active_tool_profile", None)
+            profile = resolver() if callable(resolver) else None
+            from synapse.panel.worker_policy import resolve_mode
+            use_network_prompt = (resolve_mode(profile) == "network")
+        except Exception:
+            use_network_prompt = False
+        try:
+            if use_network_prompt:
+                from synapse.panel.system_prompt import build_network_system_prompt as build_fn
+            else:
+                from synapse.panel.system_prompt import build_system_prompt as build_fn
         except Exception as exc:
             return self._prompt_fallback(overlay, "import", exc)
         ctx = {}
@@ -4021,7 +4049,7 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             ctx = {}
         try:
-            base = build_system_prompt(ctx)
+            base = build_fn(ctx)
         except Exception as exc:
             return self._prompt_fallback(overlay, "build", exc)
         # This turn is steered by the real prompt. Clearing the marker means a
@@ -4029,8 +4057,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # swallowed as "already reported".
         self._prompt_fallback_reason = None
         # L5-2: the active profile's overlay rides on top of the built prompt —
-        # tone/pacing only, never capability (L5/L6).
-        return (base + "\n\n" + overlay) if overlay else base
+        # tone/pacing only, never capability (L5/L6). Network-only compact mode
+        # preserves the exact trained prompt without appending extra prose.
+        return (base + "\n\n" + overlay) if (overlay and not use_network_prompt) else base
 
     def _prompt_fallback(self, overlay, branch, exc):
         """Declare a substituted system prompt, then return the same substitute.
@@ -4129,10 +4158,12 @@ class SynapsePanel(QtWidgets.QWidget):
             # BP9-WORKER: tools=None → the worker resolves its own filtered
             # roster (get_anthropic_tools_for_worker), so the LLM never sees a
             # schema the allowlist would deny at dispatch.
+            tool_profile = self._active_tool_profile()
             self._worker = ClaudeWorker(self._messages, system_prompt=system,
                                         tools=None, parent=None,
                                         enforce_worker_policy=True,
-                                        provider=connection.provider)
+                                        provider=connection.provider,
+                                        tool_profile=tool_profile)
             logger.info("Worker roster at send: %d tools",
                         len(getattr(self._worker, "_tools", None) or ()))
         self._worker.token_received.connect(self._on_token)
