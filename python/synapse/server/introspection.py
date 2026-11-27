@@ -25,6 +25,11 @@ try:
 except ImportError:  # loaded by file path, outside the package (tests do)
     from synapse.server.parm_authored import raw_string
 
+try:
+    from . import apex_graph as _apex_graph
+except ImportError:  # loaded by file path, outside the package (tests do)
+    from synapse.server import apex_graph as _apex_graph
+
 
 # C1-F10: a hard ceiling on input-graph traversal depth. The depth argument is
 # agent-supplied and was clamped nowhere, over what was 2^depth growth. The
@@ -398,6 +403,104 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
         if is_large:
             result["large_geometry"] = True
         return result
+
+
+# ---------------------------------------------------------------------------
+# APEX graph block
+# ---------------------------------------------------------------------------
+
+def _is_apex_type(node) -> bool:
+    """True for an ``apex::`` node type. A non-str name (a test double) is not one."""
+    try:
+        type_name = node.type().name()
+    except Exception:
+        logger.debug("node type unavailable for the APEX check", exc_info=True)
+        return False
+    return isinstance(type_name, str) and type_name.startswith("apex::")
+
+
+def _clean_geometry(node):
+    """(geometry, status) for *node* without ever forcing a cook.
+
+    The same passive gate ``_geometry_summary`` takes (R-019): geometry is
+    read only when ``needsToCook()`` answers a definite False. A node with no
+    such member is refused too, so a stand-in never reads as cooked.
+    """
+    gate = getattr(node, "needsToCook", None)
+    if not callable(gate):
+        return None, "no_cook_gate"
+    try:
+        dirty = gate()
+    except Exception:
+        logger.debug("needsToCook() could not be answered", exc_info=True)
+        return None, "dirty_unknown"
+    if dirty is not False:
+        return None, "dirty_not_forced" if dirty is True else "dirty_unknown"
+    try:
+        geo = node.geometry()
+    except Exception:
+        logger.debug("geometry unavailable", exc_info=True)
+        return None, "geometry_unavailable"
+    return geo, "ok"
+
+
+def _apex_block(node) -> Optional[Dict[str, Any]]:
+    """The APEX graphs *node* carries: nodes, wires, controls, inputs, outputs.
+
+    Reads the node's own cooked output first. An ``apex::`` node whose output
+    holds no graph (Scene Invoke outputs the posed mesh) is answered from the
+    nearest cooked input upstream instead, and ``graph_source`` names the node
+    the graph was read from.
+
+    Returns None when there is nothing to say, so the block stays optional:
+    any other node type, and any geometry without a graph, is unchanged.
+
+    Cook safety: rides the R-019 gate. A dirty ``apex::`` node gets a stamp
+    saying the graph was not read, never a forced cook, and a dirty input is
+    listed under ``upstream_not_cooked`` rather than cooked.
+    """
+    typed = _is_apex_type(node)
+    _, own_status = _clean_geometry(node)
+    if own_status != "ok":
+        if typed and own_status in ("dirty_not_forced", "dirty_unknown"):
+            return {
+                "observation_status": own_status,
+                "graph_read": False,
+                "reason": (
+                    "The node is not cooked, and reading its graph here would "
+                    "force the cook. Display the node or cook it, then ask again."
+                ),
+            }
+        return None
+
+    found = _apex_graph.find_graphs(
+        node, lambda n: _clean_geometry(n)[0], search_upstream=typed)
+    summary = found["summary"]
+    if summary is not None:
+        summary["graph_read"] = True
+        summary["graph_source"] = found["source"]
+        summary["graph_distance"] = found["distance"]
+        if found["distance"]:
+            summary["note"] = (
+                "This node's own output holds no APEX graph. The graph was "
+                "read from %s, %d input(s) upstream."
+                % (found["source"], found["distance"])
+            )
+        return summary
+    if not typed:
+        return None
+    result: Dict[str, Any] = {
+        "graph_read": False,
+        "graphs": [],
+        "upstream_examined": found["examined"],
+        "reason": (
+            "No APEX graph in this node's output or in the %d input(s) "
+            "examined upstream." % found["examined"]
+        ),
+    }
+    if found["unread"]:
+        result["upstream_not_cooked"] = found["unread"]
+    return result
 
 
 def _node_issues(node) -> Dict[str, Any]:
@@ -866,6 +969,16 @@ def inspect_node_detail(
         geo = _geometry_summary(node)
         if geo is not None:
             info["geometry"] = geo
+
+    # ── APEX graph ──
+    # A rig lives inside packed folders, where the geometry summary stops at
+    # the folder names. This block opens the graph: nodes, wires, controls.
+    # An ``apex::`` node gets it without opting in to geometry, because the
+    # read is bounded, O(1) on a mesh, and never forces a cook.
+    if include_geometry or _is_apex_type(node):
+        apex = _apex_block(node)
+        if apex is not None:
+            info["apex"] = apex
 
     # ── HDA info ──
     try:

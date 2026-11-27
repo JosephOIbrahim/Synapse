@@ -1,14 +1,18 @@
 """
-SYNAPSE APEX Graph Trace -- Introspection for APEX graphs in Houdini 21.
+SYNAPSE APEX Graph Trace -- Introspection for APEX graphs in Houdini.
 
-Reads an APEX Invoke SOP, extracts the graph structure from packed
-geometry primitives, determines execution order via topological sort,
-and presents the result as HTML (for the panel) or plain text (for Claude).
+Reads the APEX graph a node carries, determines execution order via
+topological sort, and presents the result as HTML (for the panel) or plain
+text (for Claude).
 
-APEX graphs are programs stored as geometry (packed prims).  The internal
-structure is not fully documented, so this module uses best-effort
-introspection: it reads whatever attributes are available on the packed
-content and falls back gracefully when data is missing.
+An APEX graph is a program stored as geometry: one point per graph node and
+one two-vertex primitive per wire. A rigged character holds its graph in a
+packed folder (``Base.rig``), and a scene nests the character one folder
+deeper. The geometry reads live in ``synapse.server.apex_graph`` (layout
+measured on Houdini 22.0.466); this module turns that read into a trace.
+
+A node whose own output holds no graph (Scene Invoke outputs the posed mesh)
+is traced from the nearest input upstream that does.
 
 All hou access is individually guarded so failures never break the trace.
 Outside Houdini the module imports cleanly and trace_apex_graph() returns
@@ -20,9 +24,12 @@ from __future__ import annotations
 from synapse.panel.designsystem import tokens as _ds
 
 import html
+import logging
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Houdini import guard
@@ -33,6 +40,23 @@ try:
     _HOU_AVAILABLE = True
 except ImportError:
     hou = None  # type: ignore[assignment]
+
+# ---------------------------------------------------------------------------
+# Graph geometry reader guard
+# ---------------------------------------------------------------------------
+APEX_GRAPH_AVAILABLE = False
+try:
+    from synapse.server import apex_graph as _apex_graph
+    APEX_GRAPH_AVAILABLE = True
+except ImportError:
+    _apex_graph = None  # type: ignore[assignment]
+
+# Past this many nodes the longest-chain search is skipped (it is the one
+# step here that is not linear in the graph).
+_CRITICAL_PATH_NODE_CAP = 2000
+
+# Wires printed by the formatters before the rest are counted, not listed.
+_FLOW_LINES_CAP = 200
 
 
 # ============================================================================
@@ -45,10 +69,11 @@ class ApexGraphNode:
 
     name: str               # node name within the graph
     node_type: str          # operation type (e.g. "TransformObject", "GetAttribute")
-    category: str           # "transform", "attribute", "math", "control", "solver", "other"
+    category: str           # "transform", "attribute", "math", "logic", "solver", "deform", "other"
     inputs: list            # input connection names
     outputs: list           # output connection names
     description: str        # brief description of what this operation does
+    tags: list = field(default_factory=list)   # graph tags, e.g. ["control"]
 
 
 @dataclass
@@ -62,6 +87,12 @@ class ApexGraphTrace:
     data_flow: list = field(default_factory=list)   # [(src_name, dst_name, port), ...]
     summary: str = ""
     critical_path: list = field(default_factory=list)  # names on longest eval chain
+    wire_count: int = 0
+    controls: list = field(default_factory=list)       # names of nodes tagged "control"
+    graph_folder: str = ""  # packed folder the graph was read from, e.g. "Base.rig"
+    graph_source: str = ""  # node the graph was read from (may be upstream of invoke_path)
+    graph_inputs: list = field(default_factory=list)   # names promoted on __parms__
+    graph_outputs: list = field(default_factory=list)  # names promoted on __output__
 
 
 # ============================================================================
@@ -88,26 +119,38 @@ _CATEGORY_MAP: Dict[str, List[str]] = {
         "Sin", "Cos", "Sqrt", "Pow", "Dot", "Cross", "Normalize",
         "Length", "Distance", "Min", "Max", "Mod",
         "MatrixMultiply", "QuaternionMultiply", "QuaternionToMatrix",
+        "SetComponent", "GetComponent",
     ],
-    "control": [
-        "Switch", "Branch", "Loop", "ForEach", "If", "While",
+    # Flow control. Named "logic" so it can never be read as rig controls,
+    # which are the nodes tagged ``control``.
+    "logic": [
+        "Switch", "TwoWaySwitch", "Branch", "Loop", "ForEach", "If", "While",
         "Compare", "And", "Or", "Not", "Select",
     ],
     "solver": [
         "FKSolver", "IKSolver", "FBIK", "FBIKSolver",
         "SpringSolver", "RBDSolver", "MotionClip",
-        "SolveFK", "SolveIK", "SolveFBIK",
+        "SolveFK", "SolveIK", "SolveFBIK", "TwoBoneIK",
     ],
     "constraint": [
         "ParentConstraint", "AimConstraint", "PointConstraint",
         "OrientConstraint", "ScaleConstraint", "PoleVectorConstraint",
-        "BlendConstraint", "TwoBoneIK",
+        "BlendConstraint",
     ],
     "io": [
         "Input", "Output", "Pack", "Unpack",
         "Import", "Export", "Fetch", "Store",
         "GraphInput", "GraphOutput", "SubGraphInput", "SubGraphOutput",
+        "__parms__", "__output__",
     ],
+}
+
+# Callbacks whose namespace decides the category. ``geo::Transform`` moves
+# geometry; without its namespace it would read as a rig transform.
+_FULL_NAME_CATEGORY: Dict[str, str] = {
+    "geo::Transform": "deform",
+    "sop::bonedeform": "deform",
+    "skel::SetPointTransforms": "deform",
 }
 
 # Build reverse lookup: operation_name -> category
@@ -117,23 +160,37 @@ for _cat, _ops in _CATEGORY_MAP.items():
         _OP_TO_CATEGORY[_op] = _cat
 
 
-def categorize_apex_operation(type_name: str) -> str:
-    """Map an APEX operation type name to a category string.
+def _base_callback(type_name: str) -> str:
+    """A callback's bare name: ``rig::TwoBoneIK`` -> ``TwoBoneIK``,
+    ``Multiply<Matrix4>`` -> ``Multiply``."""
+    return type_name.rsplit("::", 1)[-1].split("<", 1)[0]
 
-    Returns one of: "transform", "attribute", "math", "control",
-    "solver", "constraint", "io", or "other".
+
+def categorize_apex_operation(type_name: str) -> str:
+    """Map an APEX callback name to a category string.
+
+    Returns one of: "transform", "attribute", "math", "logic", "solver",
+    "constraint", "deform", "io", or "other".
+
+    The full name is matched first, then the bare name with its namespace and
+    ``<Type>`` suffix removed. Both are exact matches: a substring match would
+    file ``geo::Transform`` and ``SetComponent<Vector3>`` under the two-letter
+    op ``Or``.
     """
+    if type_name in _FULL_NAME_CATEGORY:
+        return _FULL_NAME_CATEGORY[type_name]
     if type_name in _OP_TO_CATEGORY:
         return _OP_TO_CATEGORY[type_name]
+    base = _base_callback(type_name)
+    if base in _OP_TO_CATEGORY:
+        return _OP_TO_CATEGORY[base]
 
-    # Try case-insensitive substring matching for partial hits
-    lower = type_name.lower()
-    for cat, ops in _CATEGORY_MAP.items():
-        for op in ops:
-            if op.lower() in lower or lower in op.lower():
-                return cat
-
-    # Heuristic fallback on common suffixes/prefixes
+    # Heuristic fallback on the bare name
+    lower = base.lower()
+    if lower.endswith("switch"):
+        return "logic"
+    if "deform" in lower:
+        return "deform"
     if "transform" in lower or "xform" in lower:
         return "transform"
     if "attrib" in lower:
@@ -185,6 +242,14 @@ _OP_DESCRIPTIONS: Dict[str, str] = {
     "Cross": "Cross product of two vectors",
     "LookAt": "Computes a look-at rotation matrix",
     "TwoBoneIK": "Two-bone IK chain solver",
+    "TwoWaySwitch": "Chooses between two inputs",
+    "Value": "Holds a constant value",
+    "SetComponent": "Sets one component of a vector",
+    "__parms__": "Graph inputs: the values the rig is driven by",
+    "__output__": "Graph outputs: what the rig hands back",
+    "geo::Transform": "Moves a group of the shape by a matrix (rigid deform)",
+    "sop::bonedeform": "Runs Bone Deform on the shape, inside the graph",
+    "skel::SetPointTransforms": "Writes transforms onto the skeleton's joints",
 }
 
 
@@ -192,6 +257,9 @@ def _describe_operation(type_name: str) -> str:
     """Return a brief human-readable description for an APEX operation."""
     if type_name in _OP_DESCRIPTIONS:
         return _OP_DESCRIPTIONS[type_name]
+    base = _base_callback(type_name)
+    if base in _OP_DESCRIPTIONS:
+        return _OP_DESCRIPTIONS[base]
     cat = categorize_apex_operation(type_name)
     if cat != "other":
         return f"{cat.capitalize()} operation"
@@ -202,132 +270,86 @@ def _describe_operation(type_name: str) -> str:
 # Graph extraction helpers
 # ============================================================================
 
-def _safe_attrib_value(prim: Any, attrib_name: str, default: Any = "") -> Any:
-    """Read an attribute value from a prim, returning *default* on failure."""
-    try:
-        val = prim.attribValue(attrib_name)
-        return val if val is not None else default
-    except Exception:
-        return default
+def _nodes_from_graph(
+    graph: Dict[str, Any],
+) -> Tuple[List[ApexGraphNode], List[Tuple[str, str, str]]]:
+    """Turn one graph read (``apex_graph.read_graph`` with nodes and wires)
+    into trace nodes and ``(source, destination, port)`` connections.
 
+    The port label reads ``source_port -> destination_port``.
+    """
+    nodes: List[ApexGraphNode] = []
+    connections: List[Tuple[str, str, str]] = []
+    in_ports: Dict[str, List[str]] = {}
+    out_ports: Dict[str, List[str]] = {}
 
-def _safe_string_list(prim: Any, attrib_name: str) -> List[str]:
-    """Read a string array attribute, returning [] on failure."""
-    try:
-        val = prim.attribValue(attrib_name)
-        if isinstance(val, (list, tuple)):
-            return [str(v) for v in val]
-        if isinstance(val, str) and val:
-            return [val]
-        return []
-    except Exception:
-        return []
+    for wire in graph.get("wires", []):
+        src = wire.get("source", "")
+        dst = wire.get("destination", "")
+        sp = wire.get("source_port", "")
+        dp = wire.get("destination_port", "")
+        if not src or not dst:
+            continue
+        label = f"{sp} -> {dp}" if (sp or dp) else ""
+        connections.append((src, dst, label))
+        if sp and sp not in out_ports.setdefault(src, []):
+            out_ports[src].append(sp)
+        if dp and dp not in in_ports.setdefault(dst, []):
+            in_ports[dst].append(dp)
+
+    for row in graph.get("nodes", []):
+        name = str(row.get("name", ""))
+        callback = str(row.get("callback", "unknown"))
+        nodes.append(ApexGraphNode(
+            name=name,
+            node_type=callback,
+            category=categorize_apex_operation(callback),
+            inputs=in_ports.get(name, []),
+            outputs=out_ports.get(name, []),
+            description=_describe_operation(callback),
+            tags=list(row.get("tags", [])),
+        ))
+    return nodes, connections
 
 
 def _extract_graph_nodes_from_geo(
     geo: Any,
 ) -> Tuple[List[ApexGraphNode], List[Tuple[str, str, str]]]:
-    """Extract APEX graph nodes and connections from geometry.
+    """Extract APEX graph nodes and connections from graph geometry.
 
-    APEX graphs store nodes as primitives with attributes describing the
-    graph structure.  The exact attribute names vary, so we probe several
-    known patterns.
+    Points are the graph's nodes and two-vertex primitives are its wires.
+    Geometry that is not a graph (a mesh, a skeleton) returns two empty
+    lists without being walked.
 
     Returns (nodes_list, connections_list).
     """
-    nodes: List[ApexGraphNode] = []
-    connections: List[Tuple[str, str, str]] = []
-    seen_names: Set[str] = set()
+    if geo is None or not APEX_GRAPH_AVAILABLE:
+        return [], []
+    graph = _apex_graph.read_graph(geo, include_nodes=True, include_wires=True)
+    if graph is None or not graph.get("read"):
+        return [], []
+    return _nodes_from_graph(graph)
 
-    if geo is None:
-        return nodes, connections
 
-    # Discover available prim-level string attributes
-    available_attribs: Set[str] = set()
+def _read_node_geometry(node: Any) -> Any:
+    """Geometry reader for an explicit trace: the artist asked for this node,
+    so it may cook, exactly as ``trace_apex_graph`` always has."""
     try:
-        for attrib in geo.primAttribs():
-            available_attribs.add(attrib.name())
+        return node.geometry()
     except Exception:
-        pass
-
-    # Candidate attribute names for node name, type, inputs, outputs
-    name_candidates = ["name", "nodename", "node_name", "label"]
-    type_candidates = ["type", "nodetype", "node_type", "callback", "op"]
-    input_candidates = ["inputnames", "input_names", "inputs", "inputconnections"]
-    output_candidates = ["outputnames", "output_names", "outputs", "outputconnections"]
-
-    def _pick(candidates: List[str]) -> Optional[str]:
-        for c in candidates:
-            if c in available_attribs:
-                return c
+        logger.debug("geometry unavailable", exc_info=True)
         return None
 
-    name_attr = _pick(name_candidates)
-    type_attr = _pick(type_candidates)
-    input_attr = _pick(input_candidates)
-    output_attr = _pick(output_candidates)
 
-    try:
-        prims = geo.prims()
-    except Exception:
-        return nodes, connections
+def _find_graphs(node: Any) -> Tuple[Optional[Dict[str, Any]], str, int]:
+    """(read, source node path, distance) for the graph *node* carries.
 
-    for prim in prims:
-        try:
-            node_name = _safe_attrib_value(prim, name_attr, "") if name_attr else ""
-            if not node_name:
-                # Fallback: use prim number
-                try:
-                    node_name = f"node_{prim.number()}"
-                except Exception:
-                    node_name = f"node_{len(nodes)}"
-
-            node_type = _safe_attrib_value(prim, type_attr, "unknown") if type_attr else "unknown"
-
-            inputs = _safe_string_list(prim, input_attr) if input_attr else []
-            outputs = _safe_string_list(prim, output_attr) if output_attr else []
-
-            category = categorize_apex_operation(str(node_type))
-            description = _describe_operation(str(node_type))
-
-            # Deduplicate names
-            base_name = str(node_name)
-            if base_name in seen_names:
-                suffix = 1
-                while f"{base_name}_{suffix}" in seen_names:
-                    suffix += 1
-                base_name = f"{base_name}_{suffix}"
-            seen_names.add(base_name)
-
-            nodes.append(ApexGraphNode(
-                name=base_name,
-                node_type=str(node_type),
-                category=category,
-                inputs=inputs,
-                outputs=outputs,
-                description=description,
-            ))
-        except Exception:
-            continue
-
-    # Try to extract explicit connections from geometry-level attributes
-    # APEX may store connections as detail attributes or in a separate
-    # connectivity structure
-    try:
-        conn_attribs = {"connections", "edges", "wires", "graph_edges"}
-        for attr_name in conn_attribs & available_attribs:
-            val = geo.attribValue(attr_name)
-            if isinstance(val, (list, tuple)):
-                for item in val:
-                    if isinstance(item, (list, tuple)) and len(item) >= 2:
-                        src = str(item[0])
-                        dst = str(item[1])
-                        port = str(item[2]) if len(item) > 2 else ""
-                        connections.append((src, dst, port))
-    except Exception:
-        pass
-
-    return nodes, connections
+    The node's own output first; if it holds no graph, the nearest input
+    upstream that does. ``read`` is None when no graph was found.
+    """
+    found = _apex_graph.find_graphs(
+        node, _read_node_geometry, include_nodes=True, include_wires=True)
+    return found["summary"], found["source"] or "", found["distance"]
 
 
 def _topological_sort(
@@ -519,85 +541,74 @@ def trace_apex_graph(invoke_path: str) -> ApexGraphTrace:
             summary="No geometry on node -- is it cooked?",
         )
 
-    # Look for packed primitives (APEX graphs are stored as packed geo)
-    all_nodes: List[ApexGraphNode] = []
-    all_connections: List[Tuple[str, str, str]] = []
-    packed_count = 0
+    if not APEX_GRAPH_AVAILABLE:
+        return ApexGraphTrace(
+            invoke_path=invoke_path,
+            graph_name=graph_name,
+            summary="Graph reader unavailable -- cannot trace APEX graph",
+        )
 
+    # Read the graph: this node's own output, else the nearest input upstream.
     try:
-        for prim in geo.prims():
-            try:
-                prim_type = prim.type()
-                is_packed = (
-                    prim_type == hou.primType.PackedPrim
-                    or "packed" in str(prim_type).lower()
-                )
-            except Exception:
-                is_packed = False
+        found, source_path, distance = _find_graphs(node)
+    except Exception as exc:
+        logger.debug("graph search failed", exc_info=True)
+        return ApexGraphTrace(
+            invoke_path=invoke_path,
+            graph_name=graph_name,
+            summary=f"Cannot read graph: {exc}",
+        )
 
-            if not is_packed:
-                continue
-
-            packed_count += 1
-
-            # Try to get the packed geometry content
-            try:
-                packed_geo = prim.getEmbeddedGeometry()
-            except Exception:
-                packed_geo = None
-
-            if packed_geo is None:
-                # Try alternative access methods
-                try:
-                    packed_geo = prim.unpackedGeo()
-                except Exception:
-                    packed_geo = None
-
-            if packed_geo is not None:
-                nodes_found, conns_found = _extract_graph_nodes_from_geo(packed_geo)
-                all_nodes.extend(nodes_found)
-                all_connections.extend(conns_found)
-    except Exception:
-        pass
-
-    # If we found no packed prims, try the geometry directly
-    if not all_nodes and packed_count == 0:
-        all_nodes, all_connections = _extract_graph_nodes_from_geo(geo)
-
-    # If still no nodes, provide a fallback report
-    if not all_nodes:
+    if found is None:
         fallback_parts = []
-        if packed_count > 0:
-            fallback_parts.append(f"{packed_count} packed prim(s) found")
+        try:
+            prim_count = geo.intrinsicValue("primitivecount")
+            point_count = geo.intrinsicValue("pointcount")
             fallback_parts.append(
-                "but graph internals could not be read"
+                f"Geometry has {prim_count} prims, {point_count} points"
             )
-        else:
-            try:
-                prim_count = geo.intrinsicValue("primitivecount")
-                point_count = geo.intrinsicValue("pointcount")
-                fallback_parts.append(
-                    f"Geometry has {prim_count} prims, {point_count} points"
-                )
-            except Exception:
-                fallback_parts.append("Could not read geometry stats")
-            fallback_parts.append("no APEX packed primitives detected")
-
+        except Exception:
+            logger.debug("geometry stats unavailable", exc_info=True)
+            fallback_parts.append("Could not read geometry stats")
+        fallback_parts.append(
+            "no APEX graph in this node's output or its inputs upstream"
+        )
         fallback_parts.append(
             "Try inspecting with the APEX Network Editor for full graph details"
         )
-
         return ApexGraphTrace(
             invoke_path=invoke_path,
             graph_name=graph_name,
             summary="; ".join(fallback_parts),
         )
 
+    graphs = found.get("graphs", [])
+    graph = graphs[0]
+    folder = str(graph.get("folder", ""))
+    if folder:
+        graph_name = folder.rsplit("/", 1)[-1]
+
+    if not graph.get("read"):
+        return ApexGraphTrace(
+            invoke_path=invoke_path,
+            graph_name=graph_name,
+            node_count=int(graph.get("node_count") or 0),
+            wire_count=int(graph.get("wire_count") or 0),
+            graph_folder=folder,
+            graph_source=source_path,
+            summary=f"APEX graph {graph_name}: {graph.get('reason', 'not read')}",
+        )
+
+    all_nodes, all_connections = _nodes_from_graph(graph)
+
     # Sort nodes into execution order
     sorted_nodes = _topological_sort(all_nodes, all_connections)
 
-    # Find critical path
-    critical_path = _find_critical_path(sorted_nodes, all_connections)
+    # Find critical path (skipped on very large graphs; see the cap)
+    if len(sorted_nodes) <= _CRITICAL_PATH_NODE_CAP:
+        critical_path = _find_critical_path(sorted_nodes, all_connections)
+    else:
+        critical_path = []
 
     # Build summary
     category_counts: Dict[str, int] = {}
@@ -607,11 +618,26 @@ def trace_apex_graph(invoke_path: str) -> ApexGraphTrace:
     dominant_categories = sorted(
         category_counts.items(), key=lambda x: x[1], reverse=True
     )
-    cat_desc = ", ".join(f"{count} {cat}" for cat, count in dominant_categories[:3])
+    cat_desc = ", ".join(f"{count} {cat}" for cat, count in dominant_categories[:4])
 
-    summary = f"APEX graph: {len(sorted_nodes)} nodes ({cat_desc})"
+    controls = list(graph.get("controls", []))
+    control_count = int(graph.get("control_count") or 0)
+    wire_count = int(graph.get("wire_count") or len(all_connections))
+
+    summary = (
+        f"APEX graph {graph_name}: {len(sorted_nodes)} nodes, "
+        f"{wire_count} wires, {control_count} controls ({cat_desc})"
+    )
     if len(critical_path) > 1:
         summary += f", critical path: {len(critical_path)} nodes"
+    if distance:
+        summary += (
+            f". Read from {source_path}, {distance} input(s) upstream: "
+            "this node's own output holds no graph"
+        )
+    if len(graphs) > 1:
+        others = ", ".join(str(g.get("folder", "")) for g in graphs[1:4])
+        summary += f". {len(graphs) - 1} more graph(s) not traced: {others}"
 
     return ApexGraphTrace(
         invoke_path=invoke_path,
@@ -621,6 +647,12 @@ def trace_apex_graph(invoke_path: str) -> ApexGraphTrace:
         data_flow=all_connections,
         summary=summary,
         critical_path=critical_path,
+        wire_count=wire_count,
+        controls=controls,
+        graph_folder=folder,
+        graph_source=source_path,
+        graph_inputs=list(graph.get("graph_inputs", [])),
+        graph_outputs=list(graph.get("graph_outputs", [])),
     )
 
 
@@ -632,7 +664,8 @@ _CATEGORY_COLORS: Dict[str, str] = {
     "transform": _ds.TEXT_SECONDARY,
     "attribute": _ds.TEXT_SECONDARY,
     "math": _ds.TEXT_SECONDARY,
-    "control": _ds.TEXT_SECONDARY,
+    "logic": _ds.TEXT_SECONDARY,
+    "deform": _ds.TEXT_SECONDARY,
     "solver": _ds.TEXT_SECONDARY,
     "constraint": _ds.TEXT_SECONDARY,
     "io": _ds.TEXT_TERTIARY,
@@ -659,9 +692,17 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
     )
     lines.append(
         f"<p style='color:{_ds.TEXT_SECONDARY}; margin:2px 0;'>"
-        f"Source: {html.escape(trace.invoke_path)} | "
-        f"{trace.node_count} nodes</p>"
+        f"Source: {html.escape(trace.graph_source or trace.invoke_path)} | "
+        f"{trace.node_count} nodes | {trace.wire_count} wires | "
+        f"{len(trace.controls)} controls</p>"
     )
+    if trace.controls:
+        control_str = ", ".join(html.escape(str(c)) for c in trace.controls)
+        lines.append("<h4 style='margin:8px 0 4px 0;'>Controls</h4>")
+        lines.append(
+            f"<div style='padding:4px 8px; color:{_ds.TEXT_SECONDARY};'>"
+            f"{control_str}</div>"
+        )
 
     # Node list in execution order
     lines.append("<h4 style='margin:8px 0 4px 0;'>Execution Order</h4>")
@@ -716,10 +757,14 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
     if trace.data_flow:
         lines.append("<h4 style='margin:8px 0 4px 0;'>Data Flow</h4>")
         lines.append(f"<div style='padding:4px 8px; color:{_ds.TEXT_SECONDARY}; font-family:monospace;'>")
-        for src, dst, port in trace.data_flow:
+        for src, dst, port in trace.data_flow[:_FLOW_LINES_CAP]:
             port_label = f" ({html.escape(port)})" if port else ""
             lines.append(
                 f"{html.escape(src)} -> {html.escape(dst)}{port_label}<br/>"
+            )
+        if len(trace.data_flow) > _FLOW_LINES_CAP:
+            lines.append(
+                f"... and {len(trace.data_flow) - _FLOW_LINES_CAP} more wires<br/>"
             )
         lines.append("</div>")
     elif trace.critical_path and len(trace.critical_path) > 1:
@@ -751,9 +796,16 @@ def format_apex_trace_text(trace: ApexGraphTrace) -> str:
     lines: List[str] = []
 
     lines.append(f"APEX Graph Trace: {trace.graph_name}")
-    lines.append(f"Source: {trace.invoke_path}")
+    lines.append(f"Source: {trace.graph_source or trace.invoke_path}")
     lines.append(f"Nodes: {trace.node_count}")
+    lines.append(f"Wires: {trace.wire_count}")
+    lines.append(f"Controls: {len(trace.controls)}")
     lines.append("")
+
+    if trace.controls:
+        lines.append("== Controls ==")
+        lines.append("  " + ", ".join(str(c) for c in trace.controls))
+        lines.append("")
 
     lines.append("== Execution Order ==")
     for idx, node in enumerate(trace.nodes, start=1):
@@ -771,9 +823,13 @@ def format_apex_trace_text(trace: ApexGraphTrace) -> str:
 
     if trace.data_flow:
         lines.append("== Data Flow ==")
-        for src, dst, port in trace.data_flow:
+        for src, dst, port in trace.data_flow[:_FLOW_LINES_CAP]:
             port_label = f" ({port})" if port else ""
             lines.append(f"  {src} -> {dst}{port_label}")
+        if len(trace.data_flow) > _FLOW_LINES_CAP:
+            lines.append(
+                f"  ... and {len(trace.data_flow) - _FLOW_LINES_CAP} more wires"
+            )
         lines.append("")
 
     if trace.critical_path and len(trace.critical_path) > 1:
@@ -792,8 +848,8 @@ def format_apex_trace_text(trace: ApexGraphTrace) -> str:
 def build_apex_trace_prompt(trace: ApexGraphTrace) -> str:
     """System prompt for Claude to interpret the APEX graph."""
     return (
-        "You are analyzing an APEX graph from Houdini 21. The graph was "
-        "extracted from an Invoke SOP. Explain what this graph does as a "
+        "You are analyzing an APEX graph from Houdini. The graph was read "
+        "from the geometry of an APEX node. Explain what this graph does as a "
         "complete rigging operation. Describe the data flow from inputs to "
         "outputs. Identify the core operations (transforms, constraints, "
         "solvers) and explain how they work together.\n\n"

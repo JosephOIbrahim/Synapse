@@ -15,8 +15,11 @@ from __future__ import annotations
 
 from synapse.panel.designsystem import tokens as _ds
 
+import logging
 import re
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Houdini import guard
@@ -29,6 +32,18 @@ try:
     _HOU_AVAILABLE = True
 except ImportError:
     hou = None  # type: ignore[assignment]
+
+# ---------------------------------------------------------------------------
+# Graph geometry reader guard
+# ---------------------------------------------------------------------------
+
+APEX_GRAPH_AVAILABLE = False
+try:
+    from synapse.server import apex_graph as _apex_graph
+
+    APEX_GRAPH_AVAILABLE = True
+except ImportError:
+    _apex_graph = None  # type: ignore[assignment]
 
 
 # ============================================================================
@@ -306,7 +321,13 @@ _APEX_TYPE_PATTERNS: Dict[str, List[str]] = {
 def _classify_apex_type(type_name: str) -> str:
     """Return the APEX sub-type for a node type name."""
     lower = type_name.lower()
+    # An ``apex::`` node is never KineFX. Without this, ``apex::rigpose`` is
+    # caught by the KineFX ``rigpose`` substring and explained as the wrong
+    # system; it falls through to the APEX bucket below instead.
+    is_apex_namespace = lower.startswith("apex::")
     for apex_type, patterns in _APEX_TYPE_PATTERNS.items():
+        if is_apex_namespace and apex_type == "kinefx":
+            continue
         for pat in patterns:
             if pat in lower:
                 return apex_type
@@ -322,6 +343,53 @@ def _is_apex_related(type_name: str) -> bool:
         return True
     apex_type = _classify_apex_type(lower)
     return apex_type != "other"
+
+
+def _intrinsic_int(geo: Any, name: str) -> int:
+    """An element count read in O(1), or 0. Never materialises the elements."""
+    try:
+        value = geo.intrinsicValue(name)
+    except Exception:
+        logger.debug("intrinsic %s unreadable", name, exc_info=True)
+        return 0
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return 0
+    return value
+
+
+def _read_node_geometry(node: Any) -> Any:
+    """Geometry reader for an explicit explain: the artist asked about this
+    node, so it may cook, exactly as ``gather_apex_context`` always has."""
+    try:
+        return node.geometry()
+    except Exception:
+        logger.debug("geometry unavailable", exc_info=True)
+        return None
+
+
+def _gather_rig_info(node: Any) -> Dict[str, Any]:
+    """The APEX graph *node* carries: counts, controls, inputs and folders.
+
+    Read from the node's own output, or from the nearest input upstream when
+    its own output holds no graph (``source`` and ``distance`` say which).
+    """
+    info: Dict[str, Any] = {"has_graph": False}
+    if not _HOU_AVAILABLE or not APEX_GRAPH_AVAILABLE or node is None:
+        return info
+    try:
+        found = _apex_graph.find_graphs(node, _read_node_geometry)
+    except Exception:
+        logger.debug("graph search failed", exc_info=True)
+        return info
+    summary = found.get("summary")
+    if not summary:
+        return info
+    info["has_graph"] = True
+    info["source"] = found.get("source") or ""
+    info["distance"] = found.get("distance", 0)
+    info["graphs"] = summary.get("graphs", [])
+    info["folders"] = summary.get("folders", [])
+    return info
 
 
 def _gather_graph_info(node: Any) -> Dict[str, Any]:
@@ -342,20 +410,14 @@ def _gather_graph_info(node: Any) -> Dict[str, Any]:
         if geo is None:
             return info
         info["has_graph_input"] = True
-        prims = geo.prims()
-        info["graph_prim_count"] = len(prims)
-        # Try to extract names from packed prims (graph operations)
-        names = []
-        for prim in prims[:50]:  # Cap to avoid huge graphs
-            try:
-                name_attr = prim.attribValue("name")
-                if name_attr:
-                    names.append(str(name_attr))
-            except Exception:
-                pass
-        info["graph_node_names"] = names[:30]
+        info["graph_prim_count"] = _intrinsic_int(geo, "primitivecount")
+        # Folder names only, through the bounded folder walk: a mesh on this
+        # input is counted, never iterated.
+        if APEX_GRAPH_AVAILABLE:
+            names = [label for label, _geo, _depth in _apex_graph.iter_folders(geo)]
+            info["graph_node_names"] = names[:30]
     except Exception:
-        pass
+        logger.debug("graph input unreadable", exc_info=True)
     return info
 
 
@@ -378,7 +440,9 @@ def _gather_skeleton_info(geo: Any) -> Dict[str, Any]:
         info["has_name_attr"] = "name" in point_attribs
         info["has_parent_attr"] = "parent" in point_attribs
 
-        if info["has_transform_attr"] or info["has_name_attr"]:
+        # An APEX graph's points carry ``name`` too, and a graph is not a skeleton.
+        is_graph = "callback" in point_attribs
+        if (info["has_transform_attr"] or info["has_name_attr"]) and not is_graph:
             info["has_skeleton"] = True
             points = geo.points()
             info["joint_count"] = len(points)
@@ -414,32 +478,24 @@ def _gather_skeleton_info(geo: Any) -> Dict[str, Any]:
 
 
 def _gather_packed_info(geo: Any) -> Dict[str, Any]:
-    """Inspect packed primitives for folder structure."""
+    """Inspect packed primitives for folder structure.
+
+    Uses the bounded folder walk, so a mesh is counted and never iterated.
+    Nested folders appear as ``parent/child``.
+    """
     info: Dict[str, Any] = {
         "packed_prim_count": 0,
         "folder_names": [],
     }
-    if geo is None:
+    if geo is None or not APEX_GRAPH_AVAILABLE:
         return info
     try:
-        prims = geo.prims()
-        packed_count = 0
-        folder_names = []
-        for prim in prims[:200]:
-            try:
-                if prim.type().name() == "PackedGeometry":
-                    packed_count += 1
-                    name_val = prim.attribValue("name") if "name" in [
-                        a.name() for a in geo.primAttribs()
-                    ] else None
-                    if name_val:
-                        folder_names.append(str(name_val))
-            except Exception:
-                pass
-        info["packed_prim_count"] = packed_count
-        info["folder_names"] = folder_names[:50]
+        labels = [label for label, _geo, depth in _apex_graph.iter_folders(geo)]
+        top_level = [label for label in labels if "/" not in label]
+        info["packed_prim_count"] = len(top_level)
+        info["folder_names"] = labels[:50]
     except Exception:
-        pass
+        logger.debug("packed folders unreadable", exc_info=True)
     return info
 
 
@@ -477,8 +533,8 @@ def _gather_output_geo(node: Any) -> Dict[str, Any]:
         geo = node.geometry()
         if geo is None:
             return info
-        info["point_count"] = len(geo.points())
-        info["prim_count"] = len(geo.prims())
+        info["point_count"] = _intrinsic_int(geo, "pointcount")
+        info["prim_count"] = _intrinsic_int(geo, "primitivecount")
         attribs: Dict[str, List[str]] = {}
         for label, accessor in (
             ("point", "pointAttribs"),
@@ -511,6 +567,7 @@ def gather_apex_context(node_path: str) -> Dict[str, Any]:
         "is_apex_node": False,
         "apex_type": "other",
         "graph_info": {},
+        "rig_info": {},
         "skeleton_info": {},
         "packed_info": {},
         "non_default_parms": [],
@@ -540,6 +597,9 @@ def gather_apex_context(node_path: str) -> Dict[str, Any]:
     # Graph info (invoke nodes)
     if context["apex_type"] == "invoke":
         context["graph_info"] = _gather_graph_info(node)
+
+    # The APEX graph this node carries (own output, else upstream)
+    context["rig_info"] = _gather_rig_info(node)
 
     # Output geometry
     context["output_geo"] = _gather_output_geo(node)
@@ -694,6 +754,47 @@ def build_apex_messages(context: Dict[str, Any]) -> List[Dict[str, str]]:
             lines.append(f"- Graph operations: {', '.join(names[:15])}")
             if len(names) > 15:
                 lines.append(f"  ... and {len(names) - 15} more")
+        lines.append("")
+
+    # The APEX graph this node carries
+    rig = context.get("rig_info", {})
+    if rig.get("has_graph"):
+        lines.append("### APEX graph")
+        if rig.get("distance"):
+            lines.append(
+                f"- This node's own output holds no graph. Read from "
+                f"`{rig.get('source', '?')}`, {rig.get('distance')} input(s) upstream."
+            )
+        for g in rig.get("graphs", [])[:4]:
+            label = g.get("folder") or "(graph)"
+            if not g.get("read"):
+                lines.append(f"- **{label}**: {g.get('reason', 'not read')}")
+                continue
+            lines.append(
+                f"- **{label}**: {g.get('node_count', 0)} nodes, "
+                f"{g.get('wire_count', 0)} wires, "
+                f"{g.get('control_count', 0)} controls"
+            )
+            controls = g.get("controls", [])
+            if controls:
+                lines.append(f"- Controls: {', '.join(controls[:60])}")
+                if g.get("control_count", 0) > 60:
+                    lines.append(f"  ... and {g['control_count'] - 60} more")
+            callbacks = g.get("callbacks", {})
+            if callbacks:
+                kinds = ", ".join(f"{k} x{v}" for k, v in list(callbacks.items())[:14])
+                lines.append(f"- Operations: {kinds}")
+            lines.append(
+                f"- Graph inputs: {g.get('graph_input_count', 0)}, "
+                f"graph outputs: {g.get('graph_output_count', 0)}"
+            )
+        folders = rig.get("folders", [])
+        if folders:
+            rows = ", ".join(
+                f"{f.get('name', '?')} ({f.get('kind', '?')}, {f.get('points', 0)} points)"
+                for f in folders[:10]
+            )
+            lines.append(f"- Folders: {rows}")
         lines.append("")
 
     # Skeleton info
