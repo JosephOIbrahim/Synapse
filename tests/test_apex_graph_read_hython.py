@@ -7,8 +7,8 @@ packs a character and a scene, and reads them back. If a Houdini build ever
 stores a graph differently, this is the test that goes red.
 
 Runs only under hython (apex/hou). The module-level importorskip self-gates
-it, so tests/conftest.py auto-marks it ``needs_houdini`` and DESELECTS it under
-plain pytest -- loudly, never a silent skip-as-pass. Run it for real via:
+it: plain pytest skips the module at collection and prints the reason. That
+skip is not a pass. Run it for real via:
 
     python .synapse/hytest.py tests/test_apex_graph_read_hython.py
 

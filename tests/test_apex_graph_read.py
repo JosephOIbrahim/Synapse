@@ -470,6 +470,24 @@ def test_inspect_block_answers_scene_invoke_from_upstream():
     assert "/obj/rig/scene_animate" in block["note"]
 
 
+def test_every_block_is_plain_json():
+    # The /mcp path serialises a result with orjson, which takes no stand-in
+    # values and no non-str keys. A ``default=str`` fallback would hide one.
+    import json
+    scene = _Node("/obj/rig/scene_animate", "apex::sceneanimate", _scene())
+    nodes = [
+        _Node("/obj/rig/rigpose", "apex::rigpose", _character()),
+        _Node("/obj/rig/scene_invoke", "apex::sceneinvoke::2.0", _mesh(), inputs=[scene]),
+        _Node("/obj/rig/rigpose", "apex::rigpose", _character(), dirty=True),
+        _Node("/obj/rig/scene_invoke", "apex::sceneinvoke::2.0", _mesh()),
+    ]
+    for node in nodes:
+        block = introspection._apex_block(node)
+        assert json.loads(json.dumps(block)) == block
+    full = apex_graph.read_graph(_rig(), include_nodes=True, include_wires=True)
+    assert json.loads(json.dumps(full)) == full
+
+
 def test_inspect_block_never_cooks_a_dirty_apex_node():
     dirty = _Node("/obj/rig/rigpose", "apex::rigpose", _character(), dirty=True)
     block = introspection._apex_block(dirty)
