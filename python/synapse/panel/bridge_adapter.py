@@ -182,6 +182,12 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     # code from measured numbers, and the model passes no code and no
     # coordinates. Pinned by tests/test_spatial_tools.py.
     "synapse_spatial_trail": "build_from_manifest",
+    # The explode control: one undo-grouped build that adds one control to an
+    # existing APEX rig, carried by one Python SOP whose code the handler
+    # generates. "build_rig_logic" is the REVIEW-gated op shared/constants.py
+    # has always held for rig work. NOT read-only, NOT disk-writing.
+    # Pinned by tests/test_apex_explode_tool.py.
+    "synapse_add_explode_control": "build_rig_logic",
     "tops_pause_cook": "set_parameter",
     "tops_resume_cook": "set_parameter",
 }
@@ -527,6 +533,11 @@ def execute_through_bridge(
         # the bridge adds back.
         from synapse.server.handlers_spatial import TRAIL_UNDO
         summary = TRAIL_UNDO.split(": ", 1)[-1]
+    elif tool_name == "synapse_add_explode_control":
+        # The same rule: the Edit menu names the step in the words the tool's
+        # own result uses, not as a tool name and a payload.
+        from synapse.server.apex_explode import UNDO_LABEL as _EXPLODE_UNDO
+        summary = _EXPLODE_UNDO.split(": ", 1)[-1]
     op = Operation(
         agent_id=agent_id,
         operation_type=op_type,

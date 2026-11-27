@@ -1323,6 +1323,29 @@ TOOL_DEFS: list[tuple] = [
      }, "required": ["decision_id"]},
      False, False, False),
 
+    # -- APEX rig control (one build) --
+    # The one tool that reaches into a rig, by the recorded exception to boundary
+    # rule D-H22-3 (docs/SYNAPSE_H22_BOUNDARY.md section 6, 2026-11-27). It adds a
+    # control to a rig that exists; it builds none. The host generates the node's
+    # code, so the schema carries no code, no node names and no directions.
+    # readOnlyHint=False (it builds), destructiveHint=False (one undo step, the
+    # packed rig upstream untouched), idempotentHint=True (a second call finds
+    # its own node and changes nothing).
+    ("synapse_add_explode_control", "add_explode_control",
+     _filter_keys(("node", "travel")),
+     "Add an explode control to an APEX rig. SYNAPSE writes one Python SOP after the node "
+     "that packs the character (one undo step): it hands on a copy of the rig with one new "
+     "control, explode, and carries an explode slider (0 closed, 1 open). Pass the rig's node "
+     "or any node below it; pass no code and no directions. The directions are the asset's "
+     "own: each point of the rest shape needs a vector attribute explode_offset, its move at "
+     "full explode, and the tool refuses an asset that has none. The rig must already be "
+     "cooked; nothing is force-cooked. A second call reports the control is already there.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "The rig's node, or any node below it (Scene Animate, Rig Pose, Scene Invoke). The control goes in after the node that first packs the character."},
+         "travel": {"type": "number", "description": "How far up the handle goes for a full explode, in scene units (default: a quarter of the asset's height)"},
+     }, "required": ["node"]},
+     False, False, True),
+
     # -- Network Explain --
     ("houdini_network_explain", "network_explain", _network_explain_payload,
      "Walk a Houdini node network and produce a structured explanation: data flow order, "

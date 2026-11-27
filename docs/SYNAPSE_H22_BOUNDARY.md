@@ -121,6 +121,23 @@ sprints later. SYNAPSE orchestrates a rig the MCP authored; it does not author t
 
 **Verified by.** `check_no_rigging_drift` (standing guardrail).
 
+**Exception E1 (Joe Ibrahim, 2026-11-27): `synapse_add_explode_control`.** One tool reaches into
+a rig. It adds one control, `explode`, to a rig that already exists, carried by one Python SOP
+placed after the node that packs the character. What keeps it an exception and not a second
+authoring domain:
+
+- It builds no rig, no skeleton and no skinning. It starts from a rig someone else authored.
+- It does not edit that rig in place. The packed rig upstream is left as it was, and the new node
+  hands on an edited copy, so one undo step or deleting the node takes the control back out.
+- The directions each part moves in are the asset's own (a per-point `explode_offset` attribute
+  on the rest shape). The tool refuses an asset that has none. SYNAPSE invents no directions.
+- The caller passes the node and a travel distance. No code, no node names, no coordinates.
+
+`server/authoring_domains.json` is unchanged, because the node the tool emits is a SOP. That also
+means `check_no_rigging_drift` does not see this tool. The exception is held here and by
+`tests/test_apex_explode_tool.py`, which fails if a second tool is mapped to the `build_rig_logic`
+gate or if this section stops naming the first. A second rig tool needs its own entry here first.
+
 ---
 
 ## 7 · D-H22-4 — Probe the shipped surface; pinned prose is not ground truth

@@ -7,7 +7,7 @@ Predicates from REPAIR_SCAFFOLD_2026-11-20 (audit commit 4aab502a):
 * No model-reachable schema field disables undo grouping: the
   ``houdini_execute_python`` schema no longer advertises ``atomic``, and the
   registry payload builder drops it even when a client sends it.
-* The history tools stay registered (the 139-tool count is pinned) but are
+* The history tools stay registered (the 140-tool count is pinned) but are
   gated at ``review``, so the default standard-mode worker may not call them.
 
 The real undo-history check needs Houdini; these unit tests drive a fake
@@ -201,14 +201,14 @@ def test_execute_python_builder_drops_atomic():
 
 
 # ---------------------------------------------------------------------------
-# Still registered (139), now review-gated
+# Still registered (140), now review-gated
 # ---------------------------------------------------------------------------
 
 def test_history_tools_stay_registered_but_are_review_gated(monkeypatch):
     from synapse.mcp._tool_registry import TOOL_DEFS, TOOL_DISPATCH
     from shared.constants import OPERATION_GATES
 
-    assert len(TOOL_DEFS) == 139, "R-012 must not change the registered tool count"
+    assert len(TOOL_DEFS) == 140, "R-012 must not change the registered tool count"
     assert "houdini_undo" in TOOL_DISPATCH and "houdini_redo" in TOOL_DISPATCH
     assert OPERATION_GATES["history_undo"] == "review"
     assert OPERATION_GATES["history_redo"] == "review"

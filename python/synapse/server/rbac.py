@@ -63,6 +63,9 @@ _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
     # code SYNAPSE generates. Mutation tier; its read (get_spatial_path) rides the
     # viewer get_* wildcard.
     "spatial_trail",
+    # The explode control: creates and wires one Python SOP whose code SYNAPSE
+    # generates, after the node that packs an APEX rig. Mutation tier.
+    "add_explode_control",
     "execute_python", "execute_vex",
     "create_usd_prim", "modify_usd_prim", "set_usd_attribute",
     "reference_usd",

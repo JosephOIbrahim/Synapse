@@ -93,6 +93,8 @@ from .handlers_graph_synth import GraphSynthHandlerMixin
 # synapse_assess_cache. Import-safe standalone (guards hou/cache_host_probe/cache_policy
 # independently); see handlers_cache.py's header for the full architecture.
 from .handlers_cache import CacheHandlerMixin
+# One build: add an explode control to an existing APEX rig (handlers_apex.py).
+from .handlers_apex import ApexHandlerMixin
 # Live-path integrity envelope (observe-only, PATH-QUALIFIED IntegrityBlocks).
 # The module is import-safe standalone; its internals are guarded.
 from . import integrity_envelope as _envelope
@@ -173,6 +175,8 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     # D6 -- the camera path's trail: one Python Script LOP SYNAPSE writes itself.
     # get_spatial_path is read-only, no category needed.
     "spatial_trail": AuditCategory.PIPELINE,
+    # One Python SOP SYNAPSE writes itself, after the node that packs a rig.
+    "add_explode_control": AuditCategory.PIPELINE,
     "create_material": AuditCategory.MATERIAL,
     "create_textured_material": AuditCategory.MATERIAL,
     "assign_material": AuditCategory.MATERIAL,
@@ -733,7 +737,7 @@ def _failure_receipt_data(exc: BaseException) -> Optional[Dict]:
     return data
 
 
-class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, SpatialHandlerMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, FarmHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, SpatialHandlerMixin, GraphSynthHandlerMixin, CacheHandlerMixin, ApexHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -1329,6 +1333,7 @@ class SynapseHandler(NodeHandlerMixin, NetworkLayoutMixin, UsdHandlerMixin, Rend
         # deliberately absent from _READ_ONLY_COMMANDS so it takes the C5 mutation lock and a
         # live PATH-QUALIFIED IntegrityBlock envelope like any other mutation.
         reg.register("insert_cache", self._handle_insert_cache)
+        reg.register("add_explode_control", self._handle_add_explode_control)
 
         # Batch
         reg.register("batch_commands", self._handle_batch_commands)

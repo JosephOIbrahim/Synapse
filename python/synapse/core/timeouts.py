@@ -65,6 +65,10 @@ SLOW_COMMANDS = {
     # then builds through solaris_build_graph, so it carries that budget. The
     # read (get_spatial_path) stays on the 10 s default: its own budget is 3 s.
     "spatial_trail": 30.0,
+    # The explode control reads a rig, builds one node and cooks it to read the
+    # result back (about 0.1 s on the demo rig). It carries the build budget so
+    # a larger rig is not false-failed at the 10 s default.
+    "add_explode_control": 30.0,
     # Copernicus (COPs) -- solvers and batch need longer timeouts
     "cops_reaction_diffusion": 60.0,
     "cops_growth_propagation": 60.0,

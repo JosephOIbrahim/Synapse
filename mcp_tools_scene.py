@@ -46,6 +46,7 @@ TOOL_NAMES = [
     "synapse_instantiate_graph",
     "synapse_assess_cache",
     "synapse_insert_cache",
+    "synapse_add_explode_control",
 ]
 
 # Dispatch entries for this group
@@ -77,4 +78,5 @@ DISPATCH_KEYS = {
     "synapse_instantiate_graph": ("instantiate_graph", "identity"),
     "synapse_assess_cache":      ("assess_cache",      "identity"),
     "synapse_insert_cache":      ("insert_cache",      "identity"),
+    "synapse_add_explode_control": ("add_explode_control", "filter_keys:node,travel"),
 }

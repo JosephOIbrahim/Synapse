@@ -1,6 +1,6 @@
 {
   "schema": "emitted_node_types/v1",
-  "generated_from_commit": "7cc1e42736932bcf147a6d076656958b08b1a88b",
+  "generated_from_commit": "80c72fbfca3026a6a1e338179ed85e4534c4dea5",
   "entries": [
     {
       "category": "apex_seed",
@@ -726,6 +726,13 @@
       "source_files": [
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "python",
+      "source_files": [
+        "python/synapse/server/handlers_apex.py"
       ]
     },
     {
