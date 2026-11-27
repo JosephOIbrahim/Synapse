@@ -166,7 +166,8 @@ def test_the_bridge_skips_the_read_and_gives_the_trail_build_graphs_tier():
     assert worker_policy.OPERATION_GATES["build_from_manifest"] == "review"
     assert TRAIL not in bridge_adapter._DISK_WRITING_TOOLS              # it writes no file
     assert worker_policy._WORKER_BUILDER_ALLOWLIST == frozenset({
-        "synapse_solaris_build_graph", "synapse_solaris_assemble_chain", TRAIL})
+        "synapse_solaris_build_graph", "synapse_solaris_assemble_chain", TRAIL,
+        "synapse_add_explode_control"})
     allowed, why = worker_policy.is_tool_allowed_for_worker(TRAIL, profile="standard")
     assert allowed and "composite Solaris builder" in why
 

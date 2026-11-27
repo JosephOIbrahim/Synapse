@@ -56,9 +56,10 @@ def test_every_builder_the_worker_may_call_earns_a_receipt(tool):
 
 def test_the_allowlist_still_holds_the_tools_this_pin_was_written_for():
     """If the allowlist is renamed or emptied the parametrize above passes
-    vacuously. Name the three it must cover."""
+    vacuously. Name the four it must cover."""
     assert {"synapse_solaris_build_graph", "synapse_solaris_assemble_chain",
-            "synapse_spatial_trail"} <= set(worker_policy._WORKER_BUILDER_ALLOWLIST)
+            "synapse_spatial_trail",
+            "synapse_add_explode_control"} <= set(worker_policy._WORKER_BUILDER_ALLOWLIST)
 
 
 def test_a_failed_builder_is_a_flag_and_never_a_credit():

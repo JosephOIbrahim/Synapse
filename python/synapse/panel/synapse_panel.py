@@ -2448,9 +2448,12 @@ class SynapsePanel(QtWidgets.QWidget):
     # worker may call against this list. It is still a name heuristic: other
     # changing tools go uncredited, and crediting from the undo stack instead
     # of from names is the fix that is not made here.
+    # "add_explode" joined on 11/27 with synapse_add_explode_control, which
+    # writes a node and matched none. It is that narrow on purpose: a bare
+    # "add" would also credit tools that write memory, not the scene.
     _MUTATORS = ("create", "set_", "assign", "build", "wire", "connect",
                  "render", "author", "delete", "apply", "configure",
-                 "trail", "assemble")
+                 "trail", "assemble", "add_explode")
 
     def _turn_evidence(self):
         """(credit, flags, paths) from what the turn actually did.
